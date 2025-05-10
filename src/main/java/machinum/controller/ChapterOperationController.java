@@ -24,7 +24,7 @@ public class ChapterOperationController {
 
     @SneakyThrows
     @PostMapping("/{id}/execute")
-    public ResponseEntity<String> startAnalysis(@PathVariable String id, @RequestBody ChapterOperationRequest operationRequest) {
+    public ResponseEntity<String> startAnalysis(@PathVariable("id") String id, @RequestBody ChapterOperationRequest operationRequest) {
         log.debug("Got request to execute operation for chapter: {}", operationRequest);
         if (state.isFree()) {
             chapterOperationProcessor.start(operationRequest.copy(b -> b.id(id)))

@@ -1,11 +1,16 @@
 plugins {
     id 'java'
-    id 'java-library'
-    id "application"
+    id 'org.springframework.boot' version '3.4.5'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 repositories {
     mavenLocal()
+    mavenCentral()
+    maven {
+        url = uri('https://repo.spring.io/release')
+    }
+
     maven {
         url = uri('https://repo.spring.io/milestone')
     }
@@ -26,15 +31,22 @@ repositories {
 group = 'machinum'
 version = '0.0.1-SNAPSHOT'
 description = 'machinum-llm'
-java.sourceCompatibility = JavaVersion.VERSION_21
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+//    toolchain {
+//        languageVersion = JavaLanguageVersion.of(21)
+//    }
+}
+
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
-tasks.withType(Javadoc) {
-    options.encoding = 'UTF-8'
-}
+//tasks.withType(Javadoc) {
+//    options.encoding = 'UTF-8'
+//}
 
 configurations {
     compileOnly {
@@ -42,47 +54,66 @@ configurations {
     }
 }
 
+ext {
+//    set('springCloudVersion', "2024.0.1")
+    set('springAiVersion', "1.0.0-SNAPSHOT")
+}
+
+dependencyManagement {
+    imports {
+//        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+    }
+}
+
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web:3.3.3'
-    implementation 'org.springframework.boot:spring-boot-starter-jetty:3.3.3'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator:3.3.3'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa:3.3.3'
-    implementation 'org.springframework.boot:spring-boot-starter-jdbc:3.3.3'
-    implementation 'org.springframework.boot:spring-boot-starter-cache:3.3.3'
-    implementation 'org.springframework.retry:spring-retry:2.0.8'
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf:3.3.3'
-    implementation 'org.springframework.ai:spring-ai-pgvector-store:1.0.0-SNAPSHOT'
-    implementation 'org.springframework.ai:spring-ai-starter-model-ollama:1.0.0-SNAPSHOT'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-jetty'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
+    implementation 'org.springframework.ai:spring-ai-pgvector-store'
+    implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
+
     implementation 'swiss.ameri:gemini-api:1beta.0.2.7'
     implementation 'org.apache.opennlp:opennlp-tools:2.0.0'
     implementation 'org.flywaydb:flyway-core:10.10.0'
     implementation 'org.flywaydb:flyway-database-postgresql:10.10.0'
-    implementation 'org.mapstruct:mapstruct:1.6.3'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
     implementation 'org.zalando:logbook-spring-boot-starter:3.9.0'
     implementation 'io.github.java-diff-utils:java-diff-utils:4.15'
     implementation 'com.github.victools:jsonschema-module-jakarta-validation:4.36.0'
-    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+    implementation 'jakarta.validation:jakarta.validation-api'
     implementation 'com.opencsv:opencsv:5.10'
     implementation 'com.guseyn.broken-xml:broken-xml:1.0.21'
     implementation 'org.jsoup:jsoup:1.19.1'
     implementation 'info.debatty:java-string-similarity:2.0.0'
-    implementation 'org.wiremock.integrations:wiremock-spring-boot:3.6.0'
-    runtimeOnly 'org.postgresql:postgresql:42.7.3'
+    runtimeOnly 'org.postgresql:postgresql'
 
-    compileOnly 'org.projectlombok:lombok:1.18.34'
-    annotationProcessor "org.projectlombok:lombok:1.18.34"
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 
-    testCompileOnly 'org.projectlombok:lombok:1.18.34'
-    testAnnotationProcessor "org.projectlombok:lombok:1.18.34"
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor "org.projectlombok:lombok"
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-test:3.3.3'
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor "org.projectlombok:lombok"
+
+    testImplementation 'org.wiremock.integrations:wiremock-spring-boot:3.6.0'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'io.github.artsok:rerunner-jupiter:2.1.6'
-    testImplementation 'org.junit.platform:junit-platform-suite:1.10.3'
-    testImplementation 'org.testcontainers:junit-jupiter:1.19.8'
-    testImplementation 'org.springframework.boot:spring-boot-testcontainers:3.3.3'
-    testImplementation 'org.testcontainers:postgresql:1.19.8'
+    testRuntimeOnly    'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.junit.platform:junit-platform-suite'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:postgresql'
     testImplementation 'net.javacrumbs.json-unit:json-unit-assertj:3.5.0'
 }
 
@@ -90,3 +121,10 @@ test {
     useJUnitPlatform()
 }
 
+/** Java debug information: */
+tasks.withType(JavaCompile) {
+    options.compilerArgs += [
+        '-parameters',
+    ]
+    options.debug = true
+}

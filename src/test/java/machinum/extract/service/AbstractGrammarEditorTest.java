@@ -39,8 +39,8 @@ public abstract class AbstractGrammarEditorTest extends NormalTest {
         var contextText = Files.readString(summaryPath);
         var oldTranslatedText = Files.readString(previousTranslatedPath);
 //        var translatedText = Files.readString(translatedPath);
-        var translatedText = Files.readString(Path.of("target/texts/translate_example.txt"));
-//        var translatedText = Files.readString(Path.of("target/texts/translate_new_2025-02-22T15:34:31.153360383.txt"));
+        var translatedText = Files.readString(Path.of("build/texts/translate_example.txt"));
+//        var translatedText = Files.readString(Path.of("build/texts/translate_new_2025-02-22T15:34:31.153360383.txt"));
 
         var glossary = readJson(glossaryPath, new TypeReference<List<ObjectName>>() {
         });
@@ -67,9 +67,9 @@ public abstract class AbstractGrammarEditorTest extends NormalTest {
         var contextText = Files.readString(summaryPath);
         var oldTranslatedText = Files.readString(previousTranslatedPath);
 //        var translatedText = Files.readString(translatedPath);
-        var translatedText = Files.readString(Path.of("target/texts/translate_example.txt"));
-//        var translatedText = Files.readString(Path.of("target/texts/translate_new_2025-02-16T16:17:45.378848324.txt"));
-//        var translatedText = Files.readString(Path.of("target/texts/translate_new_2025-02-22T15:34:31.153360383.txt"));
+        var translatedText = Files.readString(Path.of("build/texts/translate_example.txt"));
+//        var translatedText = Files.readString(Path.of("build/texts/translate_new_2025-02-16T16:17:45.378848324.txt"));
+//        var translatedText = Files.readString(Path.of("build/texts/translate_new_2025-02-22T15:34:31.153360383.txt"));
 
         var glossary = readJson(glossaryPath, new TypeReference<List<ObjectName>>() {
         });

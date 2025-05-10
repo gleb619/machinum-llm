@@ -18,8 +18,8 @@ RUN mkdir /app
 #    apk add --no-cache libstdc++ libc6-compat
 
 # Copy the application JAR file
-COPY target/RagApp-0.0.1-SNAPSHOT.jar /app/app.jar
-#COPY --chown=app:app target/RagApp-0.0.1-SNAPSHOT.jar /app/app.jar
+COPY build/libs/app-0.0.1-SNAPSHOT.jar /app/app.jar
+#COPY --chown=app:app build/libs/app-0.0.1-SNAPSHOT.jar /app/app.jar
 #VOLUME /tmp/spring-ai-onnx-generative
 
 # Set the working directory
@@ -98,7 +98,7 @@ RUN mkdir /app
 # Copy the application JAR file
 COPY --from=builder /app/app.jar /app/app.jar
 COPY --from=builder /tmp/spring-ai-onnx-generative /tmp/spring-ai-onnx-generative
-#COPY --chown=app:app target/RagApp-0.0.1-SNAPSHOT.jar /app/app.jar
+#COPY --chown=app:app build/libs/app-0.0.1-SNAPSHOT.jar /app/app.jar
 VOLUME /tmp/spring-ai-onnx-generative
 
 # Set the working directory

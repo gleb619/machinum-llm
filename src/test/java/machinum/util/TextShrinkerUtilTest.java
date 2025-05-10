@@ -12,7 +12,7 @@ class TextShrinkerUtilTest {
     @Test
     @Disabled
     void testShrinkText() throws IOException {
-        String text = Files.readString(Path.of("target/texts/rewriter_new_2025-02-23T08:33:02.224092550.txt"));
+        String text = Files.readString(Path.of("build/texts/rewriter_new_2025-02-23T08:33:02.224092550.txt"));
 //        String text = "This is a sample text. This text contains some sentences. Some sentences are duplicates. " +
 //                "This is a small sentence. Another small one. This text is used for testing purposes.";
         double percentage = 0.8; // Remove 30% of the text

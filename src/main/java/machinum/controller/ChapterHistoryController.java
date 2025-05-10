@@ -29,7 +29,8 @@ public class ChapterHistoryController {
      */
     @JsonView(Public.class)
     @GetMapping("/{chapterId}/history/{fieldName}")
-    public ResponseEntity<List<ChapterHistory>> getFieldPatches(@PathVariable String chapterId, @PathVariable String fieldName) {
+    public ResponseEntity<List<ChapterHistory>> getFieldPatches(@PathVariable("chapterId") String chapterId,
+                                                                @PathVariable("fieldName") String fieldName) {
         validateFieldName(fieldName);
         List<ChapterHistory> patches = historyService.getPatches(chapterId, fieldName);
 
@@ -46,8 +47,8 @@ public class ChapterHistoryController {
      */
     @GetMapping("/{chapterId}/history/{fieldName}/at")
     public ResponseEntity<String> getContentAtPoint(
-            @PathVariable String chapterId,
-            @PathVariable String fieldName,
+            @PathVariable("chapterId") String chapterId,
+            @PathVariable("fieldName") String fieldName,
             @RequestParam("number") Integer point) {
 
         validateFieldName(fieldName);

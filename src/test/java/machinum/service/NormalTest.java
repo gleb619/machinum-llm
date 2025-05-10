@@ -110,7 +110,7 @@ public class NormalTest {
         glossaryPath = Path.of("src/test/resources/chapter02/glossary_chapter_02.json");
         summaryPath = Path.of("src/test/resources/chapter02/summary_chapter_02.md");
         translatedPath = Path.of("src/test/resources/chapter02/translated_chapter_02.md");
-        Path.of("target/texts").toFile().mkdirs();
+        Path.of("build/texts").toFile().mkdirs();
     }
 
     protected void withReport(ReportInput input, Runnable runnable) {
@@ -216,7 +216,7 @@ public class NormalTest {
 
     protected void persistReport(String prefix, String reportText) throws IOException {
         LocalDateTime now = LocalDateTime.now();
-        Path reportPath = Path.of("target/texts", String.format("%s_report_%s.md".formatted(prefix, now)));
+        Path reportPath = Path.of("build/texts", String.format("%s_report_%s.md".formatted(prefix, now)));
         Files.writeString(reportPath,
                 reportText,
                 StandardOpenOption.CREATE,
@@ -228,8 +228,8 @@ public class NormalTest {
 
     protected Path[] persist(String prefix, String oldText, String newText) throws IOException {
         var now = LocalDateTime.now();
-        var oldPath = Path.of("target/texts", String.format("%s_old_%s.txt".formatted(prefix, now)));
-        var newPath = Path.of("target/texts", String.format("%s_new_%s.txt".formatted(prefix, now)));
+        var oldPath = Path.of("build/texts", String.format("%s_old_%s.txt".formatted(prefix, now)));
+        var newPath = Path.of("build/texts", String.format("%s_new_%s.txt".formatted(prefix, now)));
 
         Files.writeString(oldPath,
                 oldText,

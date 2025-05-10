@@ -1,6 +1,5 @@
 package machinum.service;
 
-import com.google.common.annotations.VisibleForTesting;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +49,6 @@ public class BookProcessor {
         });
     }
 
-    @VisibleForTesting
     public void doStart(BookOperationRequest request) {
         log.debug("Prepare to process book with ai: {}", request);
 

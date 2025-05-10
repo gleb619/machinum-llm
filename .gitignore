@@ -69,3 +69,4 @@ Thumbs.db
 /pom.xml
 /test.md
 /.gradle/
+/.app.env.md

@@ -45,7 +45,7 @@ public class ChapterController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Chapter> getChapterById(@PathVariable String id) {
+    public ResponseEntity<Chapter> getChapterById(@PathVariable("id") String id) {
         return chapterService.getChapterById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -57,7 +57,7 @@ public class ChapterController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Chapter> updateChapter(@PathVariable String id, @RequestBody Chapter updatedChapter) {
+    public ResponseEntity<Chapter> updateChapter(@PathVariable("id") String id, @RequestBody Chapter updatedChapter) {
         if (!Objects.equals(id, updatedChapter.getId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .build();
@@ -69,7 +69,7 @@ public class ChapterController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteChapter(@PathVariable String id) {
+    public ResponseEntity<Void> deleteChapter(@PathVariable("id") String id) {
         chapterService.deleteChapter(id);
         return ResponseEntity.noContent().build();
     }

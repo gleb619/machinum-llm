@@ -68,10 +68,10 @@ public class BookController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Book>> getAllChapters(@RequestParam(required = false) String query,
-                                                     @RequestParam(required = false) String bookId,
-                                                     @RequestParam(defaultValue = "0") int page,
-                                                     @RequestParam(defaultValue = "10") int size) {
+    public ResponseEntity<List<Book>> getAllChapters(@RequestParam(name = "query", required = false) String query,
+                                                     @RequestParam(name = "bookId", required = false) String bookId,
+                                                     @RequestParam(name = "page", defaultValue = "0") int page,
+                                                     @RequestParam(name = "size", defaultValue = "10") int size) {
         var pageRequest = PageRequest.of(page, size);
         Page<Book> result;
 
@@ -242,9 +242,9 @@ public class BookController {
 
     @SneakyThrows
     @GetMapping("/{id}/chapters/ready")
-    public ResponseEntity<String> readyChapters(@PathVariable String id,
-                                                @RequestParam(required = false, name = "from") Integer fromChapterNumber,
-                                                @RequestParam(required = false, name = "to") Integer toChapterNumber) {
+    public ResponseEntity<String> readyChapters(@PathVariable("id") String id,
+                                                @RequestParam(name = "from", required = false) Integer fromChapterNumber,
+                                                @RequestParam(name = "to", required = false) Integer toChapterNumber) {
         log.debug("Got request to return a book: {}", id);
 
         List<Chapter> chapters;
@@ -263,7 +263,7 @@ public class BookController {
 
     @SneakyThrows
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> removeBook(@PathVariable String id) {
+    public ResponseEntity<String> removeBook(@PathVariable("id") String id) {
         log.debug("Got request to remove book: {}", id);
 
         bookService.remove(id);
@@ -276,8 +276,8 @@ public class BookController {
     /* ============= */
 
     @GetMapping("/titles")
-    public ResponseEntity<Map<String, String>> getBookTitles(@RequestParam(defaultValue = "0") int page,
-                                                             @RequestParam(defaultValue = "10") int size) {
+    public ResponseEntity<Map<String, String>> getBookTitles(@RequestParam(name = "page", defaultValue = "0") int page,
+                                                             @RequestParam(name = "size", defaultValue = "10") int size) {
         var result = bookService.getBookTitles(page, size);
         return result.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(result);
     }

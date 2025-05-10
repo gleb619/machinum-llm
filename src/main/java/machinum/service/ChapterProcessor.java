@@ -1,6 +1,5 @@
 package machinum.service;
 
-import com.google.common.annotations.VisibleForTesting;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +45,6 @@ public class ChapterProcessor {
     }
 
     @SneakyThrows
-    @VisibleForTesting
     public void doStart(ChapterOperationRequest request) {
         log.debug("Prepare to process chapter with ai: {}", request);
 

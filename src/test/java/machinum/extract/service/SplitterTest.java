@@ -46,11 +46,11 @@ class SplitterTest {
         var list4 = doWork(chapter4Path);
         var list5 = doWork(chapter5Path);
 
-        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("target/texts/chapter_01_chunks.json"), list);
-        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("target/texts/chapter_02_chunks.json"), list2);
-        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("target/texts/chapter_03_chunks.json"), list3);
-        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("target/texts/chapter_04_chunks.json"), list4);
-        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("target/texts/chapter_05_chunks.json"), list5);
+        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("build/texts/chapter_01_chunks.json"), list);
+        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("build/texts/chapter_02_chunks.json"), list2);
+        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("build/texts/chapter_03_chunks.json"), list3);
+        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("build/texts/chapter_04_chunks.json"), list4);
+        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("build/texts/chapter_05_chunks.json"), list5);
     }
 
     private Chunks doWork(Path chapter1Path) throws IOException {

@@ -79,9 +79,9 @@ class SplitFactoryTest {
         var list2 = doTest(chapter2Path);
         var list3 = doTest(chapter3Path);
 
-        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("target/texts/chapter_01_chunks.json"), list);
-        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("target/texts/chapter_02_chunks.json"), list2);
-        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("target/texts/chapter_03_chunks.json"), list3);
+        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("build/texts/chapter_01_chunks.json"), list);
+        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("build/texts/chapter_02_chunks.json"), list2);
+        mapper.writerWithDefaultPrettyPrinter().writeValue(new File("build/texts/chapter_03_chunks.json"), list3);
     }
 
     /* ============= */

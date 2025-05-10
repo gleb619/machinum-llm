@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +28,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 
 @Slf4j
@@ -57,9 +60,9 @@ public class AssetsResourceController {
     }
 
     @GetMapping("/assets/{type}/{filename:.+}")
-    public ResponseEntity<Resource> getCachedResource(@PathVariable String type,
-                                                      @PathVariable String filename,
-                                                      @RequestParam String url) {
+    public ResponseEntity<Resource> getCachedResource(@PathVariable("type") String type,
+                                                      @PathVariable("filename") String filename,
+                                                      @RequestParam("url") String url) {
         String decodedUrl;
         try {
             // URLs from query parameters are typically already decoded by Spring,
@@ -105,6 +108,7 @@ public class AssetsResourceController {
         String contentType = determineContentType(filename);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
+                .cacheControl(CacheControl.maxAge(7, TimeUnit.DAYS).cachePublic())
                 .body(resource);
     }
 
