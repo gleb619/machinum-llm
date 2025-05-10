@@ -1,0 +1,256 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are tasked with copy editing a')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Translated chunk response for chapter 1, part 1')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Translated chunk fix response for chapter 1, part 1\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are tasked with copy editing a')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Translated chunk response for chapter 1, part 2')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Translated chunk fix response for chapter 1, part 2\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are tasked with copy editing a')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Translated chunk response for chapter 2, part 1')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Translated chunk fix response for chapter 2, part 1\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are tasked with copy editing a')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Translated chunk response for chapter 2, part 2')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Translated chunk fix response for chapter 2, part 2\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are tasked with copy editing a')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Translated chunk response for chapter 3, part 1')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Translated chunk fix response for chapter 3, part 1\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are tasked with copy editing a')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Translated chunk response for chapter 3, part 2')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Translated chunk fix response for chapter 3, part 2\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are tasked with copy editing a')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Score comment fix chunk response for chapter 1, part 1')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Better translated chunk fix response for chapter 1, part 1\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are tasked with copy editing a')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Score comment fix chunk response for chapter 1, part 2')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Better translated chunk fix response for chapter 1, part 2\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are tasked with copy editing a')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Score comment fix chunk response for chapter 2, part 1')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Better translated chunk fix response for chapter 2, part 1\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are tasked with copy editing a')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Score comment fix chunk response for chapter 2, part 2')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Better translated chunk fix response for chapter 2, part 2\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are tasked with copy editing a')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Score comment fix chunk response for chapter 3, part 1')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Better translated chunk fix response for chapter 3, part 1\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are tasked with copy editing a')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Score comment fix chunk response for chapter 3, part 2')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Better translated chunk fix response for chapter 3, part 2\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    }
+  ]
+}

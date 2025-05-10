@@ -1,0 +1,22 @@
+- Kael awakens excited and nervous after discovering his ability – the Soulforge.
+- He feels a sense of responsibility and recognizes this as a turning point in his life.
+- The blacksmith’s guild is bustling with activity upon his arrival.
+- Griswold tasks Kael with testing his Soulforge ability on a simple dagger.
+- Kael focuses his energy, attempting to infuse the dagger with magic.
+- He discovers his initial attempt is flawed due to substandard materials.
+- Vayne mocks Kael’s efforts, but he ignores her and continues to practice.
+- Kael successfully infuses a new blade with magic, causing it to glow.
+- He experiences forge fatigue, a warning sign of overexertion.
+- Griswold emphasizes the importance of patience and nurturing his ability.
+- Kael demonstrates progress, creating a blade with subtle magical intricacies.
+- A messenger arrives with a scroll for Griswold, altering his demeanor.
+- Griswold cryptically states Kael’s journey is just beginning.
+- An unknown figure observes the workshop from outside, watching Kael intently.
+- Kael is determined to overcome challenges and master the Soulforge.
+- Kael’s initial attempts reveal the importance of material quality in Soulforging.
+- Griswold provides guidance, emphasizing balance and patience in developing the ability.
+- The arrival of the scroll suggests a larger, unfolding narrative.
+- The mysterious observer hints at external forces at play.
+- Kael's discovery of the Soulforge marks a significant shift in his life.
+- Forge fatigue serves as a reminder of the ability’s limitations and the need for control.
+- The subtle intricacies in the blade demonstrate Kael’s growing skill.

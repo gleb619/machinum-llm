@@ -1,0 +1,147 @@
+[
+  {
+    "id": "${json-unit.ignore}",
+    "number": 1,
+    "title": "Chapter 1",
+    "translatedTitle": "Translated chapter 1",
+    "rawText": "First chapter text.",
+    "text": "Clean response for chapter 1",
+    "cleanChunks": {
+      "chunks": [
+        {
+          "part": 1,
+          "text": "Clean response for chapter 1",
+          "tokens": 6
+        }
+      ]
+    },
+    "translatedText": "Translate fix response for chapter 1",
+    "translatedChunks": {
+      "chunks": [
+        {
+          "part": 1,
+          "text": "Translate fix response for chapter 1",
+          "tokens": 7
+        }
+      ]
+    },
+    "summary": "Summary response for chapter 1",
+    "consolidatedSummary": "Summary response for chapter 1",
+    "keywords": [],
+    "selfConsistency": {
+      "questionsAndAnswers": []
+    },
+    "quotes": [],
+    "characters": [],
+    "names": [
+      {
+        "name": "First",
+        "category": "Test",
+        "description": "First term description",
+        "references": [],
+        "ruName": "Первый"
+      }
+    ],
+    "scenes": [],
+    "bookId": "00000000-0000-0000-0000-000000000001",
+    "sourceKey": "https://some-site.com/1"
+  },
+  {
+    "id": "${json-unit.ignore}",
+    "number": 2,
+    "title": "Chapter 2",
+    "translatedTitle": "Translated chapter 2",
+    "rawText": "Second chapter text.",
+    "text": "Clean response for chapter 2",
+    "cleanChunks": {
+      "chunks": [
+        {
+          "part": 1,
+          "text": "Clean response for chapter 2",
+          "tokens": 6
+        }
+      ]
+    },
+    "translatedText": "Translate fix response for chapter 2",
+    "translatedChunks": {
+      "chunks": [
+        {
+          "part": 1,
+          "text": "Translate fix response for chapter 2",
+          "tokens": 7
+        }
+      ]
+    },
+    "summary": "Summary response for chapter 2",
+    "consolidatedSummary": "Consolidated summary response for chapter 2",
+    "keywords": [],
+    "selfConsistency": {
+      "questionsAndAnswers": []
+    },
+    "quotes": [],
+    "characters": [],
+    "names": [
+      {
+        "name": "Second",
+        "category": "Test",
+        "description": "Related to First",
+        "references": [
+          "First"
+        ],
+        "ruName": "Второй"
+      }
+    ],
+    "scenes": [],
+    "bookId": "00000000-0000-0000-0000-000000000001",
+    "sourceKey": "https://some-site.org/2"
+  },
+  {
+    "id": "${json-unit.ignore}",
+    "number": 3,
+    "title": "Chapter 3",
+    "translatedTitle": "Translated chapter 3",
+    "rawText": "Third chapter text.",
+    "text": "Clean response for chapter 3",
+    "cleanChunks": {
+      "chunks": [
+        {
+          "part": 1,
+          "text": "Clean response for chapter 3",
+          "tokens": 6
+        }
+      ]
+    },
+    "translatedText": "Translate fix response for chapter 3",
+    "translatedChunks": {
+      "chunks": [
+        {
+          "part": 1,
+          "text": "Translate fix response for chapter 3",
+          "tokens": 7
+        }
+      ]
+    },
+    "summary": "Summary response for chapter 3",
+    "consolidatedSummary": "Consolidated summary response for chapter 3",
+    "keywords": [],
+    "selfConsistency": {
+      "questionsAndAnswers": []
+    },
+    "quotes": [],
+    "characters": [],
+    "names": [
+      {
+        "name": "Third",
+        "category": "Test",
+        "description": "Related to Second",
+        "references": [
+          "Second"
+        ],
+        "ruName": "Третий"
+      }
+    ],
+    "scenes": [],
+    "bookId": "00000000-0000-0000-0000-000000000001",
+    "sourceKey": "https://some-site.com/3"
+  }
+]

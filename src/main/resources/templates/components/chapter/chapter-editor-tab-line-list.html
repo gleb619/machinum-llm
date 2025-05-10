@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Layout -->
+<div th:fragment="tab-lines">
+
+    <div class="mx-auto p-4">
+        <!-- Lines Content -->
+        <div class="bg-white dark:bg-gray-800 p-2 mb-2">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Search & Replace</h2>
+
+            <!-- Search & Replace Panel -->
+            <div class="mb-6">
+                <div class="mb-4 flex flex-wrap gap-2">
+                    <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mt-1">Search in:</span>
+                    <label class="inline-flex items-center mr-3">
+                        <input class="form-radio disabled" disabled name="searchField" type="radio"
+                               value="original" x-model="selectedField">
+                        <span class="ml-1 text-sm">Original</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input class="form-radio disabled" disabled name="searchField" type="radio"
+                               value="translated" x-model="selectedField">
+                        <span class="ml-1 text-sm">Translated</span>
+                    </label>
+                </div>
+
+                <!-- Search Panel -->
+                <div class="flex flex-col sm:flex-row items-end gap-2 mb-3">
+                    <div class="w-full sm:w-4/5">
+                        <label class="text-xs text-gray-500 block" for="lineSearch">Search for similar lines</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none"
+                                     stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"
+                                          stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <input
+                                    @change="changeValue('lineSearchQuery', lineSearchQuery)"
+                                    class="pl-10 p-2 w-full border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    id="lineSearch"
+                                    placeholder="Enter search term..."
+                                    type="text"
+                                    x-model="lineSearchQuery">
+                        </div>
+                    </div>
+                    <div class="w-full sm:w-1/5">
+                        <button
+                                @click="fetchSimilarLines(lineSearchQuery, [selectedField])"
+                                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg p-2.5 transition duration-200"
+                                type="button">
+                            Find
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Replace Panel -->
+                <div class="flex flex-col sm:flex-row items-end gap-2">
+                    <div class="w-full sm:w-4/5">
+                        <label class="text-xs text-gray-500 block" for="replaceText">Replace with</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none"
+                                     stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"
+                                          stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <input
+                                    @change="changeValue('lineReplaceWith', lineReplaceWith)"
+                                    class="pl-10 p-2 w-full border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    id="replaceText"
+                                    placeholder="Replacement text"
+                                    type="text"
+                                    x-model="lineReplaceWith">
+                        </div>
+                    </div>
+                    <div class="w-full sm:w-1/5">
+                        <button
+                                @click="performReplace()"
+                                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg p-2.5 transition duration-200"
+                                type="button">
+                            Replace
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global Actions -->
+            <div class="mt-4 bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+                <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Batch Operations</h2>
+                <div class="flex flex-wrap gap-2">
+                    <button
+                            @click="removeAllLines()"
+                            class="bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg py-2 px-4 transition duration-200">
+                        Remove All
+                    </button>
+                    <button
+                            @click="removeAllOriginalLines()"
+                            class="bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg py-2 px-4 transition duration-200">
+                        Remove All Original
+                    </button>
+                    <button
+                            @click="removeAllTranslatedLines()"
+                            class="bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg py-2 px-4 transition duration-200">
+                        Remove All Translated
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-2 mb-2">
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Lines</h2>
+
+                <!-- Filter and Count -->
+                <div class="relative w-full md:w-1/2">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none"
+                             stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" stroke-linecap="round" stroke-linejoin="round"
+                                  stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <input
+                            class="pl-10 p-2 w-full border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Filter lines locally..."
+                            type="text"
+                            x-model="lineFilter">
+                </div>
+            </div>
+
+            <!-- Statistics Card -->
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="flex flex-col text-center">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Total Lines</span>
+                    <span class="text-xl font-bold text-gray-900 dark:text-white" x-text="lines.length"></span>
+                </div>
+                <div class="flex flex-col text-center">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Missing Original</span>
+                    <span class="text-xl font-bold text-red-500"
+                          x-text="lines.filter(l => !l.originalLine).length"></span>
+                </div>
+                <div class="flex flex-col text-center">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Missing Translation</span>
+                    <span class="text-xl font-bold text-red-500"
+                          x-text="lines.filter(l => !l.translatedLine).length"></span>
+                </div>
+            </div>
+
+            <!-- Lines Display -->
+            <div x-show="lines && lines.length > 0">
+                <ul class="divide-y divide-gray-200" x-data="{ openLinesMenu: false, selectedLine: null }">
+                    <template :key="line.id" x-for="(line, index) in filteredLines">
+                        <li class="py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150 rounded-lg">
+                            <!-- Edit Mode -->
+                            <div class="px-4" x-show="editingLineId === line.id">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center">
+                                        <span class="text-sm font-medium text-gray-500 mr-2">Line #<span
+                                                x-text="line.lineIndex"></span> | Chapter #<span
+                                                x-text="line.number"></span></span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <button
+                                                @click.stop="saveLine(line.id, line.originalLineContent, line.translatedLineContent)"
+                                                class="bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg py-1 px-3 text-sm transition duration-200 mr-2">
+                                            Save
+                                        </button>
+                                        <button
+                                                @click.stop="editingLineId = null"
+                                                class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-lg py-1 px-3 text-sm transition duration-200">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-500 mb-1">Original</label>
+                                        <textarea
+                                                class="w-full p-2.5 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                                placeholder="Original text"
+                                                rows="2"
+                                                x-model="line.originalLineContent"></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-500 mb-1">Translation</label>
+                                        <textarea
+                                                class="w-full p-2.5 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                                placeholder="Translated text"
+                                                rows="2"
+                                                x-model="line.translatedLineContent"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- View Mode -->
+                            <div class="relative px-4" x-show="editingLineId !== line.id">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center">
+                                    <span class="text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded">
+                                        Line #<span x-text="line.lineIndex"></span> | Ch. <span
+                                            x-text="line.number"></span>
+                                    </span>
+                                    </div>
+                                    <div>
+                                        <button
+                                                @click.stop="editLine(line.id)"
+                                                class="text-blue-500 hover:text-blue-700 mr-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                 xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke-linecap="round" stroke-linejoin="round"
+                                                      stroke-width="2"></path>
+                                            </svg>
+                                        </button>
+                                        <button
+                                                @click.stop="openLinesMenu = !openLinesMenu; selectedLine = line"
+                                                class="text-gray-500 hover:text-gray-700">
+                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"
+                                                 xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                                                      stroke-linecap="round" stroke-linejoin="round"
+                                                      stroke-width="2"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <div class="flex items-center mb-1">
+                                            <span class="text-xs font-medium text-gray-500">Original</span>
+                                            <span
+                                                    class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800"
+                                                    x-show="!line.originalLine">
+                                            Missing
+                                        </span>
+                                        </div>
+                                        <p
+                                                :class="!line.originalLine ? 'border-red-300 bg-red-50 italic text-red-500' : 'border-gray-200 text-gray-700'"
+                                                class="text-sm p-2 rounded-lg border">
+                                            <span x-text="line.originalLine || 'No original text'"></span>
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center mb-1">
+                                            <span class="text-xs font-medium text-gray-500">Translation</span>
+                                            <span
+                                                    class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800"
+                                                    x-show="!line.translatedLine">
+                                            Missing
+                                        </span>
+                                        </div>
+                                        <p
+                                                :class="!line.translatedLine ? 'border-red-300 bg-red-50 italic text-red-500' : 'border-gray-200 text-gray-700'"
+                                                class="text-sm p-2 rounded-lg border">
+                                            <span x-text="line.translatedLine || 'No translation'"></span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Context Menu -->
+                                <div
+                                        @click.away="openLinesMenu = false; selectedLine = null"
+                                        class="absolute right-4 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 focus:outline-none z-10"
+                                        x-show="openLinesMenu && selectedLine && selectedLine.id == line.id"
+                                        x-transition:enter="transition ease-out duration-100"
+                                        x-transition:enter-end="transform opacity-100 scale-100"
+                                        x-transition:enter-start="transform opacity-0 scale-95">
+                                    <div class="py-1 text-left" role="none">
+                                        <button
+                                                @click.stop="editLine(line.id); openLinesMenu = false"
+                                                class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 hover:text-gray-900 w-full text-left">
+                                            Edit
+                                        </button>
+                                        <button
+                                                @click="removeOriginalLine(line.id, index); openLinesMenu = false"
+                                                class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 hover:text-gray-900 w-full text-left">
+                                            Clear Original
+                                        </button>
+                                        <button
+                                                @click="removeTranslatedLine(line.id, index); openLinesMenu = false"
+                                                class="text-gray-700 block px-4 py-2 text-sm hover:bg-gray-100 hover:text-gray-900 w-full text-left">
+                                            Clear Translation
+                                        </button>
+                                        <button
+                                                @click="removeLine(line.id, index); openLinesMenu = false"
+                                                class="text-red-600 block px-4 py-2 text-sm hover:bg-red-50 hover:text-red-700 w-full text-left">
+                                            Delete Line
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    </template>
+                </ul>
+
+                <!-- No results message -->
+                <div
+                        class="text-center py-8"
+                        x-show="lines.length > 0 && filteredLines.length === 0">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                         xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"
+                              stroke-width="2"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No matching lines</h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Try adjusting your filter criteria.</p>
+                    <div class="mt-4">
+                        <button
+                                @click="lineFilter = ''"
+                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 focus:outline-none">
+                            Clear filter
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty state -->
+            <div
+                    class="text-center py-10"
+                    x-show="!lines || lines.length == 0">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                     xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round"
+                          stroke-width="2"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No lines available</h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by loading chapter lines.</p>
+                <div class="mt-6" x-show="!!activeId">
+                    <button
+                            @click="fetchChapterLines(activeId)"
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 focus:outline-none"
+                            type="button">
+                        <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                             xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round"
+                                  stroke-width="2"></path>
+                        </svg>
+                        Load Chapter Lines
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

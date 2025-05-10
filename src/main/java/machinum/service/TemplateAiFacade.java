@@ -1,0 +1,174 @@
+package machinum.service;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import machinum.config.Constants;
+import machinum.extract.*;
+import machinum.flow.FlowContext;
+import machinum.model.Chapter;
+import machinum.model.Chunks;
+import org.springframework.stereotype.Service;
+
+import static machinum.config.Constants.TITLE;
+import static machinum.flow.FlowContext.*;
+import static machinum.util.TextUtil.isNotEmpty;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class TemplateAiFacade {
+
+    private final Summarizer summarizer;
+    private final CoT coT;
+    private final Glossary glossary;
+    private final Rewriter rewriter;
+    private final ProofreaderEn proofreaderEn;
+    private final Translater translater;
+    private final Splitter splitter;
+    private final SSMLConverter ssmlConverter;
+
+
+    public FlowContext<Chapter> rewrite(FlowContext<Chapter> context) {
+        return rewriter.rewrite(context);
+    }
+
+    public FlowContext<Chapter> summary(FlowContext<Chapter> context) {
+        return summarizer.summarize(context);
+    }
+
+    public FlowContext<Chapter> selfConsistency(FlowContext<Chapter> context) {
+        return coT.createCoT(context);
+    }
+
+    public FlowContext<Chapter> glossary(FlowContext<Chapter> context) {
+        return glossary.glossary(context);
+    }
+
+    public FlowContext<Chapter> proofread(FlowContext<Chapter> context) {
+        return proofreaderEn.proofread(context);
+    }
+
+    public FlowContext<Chapter> proofreadRu(FlowContext<Chapter> context) {
+        return translater.proofread(context);
+    }
+
+    public FlowContext<Chapter> glossaryTranslate(FlowContext<Chapter> context) {
+        return glossary.glossaryTranslateWithCache(context);
+    }
+
+    public FlowContext<Chapter> translate(FlowContext<Chapter> context) {
+        return translater.translate(context);
+    }
+
+    public FlowContext<Chapter> translateInChunks(FlowContext<Chapter> context) {
+        return translater.translateInChunks(context);
+    }
+
+    public FlowContext<Chapter> scoreAndTranslate(FlowContext<Chapter> context) {
+        return translater.scoreAndTranslate(context);
+    }
+
+    public FlowContext<Chapter> scoreAndTranslateInChunks(FlowContext<Chapter> context) {
+        return translater.scoreAndTranslateInChunks(context);
+    }
+
+    public FlowContext<Chapter> translateTitle(FlowContext<Chapter> context) {
+        return translater.translateTitle(context);
+    }
+
+    public FlowContext<Chapter> editGrammar(FlowContext<Chapter> context) {
+        return translater.fixGrammar(context);
+    }
+
+    public FlowContext<Chapter> editWithGlossary(FlowContext<Chapter> context) {
+        return glossary.extractGlossaryFast(context)
+                .then(translater::fixGrammar);
+    }
+
+    public FlowContext<Chapter> editGrammarInChunks(FlowContext<Chapter> context) {
+        return translater.fixGrammarInChunks(context);
+    }
+
+    public FlowContext<Chapter> scoreAndEditGrammar(FlowContext<Chapter> context) {
+        return translater.scoreAndFix(context);
+    }
+
+    public FlowContext<Chapter> scoreAndEditGrammarInChunks(FlowContext<Chapter> context) {
+        return translater.scoreAndFixInChunks(context);
+    }
+
+    public FlowContext<Chapter> logicSplit(FlowContext<Chapter> context) {
+        return splitter.split(context);
+    }
+
+    public FlowContext<Chapter> convertToSSML(FlowContext<Chapter> context) {
+        return ssmlConverter.convert(context);
+    }
+
+    public FlowContext<Chapter> bootstrapWith(FlowContext<Chapter> context) {
+        var currentItem = context.getCurrentItem();
+        log.debug("Bootstrap context from: {}", currentItem);
+
+        var textValue = resolveTextValue(context, currentItem);
+        var contextValue = currentItem.getSummary();
+        var consolidatedContextValue = currentItem.getConsolidatedSummary();
+        var glossaryValue = currentItem.getNames();
+        var title = currentItem.getTitle();
+        var translatedText = resolveTranslatedText(currentItem);
+        var cleanChunks = currentItem.getCleanChunks();
+        var translatedChunks = resolveTranslatedChunks(currentItem);
+
+        return context.rearrange(FlowContext::chapterNumberArg, chapterNumber(currentItem.getNumber()))
+                .rearrange(FlowContext::textArg, text(textValue))
+                .rearrange(FlowContext::contextArg, context(contextValue))
+                .rearrange(FlowContext::consolidatedContextArg, consolidatedContext(consolidatedContextValue))
+                .rearrange(FlowContext::glossaryArg, FlowContext.glossary(glossaryValue))
+                .rearrange(ctx -> ctx.arg(TITLE), FlowContext.createArg(TITLE, title))
+                .rearrange(FlowContext::translatedTextArg, FlowContext.translatedText(translatedText))
+                .rearrange(FlowContext::chunksArg, FlowContext.chunks(cleanChunks))
+                .rearrange(FlowContext::translatedChunksArg, FlowContext.translatedChunks(translatedChunks));
+    }
+
+    /* ============= */
+
+
+    private String resolveTextValue(FlowContext<Chapter> context, Chapter currentItem) {
+        var proofreadText = currentItem.getProofreadText();
+        var cleanText = currentItem.getText();
+
+        if (isNotEmpty(proofreadText)) {
+            return proofreadText;
+        } else if (isNotEmpty(cleanText)) {
+            return cleanText;
+        } else {
+            if (Boolean.TRUE.equals(context.metadata(Constants.ALLOW_EMPTY_TEXT))) {
+                return "";
+            } else {
+                throw new IllegalStateException("Unknown state for text");
+            }
+        }
+    }
+
+    private Chunks resolveTranslatedChunks(Chapter currentItem) {
+//        var fixedTranslatedChunks = currentItem.getFixedTranslatedChunks();
+        var translatedChunks = currentItem.getTranslatedChunks();
+
+//        if(!Chunks.isEmpty(fixedTranslatedChunks)) {
+//            return fixedTranslatedChunks;
+//        }
+
+        return translatedChunks;
+    }
+
+    private String resolveTranslatedText(Chapter currentItem) {
+//        var fixedTranslatedText = currentItem.getFixedTranslatedText();
+        var translatedText = currentItem.getTranslatedText();
+
+//        if(TextUtil.isNotEmpty(fixedTranslatedText)) {
+//            return fixedTranslatedText;
+//        }
+
+        return translatedText;
+    }
+
+}

@@ -1,0 +1,77 @@
+version: '3.7'
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    #    restart: always
+    environment:
+      - POSTGRES_USER=pgvector
+      - POSTGRES_PASSWORD=pgvector
+      - POSTGRES_DB=pgvector
+      - PGPASSWORD=pgvector
+    #    logging:
+    #      options:
+    #        max-size: 10m
+    #        max-file: "3"
+    ports:
+      - '5432:5432'
+  #    healthcheck:
+  #      extract: "pg_isready -U postgres -d vector_store"
+  #      interval: 2s
+  #      timeout: 20s
+  #      retries: 10
+
+  #  pgadmin:
+  #    container_name: pgadmin_container
+  #    image: dpage/pgadmin4
+  #    environment:
+  #      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+  #      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+  #    volumes:
+  #      - ./servers.json:/pgadmin4/servers.json
+  #    ports:
+  #      - "${PGADMIN_PORT:-5050}:80"
+
+  #  dbbackups:
+  #    image: kartoza/pg-backup:16-3.4
+  #    volumes:
+  #      - ./sql:/backups
+  #    environment:
+  #      - DUMPPREFIX=PG
+  #      - POSTGRES_HOST=postgres
+  #      - POSTGRES_USER=postgres
+  #      - POSTGRES_PASS=postgres
+  #      - POSTGRES_PORT=5432
+  #      - RUN_AS_ROOT=true
+  #      - CRON_SCHEDULE="*/1 * * * *"
+  #      - DUMP_ARGS=-Fp --column-inserts --on-conflict-do-nothing --no-blobs --create --clean --if-exists --no-owner --no-acl --encoding=UTF-8
+  #      #- CONSOLE_LOGGING=TRUE
+  #      #- DB_DUMP_ENCRYPTION=true
+  #      #- DB_TABLES=TRUE
+  #    restart: on-failure
+  ##    depends_on:
+  ##      postgres:
+  ##        condition: service_healthy
+
+  machinima-llm:
+    image: machinima-llm:latest
+    environment:
+      SPRING_AI_OLLAMA_BASE_URL: http://host.docker.internal:7869
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/pgvector
+    ports:
+      - "8078:8078"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    profiles:
+      - donotstart
+
+  wiremock:
+    image: "wiremock/wiremock:latest"
+    volumes:
+      #      - ./extensions:/var/wiremock/extensions
+      #      - ./__files:/home/wiremock/__files
+      - ./src/test/resources/stubs/mappings:/home/wiremock/mappings
+    ports:
+      - "7869:8080"
+    entrypoint: [ "/docker-entrypoint.sh", "--global-response-templating", "--disable-gzip", "--verbose" ]
+    profiles:
+      - donotstart

@@ -1,0 +1,307 @@
+// Import core functions
+import { getById, debounce, removeSearchParam } from './core.js';
+
+/**
+ * Creates an Alpine.js data object with list functionality
+ */
+export function listApp() {
+    return {
+        books: [],
+        currentPage: 0,
+        totalPages: 1,
+        totalElements: 0,
+        searchQuery: '',
+        filters: {
+            bookId: '',
+        },
+        currentBook: { id: '', title: '', bookState: {} },
+        showDeleteModal: false,
+        isUploading: false,
+        bookToDelete: null,
+        activeId: localStorage.getItem('activeId') || '',
+        expanded: false,
+        booksActionDropDownOpen: false,
+        actionDropDownOpen: {},
+        overwrite: false,
+        file: undefined,
+        importTranslationFile: undefined,
+        importGlossaryTranslateFile: undefined,
+        currentRequest: undefined,
+
+
+        fetchBooksDebounce(page = 0, callback = () => {}) {
+            if(this.currentRequest) {
+                this.currentRequest.cancel();
+                this.currentRequest = undefined;
+            }
+
+            this.currentRequest = debounce(() => {
+                this.fetchBooks(page, callback);
+            }, 500);
+
+            this.currentRequest();
+        },
+
+        fetchBooks(page = 0, callback = () => {}) {
+            const params = {
+                page,
+                query: this.searchQuery,
+                bookId: this.filters.bookId || undefined,
+            };
+
+            axios.get('/api/books', { params })
+                .then(response => {
+                    this.currentPage = parseInt(response.headers['x-current-page']) || 0;
+                    this.totalPages = parseInt(response.headers['x-total-pages']) || 1;
+                    this.totalElements = parseInt(response.headers['x-total-elements']) || 0;
+
+                    this.books = response.data;
+                    this.afterFetchBooks();
+                    callback();
+                });
+        },
+
+        afterFetchBooks() {
+//            this.actionDropDownOpen = {};
+            this.changeActiveItem(this.activeId);
+        },
+
+        changeActiveItem(bookId) {
+            if(this.books && this.books.length > 0) {
+                const item = getById(this.books, bookId);
+                if(item) {
+                    this.activeId = item.id;
+                } else {
+                    this.activeId = this.books[0].id;
+                }
+                localStorage.setItem('activeId', this.activeId);
+            } else {
+                this.activeId = '';
+            }
+
+            if(this.activeId) {
+                this.currentBook = getById(this.books, this.activeId);
+            }
+        },
+
+        editBook(chapter) {
+            if(chapter && chapter.id) {
+                showLoader(500);
+                window.location.href = "/chapter?bookId=" + chapter.id;
+            }
+        },
+
+        deleteBook(id) {
+            this.bookToDelete = id;
+            this.showDeleteModal = true;
+        },
+
+        confirmDelete() {
+            axios.delete(`/api/books/${this.bookToDelete}`)
+                .then(() => {
+                    this.activeId = '';
+                    this.filters.bookId = '';
+                    this.fetchBooks(this.currentPage);
+                    this.cancelDelete();
+                    removeSearchParam('bookId');
+                });
+        },
+
+        cancelDelete() {
+            this.showDeleteModal = false;
+            this.bookToDelete = null;
+        },
+
+        registerHotkeys(app) {
+            // Prevent default browser behavior for Alt+Left
+            window.addEventListener('keydown', function(e) {
+                 if ((e.altKey && e.key === 'ArrowLeft') ||
+                    (e.ctrlKey && e.key === 's')) {
+                    e.preventDefault();
+                }
+            });
+
+//            Mousetrap.bind('alt+right', () => {
+//                app.changeNumberFilter(1);
+//            });
+//            Mousetrap.bind('alt+left', (e) => {
+//                e.preventDefault();
+//                app.changeNumberFilter(-1);
+//
+//                return false;
+//            });
+            Mousetrap.bind('ctrl+e', function(e) {
+                e.preventDefault(); // Prevent browser save dialog
+                app.editBook(app.currentBook);
+
+                return false;
+            });
+        },
+
+        showErrorToast(text) {
+            Toastify({
+              text: text,
+              duration: 3000,
+              gravity: "top",
+              position: "right",
+              backgroundColor: "linear-gradient(90deg, #bd1c1c 10%, #da0e0e 70%)",
+              stopOnFocus: true,
+              close: true
+            }).showToast();
+        },
+
+        uploadBook(app, formData) {
+            fetch('/api/books/upload?overwrite=' + (app.overwrite ? 'true' : 'false'), {
+              method: 'POST',
+              body: formData,
+            }).then(response => {
+                if (response.ok) {
+                  app.fetchBooks(0);
+                  app.changeActiveItem(response.id);
+                  console.info('File uploaded successfully');
+                } else {
+                  console.error('Upload failed: ' + response.statusText);
+                  app.showErrorToast(`File upload failed!`);
+                }
+            });
+        },
+
+        executeWithMeasure(fn) {
+            this.isExecuting = true;
+            this.startTime = Date.now();
+            this.timePassed = '00:00:00';
+
+            const updateTimer = setInterval(() => {
+                const elapsedSeconds = Math.floor((Date.now() - this.startTime) / 1000);
+                const hours = String(Math.floor(elapsedSeconds / 3600)).padStart(2, '0');
+                const minutes = String(Math.floor((elapsedSeconds % 3600) / 60)).padStart(2, '0');
+                const seconds = String(elapsedSeconds % 60).padStart(2, '0');
+                this.timePassed = `${hours}:${minutes}:${seconds}`;
+            }, 1000);
+
+            fn(() => {
+                clearInterval(updateTimer);
+                this.isExecuting = false;
+            });
+        },
+
+        translateGlossary(bookId) {
+            this.executeWithMeasure(callback => {
+                axios.post(`/api/books/${bookId}/translate-glossary`, {
+                    operationName: 'translate-glossary',
+                    windowOperation: true
+                 })
+                    .then(response => {
+                        callback();
+                        this.fetchBooks();
+                    });
+            })
+        },
+
+        handleAction(action, bookId, ref = undefined) {
+            this.activeId = bookId;
+
+            switch (action) {
+              case 'translate-glossary':
+                console.info(`Import Glossary for book: ${book.title}`);
+                // Add API call logic here
+                break;
+              case 'import-glossary':
+                console.info(`Import Glossary for book: ${book.title}`);
+                // Add API call logic here
+                break;
+              case 'export-glossary':
+                console.info(`Export Glossary for book: ${book.title}`);
+                // Add API call logic here
+                break;
+              case 'import-translation':
+                if(ref) {
+                    ref.click();
+                }
+                break;
+              case 'export-translation':
+                console.info(`Export Translation for book: ${book.title}`);
+                // Add API call logic here
+                break;
+              case 'import-glossary-translate':
+                if(ref) {
+                    ref.click();
+                }
+                break;
+              default:
+                console.error('Unknown action');
+                this.showErrorToast(`Unknown action`);
+            }
+        },
+
+        importTranslation(app, formData) {
+            fetch(`/api/books/${app.activeId}/upload/translation`, {
+              method: 'POST',
+              body: formData,
+            }).then(response => {
+                if (response.ok) {
+                  console.info('Translation uploaded successfully');
+                } else {
+                  console.error('Upload failed: ' + response.statusText);
+                  app.showErrorToast('Upload failed: ' + response.statusText);
+                }
+            });
+        },
+
+        importGlossaryTranslate(app, formData) {
+            fetch(`/api/books/${app.activeId}/upload/glossary-translation`, {
+              method: 'POST',
+              body: formData,
+            }).then(response => {
+                if (response.ok) {
+                  console.info('Glossary translation uploaded successfully');
+                } else {
+                  console.error('Upload failed: ' + response.statusText);
+                  app.showErrorToast('Upload failed: ' + response.statusText);
+                }
+            });
+        },
+
+        registerChangeListener(app, selector, fn) {
+            const input = document.querySelector(`[x-ref="${selector}"]`);
+            input.addEventListener('change', async (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+
+              const formData = new FormData();
+              formData.append('file', file);
+              formData.append('fileName', file.name.replace(/\.[^/.]+$/, ""));
+
+              try {
+                app.isUploading = true;
+                fn(app, formData);
+
+              } catch (error) {
+                console.error('Error during upload: ' + error.message);
+                app.showErrorToast(`${file.name} upload failed!`);
+
+              } finally {
+                app.isUploading = false;
+                input.value = null
+              }
+            });
+        },
+
+        init() {
+            const qBookId = new URLSearchParams(window.location.search).get('bookId');
+            if(qBookId) {
+                this.activeId = qBookId;
+                this.filters.bookId = qBookId;
+            }
+
+            this.fetchBooks(0);
+            this.registerHotkeys(this);
+            this.registerChangeListener(this, "fileInput", this.uploadBook);
+            this.registerChangeListener(this, "importTranslationInput", this.importTranslation);
+            this.registerChangeListener(this, "importGlossaryTranslateInput", this.importGlossaryTranslate);
+            if(this.statisticAppInit) {
+                this.statisticAppInit();
+            }
+        }
+    };
+}

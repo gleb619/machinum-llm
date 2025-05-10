@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Chapter Info/Object Names Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+          rel="stylesheet"
+          th:href="@{/assets/css/tailwindcss.min.css(url='https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css')}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.12.0/toastify.min.css"
+          rel="stylesheet"
+          th:href="@{/assets/css/toastify.min.css(url='https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.12.0/toastify.min.css')}">
+
+    <!-- Include the CodeMirror library -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css"
+          rel="stylesheet"
+          th:href="@{/assets/css/codemirror.min.css(url='https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css')}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/eclipse.css"
+          rel="stylesheet"
+          th:href="@{/assets/css/theme-eclipse.css(url='https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/eclipse.css')}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/merge/merge.min.css"
+          rel="stylesheet"
+          th:href="@{/assets/css/merge.min.css(url='https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/merge/merge.min.css')}">
+
+    <!-- Include line numbers addon -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"
+            th:src="@{/assets/js/codemirror.min.js(url='https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js')}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/display/rulers.min.js"
+            th:src="@{/assets/js/display-rulers.min.js(url='https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/display/rulers.min.js')}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/edit/matchbrackets.min.js"
+            th:src="@{/assets/js/edit-matchbrackets.min.js(url='https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/edit/matchbrackets.min.js')}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/selection/active-line.min.js"
+            th:src="@{/assets/js/selection-active-line.min.js(url='https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/selection/active-line.min.js')}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/merge/merge.min.js"
+            th:src="@{/assets/js/merge.min.js(url='https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/merge/merge.min.js')}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"
+            th:src="@{/assets/js/diff-match-patch.js(url='https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js')}"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"
+            th:src="@{/assets/js/axios.min.js(url='https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js')}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.12.0/toastify.min.js"
+            th:src="@{/assets/js/toastify.min.js(url='https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.12.0/toastify.min.js')}"></script>
+
+    <script defer type="module">
+        //import Alpine from 'https://unpkg.com/alpinejs@3.14.9/dist/module.esm.min.js';
+        import Alpine from '[[@{/assets/js/alpine.esm.min.js(url='https://unpkg.com/alpinejs@3.14.9/dist/module.esm.min.js')}]]';
+
+        window.Alpine = Alpine;
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mousetrap"
+            th:src="@{/assets/js/mousetrap.min.js(url='https://cdn.jsdelivr.net/npm/mousetrap')}"></script>
+
+    <link href="../static/css/style.css" rel="stylesheet"
+          th:href="@{/css/style.css}">
+    <script src="../static/js/chapter-script.js" th:src="@{/js/chapter-script.js}"
+            type="module"></script>
+</head>
+<body class="bg-gray-100" x-data="app">
+<!-- Splash Screen -->
+<div class="splash-screen" id="splashScreen">
+    <div class="splash-logo text-blue-500">Loading</div>
+    <div class="splash-spinner border-4 border-blue-200 border-t-blue-500"></div>
+</div>
+
+<!-- Main Container -->
+<div class="container mx-auto px-4 py-8" id="mainContent">
+    <!-- List Section -->
+    <div th:remove="tag" th:replace="~{chapter-list::list}">
+        <p>
+            Here placed content of templates/chapter-list.html page, tag `th:fragment="list"`
+        </p>
+    </div>
+
+    <!-- Editor Section -->
+    <div th:remove="tag" th:replace="~{chapter-editor::editor}">
+        <textarea>
+            Here placed content of templates/chapter-editor.html page, tag `th:fragment="editor"`
+        </textarea>
+    </div>
+
+    <!-- Help Text Section -->
+    <div class="mt-8 bg-white p-4 shadow-lg rounded-lg">
+        <h2 class="text-xl font-bold mb-2">Help: Hotkeys Usage</h2>
+        <ul class="list-disc pl-6 text-gray-700">
+            <li><strong>Ctrl + E:</strong> Open editor</li>
+            <li><strong>Ctrl + S:</strong> Save changes</li>
+            <li><strong>Ctrl + Shift + S:</strong> Save editor changes</li>
+            <li><strong>Alt + Right:</strong> Navigate Forward</li>
+            <li><strong>Alt + Left:</strong> Navigate Backward</li>
+            <li><strong>Mouse click on editor's line number:</strong> Open context menu in text editor for line</li>
+            <li><strong>Select text in editor:</strong> Open context menu for selection</li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>
