@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
-import static machinum.flow.FlowContext.*;
+import static machinum.flow.FlowContextActions.*;
 import static machinum.service.NormalTest.ReportInput.jsonText;
 import static machinum.util.JavaUtil.calculatePart;
 import static machinum.util.TextProcessingTestUtil.assertCharacterCount;
@@ -37,7 +37,7 @@ public abstract class AbstractGlossaryTest extends DbTest {
 
         //TODO add to FlowContext a Chapter#number & consolidatedGlossary
         var glossary = DurationUtil.measure("glossaryExtractor", () -> {
-            return this.glossary.glossary((FlowContext<Chapter>) of(
+            return this.glossary.extractGlossary((FlowContext<Chapter>) of(
                             context(previousContext).obsolete(),
                             glossary(previousGlossary),
                             text(chapterText),

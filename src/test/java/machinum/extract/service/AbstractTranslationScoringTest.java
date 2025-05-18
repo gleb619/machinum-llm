@@ -16,7 +16,7 @@ import java.nio.file.Files;
 import java.util.List;
 
 import static machinum.config.Constants.SCORE;
-import static machinum.flow.FlowContext.*;
+import static machinum.flow.FlowContextActions.*;
 import static machinum.service.NormalTest.ReportInput.jsonText;
 import static machinum.util.TextProcessingTestUtil.assertLineCount;
 

@@ -14,8 +14,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static machinum.flow.FlowContext.of;
-import static machinum.flow.FlowContext.text;
+import static machinum.flow.FlowContextActions.*;
+
 
 class SplitterTest {
 

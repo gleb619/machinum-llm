@@ -3,6 +3,7 @@ package machinum.service;
 import machinum.TestApplication;
 import machinum.extract.CoT;
 import machinum.flow.FlowContext;
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.util.DurationUtil;
 import org.junit.jupiter.api.Test;
@@ -12,8 +13,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import static machinum.flow.FlowContext.context;
-import static machinum.flow.FlowContext.text;
+import static machinum.flow.FlowContextActions.context;
+import static machinum.flow.FlowContextActions.text;
 import static machinum.service.NormalTest.ReportInput.onlyNewText;
 import static machinum.util.JavaUtil.calculatePart;
 import static machinum.util.TextProcessingTestUtil.assertCharacterCount;
@@ -45,7 +46,7 @@ class CoTTest extends NormalTest {
         var contextText = Files.readString(contextPath);
 
         var cot = DurationUtil.measure("CoT", () -> {
-            return coT.createCoT((FlowContext<Chapter>) FlowContext.of(
+            return coT.createCoT((FlowContext<Chapter>) FlowContextActions.of(
                     text(chapterText),
                     context(chapterText)
             ));

@@ -7,6 +7,7 @@ import com.github.difflib.text.DiffRowGenerator;
 import lombok.SneakyThrows;
 import machinum.util.DurationUtil;
 import machinum.util.TextReportUtil;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -120,7 +121,7 @@ public class NormalTest {
             var builder = createReport(input, paths[0], paths[1]);
             persistReport(input.prefix(), builder);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            ExceptionUtils.rethrow(e);
         }
 
         runnable.run();

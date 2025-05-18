@@ -2,6 +2,7 @@ package machinum.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.io.Resource;
@@ -34,7 +35,7 @@ public class DatabaseMigration implements CommandLineRunner {
             log.info("Database migration completed successfully.");
         } catch (Exception e) {
             log.error("Error during database migration: %s".formatted(e.getMessage()), e);
-            throw new RuntimeException(e);
+            ExceptionUtils.rethrow(e);
         }
     }
 

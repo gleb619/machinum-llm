@@ -116,13 +116,13 @@ class FlowTest {
                 .exception(exceptionActionMock)
                 .afterAll(afterAllMock)
                 .onState(TestState.STEP1)
-                .pipe(ctx -> ctx.addArgs(FlowContext.text(testBean.testString())))
+                .pipe(ctx -> ctx.addArgs(FlowContextActions.text(testBean.testString())))
                 .sink(sinkMock);
 
         flowWithState = flowWithMocks.withStateManager(stateManager)
                 .onState(TestState.STEP2)
-                .pipe(ctx -> ctx.addArgs(FlowContext.text(testBean.firstMethod())))
-                .pipe(ctx -> ctx.addArgs(FlowContext.text(testBean.secondMethod())))
+                .pipe(ctx -> ctx.addArgs(FlowContextActions.text(testBean.firstMethod())))
+                .pipe(ctx -> ctx.addArgs(FlowContextActions.text(testBean.secondMethod())))
                 .build();
 
         runnerForMocks = new OneStepRunner(flowWithMocks);

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import machinum.extract.Summarizer;
 import machinum.flow.FlowContext;
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.util.DurationUtil;
@@ -15,7 +16,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
-import static machinum.flow.FlowContext.*;
+import static machinum.flow.FlowContextActions.*;
 import static machinum.service.NormalTest.ReportInput.data;
 import static machinum.service.NormalTest.ReportInput.onlyNewText;
 import static machinum.util.JavaUtil.calculatePart;
@@ -32,7 +33,7 @@ public abstract class AbstractSummarizerTest extends NormalTest {
     void testSummarize() throws IOException {
         String chapterText = Files.readString(rewrittenChapterPath);
         var summary = DurationUtil.measure("summary", () -> {
-            return summarizer.summarize(FlowContext.of(text(chapterText)));
+            return summarizer.summarize(FlowContextActions.of(text(chapterText)));
         }).mutate(FlowContext::context);
 
         withReport(data("summary", chapterText, summary), () -> {

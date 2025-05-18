@@ -70,3 +70,6 @@ Thumbs.db
 /test.md
 /.gradle/
 /.app.env.md
+/temp/
+/out/*
+/src/main/generated/*

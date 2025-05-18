@@ -16,7 +16,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static machinum.config.Constants.EMPTY_PLACEHOLDER;
-import static machinum.flow.FlowContext.*;
+import static machinum.flow.FlowContextActions.*;
+import static machinum.flow.FlowContextActions.*;
 
 @ExtendWith(MockitoExtension.class)
 class FlowContextTest {

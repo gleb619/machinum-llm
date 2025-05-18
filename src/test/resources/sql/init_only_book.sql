@@ -6,7 +6,8 @@ VALUES('00000000-0000-0000-0000-000000000001',
 
 --SEPARATOR--
 
-INSERT INTO chapter_info (id, source_key, "number", title, raw_text, proofread_text, summary, keywords, self_consistency, quotes, "characters", themes, perspective, tone, foreshadowing, NAMES, scenes, book_id)
+INSERT INTO chapter_info (id, source_key, "number", title, text, proofread_text, summary, keywords, self_consistency,
+                          quotes, "characters", themes, perspective, tone, foreshadowing, NAMES, scenes, book_id)
 VALUES('00000000-0000-0000-0000-000000000002',
        'https://some-site.com/1',
        1,
@@ -29,7 +30,8 @@ ON CONFLICT (id) DO NOTHING;
 
 --SEPARATOR--
 
-INSERT INTO chapter_info (id, source_key, "number", title, raw_text, proofread_text, summary, keywords, self_consistency, quotes, "characters", themes, perspective, tone, foreshadowing, NAMES, scenes, book_id)
+INSERT INTO chapter_info (id, source_key, "number", title, text, proofread_text, summary, keywords, self_consistency,
+                          quotes, "characters", themes, perspective, tone, foreshadowing, NAMES, scenes, book_id)
 VALUES('00000000-0000-0000-0000-000000000003',
        'https://some-site.org/2',
        2,
@@ -52,7 +54,8 @@ ON CONFLICT (id) DO NOTHING;
 
 --SEPARATOR--
 
-INSERT INTO chapter_info (id, source_key, "number", title, raw_text, proofread_text, summary, keywords, self_consistency, quotes, "characters", themes, perspective, tone, foreshadowing, NAMES, scenes, book_id)
+INSERT INTO chapter_info (id, source_key, "number", title, text, proofread_text, summary, keywords, self_consistency,
+                          quotes, "characters", themes, perspective, tone, foreshadowing, NAMES, scenes, book_id)
 VALUES('00000000-0000-0000-0000-000000000004',
        'https://some-site.com/3',
        3,

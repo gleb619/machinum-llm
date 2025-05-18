@@ -18,7 +18,7 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.function.Function;
 
-import static machinum.flow.FlowContext.*;
+import static machinum.flow.FlowContextActions.*;
 import static machinum.service.NormalTest.ReportInput.jsonText;
 import static machinum.util.JavaUtil.calculatePart;
 import static machinum.util.TextProcessingTestUtil.assertCharacterCount;

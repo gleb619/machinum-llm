@@ -3,6 +3,7 @@ package machinum.service;
 import machinum.TestApplication;
 import machinum.extract.SummaryExtractor;
 import machinum.flow.FlowContext;
+import machinum.flow.FlowContextActions;
 import machinum.util.DurationUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import static machinum.flow.FlowContext.text;
+import static machinum.flow.FlowContextActions.text;
 import static machinum.service.NormalTest.ReportInput.data;
 import static machinum.util.JavaUtil.calculatePart;
 import static machinum.util.TextProcessingTestUtil.assertCharacterCount;
@@ -40,7 +41,7 @@ class SummaryExtractorTest extends NormalTest {
     void testSummarize() throws IOException {
         String chapterText = Files.readString(chapterPath);
         var summary = DurationUtil.measure("summary", () -> {
-            return summarizer.extractSummary(FlowContext.of(text(chapterText)));
+            return summarizer.extractSummary(FlowContextActions.of(text(chapterText)));
         }).mutate(FlowContext::context);
 
         withReport(data("summary", chapterText, summary), () -> {
