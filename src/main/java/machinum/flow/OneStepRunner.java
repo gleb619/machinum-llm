@@ -2,15 +2,16 @@ package machinum.flow;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import machinum.exception.AppIllegalStateException;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static machinum.config.Constants.*;
 import static machinum.flow.FlowContextActions.iteration;
+import static machinum.flow.FlowContextActions.result;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -37,7 +38,9 @@ public class OneStepRunner<T> implements FlowRunner<T> {
                 .sm(sm)
                 .metadata(metadata)
                 .extendEnabled(extendEnabled)
-                .flowContextRef(flowContextRef));
+                .flowContextRef(flowContextRef)
+                .windowBuffer(new WindowBuffer<>()));
+
         executeFlow(runnerContext);
     }
 
@@ -63,7 +66,28 @@ public class OneStepRunner<T> implements FlowRunner<T> {
             processItem(runnerContext, i, currentPipeIndex);
         }
 
+        // Process any remaining windows after all items are processed
+        flushWindows(runnerContext);
+
         updateNextState(runnerContext);
+    }
+
+    private void flushWindows(RunnerContext<T> runnerContext) {
+        var state = runnerContext.getCurrentState();
+        runnerContext.getWindowBuffer().getAllWindows().forEach((windowId, contexts) -> {
+            if (!contexts.isEmpty()) {
+                var pipe = runnerContext.getWindowPipe(windowId);
+                if (pipe != null) {
+                    try {
+                        var aggregatedContext = pipe.aggregate(contexts);
+                        processSinglePipe(runnerContext, -1, -1, ctx -> aggregatedContext, state);
+                    } catch (Exception e) {
+                        handlePipeException(runnerContext, e);
+                    }
+                }
+            }
+        });
+        runnerContext.getWindowBuffer().clear();
     }
 
     private void prepareContext(RunnerContext<T> runnerContext, T originItem) {
@@ -100,11 +124,41 @@ public class OneStepRunner<T> implements FlowRunner<T> {
                               List<Function<FlowContext<T>, FlowContext<T>>> pipes, Flow.State state) {
         for (int j = startPipeIndex; j < pipes.size(); j++) {
             try {
-                processSinglePipe(runnerContext, itemIndex, j, pipes.get(j), state);
+                var pipe = pipes.get(j);
+                if (pipe instanceof WindowedPipe) {
+                    processWindowedPipe(runnerContext, itemIndex, j, (WindowedPipe<T>) pipe, state);
+                } else {
+                    processSinglePipe(runnerContext, itemIndex, j, pipe, state);
+                }
             } catch (Exception e) {
                 handlePipeException(runnerContext, e);
             }
         }
+    }
+
+    private void processWindowedPipe(RunnerContext<T> runnerContext, int itemIndex, int pipeIndex,
+                                     WindowedPipe<T> windowedPipe, Flow.State state) {
+        var context = runnerContext.getFlowContext();
+        var windowId = windowedPipe.getWindowId();
+
+        runnerContext.getWindowBuffer().add(windowId, context);
+
+        // Check if window is ready for processing
+        if (windowedPipe.shouldTrigger(runnerContext.getWindowBuffer().getWindow(windowId))) {
+            var contexts = runnerContext.getWindowBuffer().getWindow(windowId);
+            var aggregatedContext = windowedPipe.aggregate(contexts);
+
+            // Process the aggregated result
+            processSinglePipe(runnerContext, itemIndex, pipeIndex, ctx -> aggregatedContext, state);
+
+            // Clear the window if it's a tumbling window or similar that needs clearing
+            if (windowedPipe.shouldClearAfterTrigger()) {
+                runnerContext.getWindowBuffer().clearWindow(windowId);
+            }
+        }
+
+        // Update state even if we don't process anything yet
+        runnerContext.saveCurrentState(itemIndex, pipeIndex + 1, state);
     }
 
     private void processSinglePipe(RunnerContext<T> runnerContext, int itemIndex, int pipeIndex,
@@ -148,6 +202,123 @@ public class OneStepRunner<T> implements FlowRunner<T> {
 
     /* ============= */
 
+    /**
+     * Window definition to be used with aggregate operations
+     */
+    public interface Window {
+
+        static Window tumbling(int size) {
+            return new TumblingWindow(size);
+        }
+
+        static Window sliding(int size, int slide) {
+            return new SlidingWindow(size, slide);
+        }
+
+        static Window session(int timeout) {
+            return new SessionWindow(timeout);
+        }
+
+        int getSize();
+
+        int getSlide();
+
+        record TumblingWindow(int size) implements Window {
+            @Override
+            public int getSize() {
+                return size;
+            }
+
+            @Override
+            public int getSlide() {
+                return size; // For tumbling windows, slide equals size
+            }
+        }
+
+        record SlidingWindow(int size, int slide) implements Window {
+            @Override
+            public int getSize() {
+                return size;
+            }
+
+            @Override
+            public int getSlide() {
+                return slide;
+            }
+        }
+
+        record SessionWindow(int timeout) implements Window {
+            @Override
+            public int getSize() {
+                return timeout;
+            }
+
+            @Override
+            public int getSlide() {
+                return 1; // Sessions don't have traditional slides
+            }
+        }
+
+    }
+
+    /**
+     * Windowed pipe for processing data in windows
+     */
+    public interface WindowedPipe<T> extends Function<FlowContext<T>, FlowContext<T>> {
+
+        String getWindowId();
+
+        boolean shouldTrigger(List<FlowContext<T>> contexts);
+
+        boolean shouldClearAfterTrigger();
+
+        FlowContext<T> aggregate(List<FlowContext<T>> contexts);
+
+        @Override
+        default FlowContext<T> apply(FlowContext<T> context) {
+            // This is a placeholder - actual processing happens in OneStepRunner
+            return context;
+        }
+
+    }
+
+    /**
+     * Aggregation function to be used with windows
+     */
+    public interface Aggregation<T> {
+
+        static <T> Aggregation<T> sum(Function<FlowContext<T>, Number> extractor) {
+            return contexts -> {
+                if (contexts.isEmpty()) return null;
+                var sum = contexts.stream()
+                        .map(extractor)
+                        .mapToDouble(Number::doubleValue)
+                        .sum();
+
+                return contexts.getLast().rearrange(FlowContext::resultArg, result(sum));
+            };
+        }
+
+        static <T> Aggregation<T> count() {
+            return contexts -> contexts.getLast().rearrange(FlowContext::resultArg, result((long) contexts.size()));
+        }
+
+        static <T> Aggregation<T> avg(Function<FlowContext<T>, Number> extractor) {
+            return contexts -> {
+                if (contexts.isEmpty()) return null;
+                var avg = contexts.stream()
+                        .map(extractor)
+                        .mapToDouble(Number::doubleValue)
+                        .average()
+                        .orElse(0.0);
+
+                return contexts.getLast().rearrange(FlowContext::resultArg, result(avg));
+            };
+        }
+
+        FlowContext<T> apply(List<FlowContext<T>> contexts);
+    }
+
     @Value
     @AllArgsConstructor
     @Builder(toBuilder = true)
@@ -159,6 +330,7 @@ public class OneStepRunner<T> implements FlowRunner<T> {
         Map<String, Object> metadata;
         boolean extendEnabled;
         AtomicReference<FlowContext<T>> flowContextRef;
+        WindowBuffer<T> windowBuffer;
 
         public void updateFlowContext(FlowContext<T> newContext) {
             flowContextRef.set(newContext);
@@ -249,8 +421,93 @@ public class OneStepRunner<T> implements FlowRunner<T> {
             return getFlow().nextState(initState);
         }
 
+        public WindowedPipe<T> getWindowPipe(@NonNull String windowId) {
+            var statePipes = getStatePipe(currentState);
+            if (statePipes == null) return null;
+
+            return statePipes.stream()
+                    .filter(pipe -> pipe instanceof WindowedPipe)
+                    .map(pipe -> (WindowedPipe<T>) pipe)
+                    .filter(wp -> windowId.equals(wp.getWindowId()))
+                    .findFirst()
+                    .orElseThrow(() -> new AppIllegalStateException("Window for given id not found", windowId));
+        }
+
         public static <U> RunnerContext<U> of(Function<RunnerContextBuilder<U>, RunnerContextBuilder<U>> creator) {
             return creator.apply(builder()).build();
+        }
+
+    }
+
+    /**
+     * Buffer to store contexts for windowed operations
+     */
+    private static class WindowBuffer<T> {
+
+        private final Map<String, List<FlowContext<T>>> windows = new ConcurrentHashMap<>();
+
+        public void add(String windowId, FlowContext<T> context) {
+            windows.computeIfAbsent(windowId, k -> new ArrayList<>()).add(context);
+        }
+
+        public List<FlowContext<T>> getWindow(String windowId) {
+            return windows.getOrDefault(windowId, List.of());
+        }
+
+        public void clearWindow(String windowId) {
+            windows.remove(windowId);
+        }
+
+        public Map<String, List<FlowContext<T>>> getAllWindows() {
+            return new HashMap<>(windows);
+        }
+
+        public void clear() {
+            windows.clear();
+        }
+
+    }
+
+    /**
+     * Base implementation of a windowed pipe
+     */
+    @Value
+    @RequiredArgsConstructor
+    public static class BaseWindowedPipe<T> implements WindowedPipe<T> {
+
+        String windowId;
+        Window window;
+        Aggregation<T> aggregation;
+
+        @Override
+        public boolean shouldTrigger(List<FlowContext<T>> contexts) {
+            return contexts.size() >= window.getSize();
+        }
+
+        @Override
+        public boolean shouldClearAfterTrigger() {
+            return window instanceof Window.TumblingWindow;
+        }
+
+        @Override
+        public FlowContext<T> aggregate(List<FlowContext<T>> contexts) {
+            return aggregation.apply(contexts);
+        }
+
+    }
+
+    /**
+     * Extension methods for Flow to support windowing operations
+     */
+    public static class FlowExtensions {
+
+        public static <T> WindowedPipe<T> window(String windowId, Window window, Aggregation<T> aggregation) {
+            return new BaseWindowedPipe<>(windowId, window, aggregation);
+        }
+
+        public static <T> WindowedPipe<T> aggregate(Window window, Aggregation<T> aggregation) {
+            String windowId = UUID.randomUUID().toString();
+            return window(windowId, window, aggregation);
         }
 
     }
