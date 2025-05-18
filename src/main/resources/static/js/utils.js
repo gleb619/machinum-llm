@@ -51,13 +51,18 @@ export function utilsApp() {
       },
 
       changeValue(name, newValue) {
-        localStorage.setItem(name, newValue);
+        const valueToStore = typeof newValue === 'object' ? JSON.stringify(newValue) : newValue;
+        localStorage.setItem(name, valueToStore);
         this[name] = newValue;
       },
 
       loadValue(name, defaultValue) {
         const currValue = localStorage.getItem(name);
-        this[name] = currValue || defaultValue;
+        try {
+          this[name] = JSON.parse(currValue) || defaultValue;
+        } catch (e) {
+          this[name] = currValue || defaultValue;
+        }
       },
 
       /**
@@ -249,6 +254,26 @@ export function utilsApp() {
           }).format(number).replace(/,/g, ' ');
       },
 
+      fromSearchParams(query) {
+        const currentParams = new URLSearchParams(window.location.search);
+        const queryObject = Object.fromEntries(currentParams.entries());
+        return this.toURLSearchParams(queryObject);
+      },
+
+      toURLSearchParams(query) {
+          for (let param in query) {
+            if (query[param] === undefined
+              || query[param] === null
+              || query[param] === ""
+            ) {
+              delete query[param];
+            }
+          }
+
+          return new URLSearchParams(query);
+      },
+
+      //TODO move to another js file
       translateToRussian(text) {
           return fetch('/api/translate/to-russian', {
                       method: 'POST',

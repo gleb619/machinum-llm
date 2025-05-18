@@ -1,5 +1,5 @@
 // Import core functions
-import { getById, debounce, removeSearchParam } from './core.js';
+//import { getById, debounce, removeSearchParam } from './core.js';
 
 /**
  * Creates an Alpine.js data object with list functionality
@@ -19,7 +19,6 @@ export function listApp() {
         isUploading: false,
         bookToDelete: null,
         activeId: localStorage.getItem('activeId') || '',
-        expanded: false,
         booksActionDropDownOpen: false,
         actionDropDownOpen: {},
         overwrite: false,
@@ -29,13 +28,28 @@ export function listApp() {
         currentRequest: undefined,
 
 
+        initList() {
+            const params = this.fromSearchParams(window.location.search);
+            const qBookId = params.get('bookId');
+            if(qBookId) {
+                this.activeId = qBookId;
+                this.filters.bookId = qBookId;
+            }
+
+            this.fetchBooks(0);
+            this.registerHotkeys(this);
+            this.registerChangeListener(this, "fileInput", this.uploadBook);
+            this.registerChangeListener(this, "importTranslationInput", this.importTranslation);
+            this.registerChangeListener(this, "importGlossaryTranslateInput", this.importGlossaryTranslate);
+        },
+
         fetchBooksDebounce(page = 0, callback = () => {}) {
             if(this.currentRequest) {
                 this.currentRequest.cancel();
                 this.currentRequest = undefined;
             }
 
-            this.currentRequest = debounce(() => {
+            this.currentRequest = this.debounce(() => {
                 this.fetchBooks(page, callback);
             }, 500);
 
@@ -45,20 +59,28 @@ export function listApp() {
         fetchBooks(page = 0, callback = () => {}) {
             const params = {
                 page,
-                query: this.searchQuery,
+                query: this.searchQuery || undefined,
                 bookId: this.filters.bookId || undefined,
             };
 
-            axios.get('/api/books', { params })
-                .then(response => {
-                    this.currentPage = parseInt(response.headers['x-current-page']) || 0;
-                    this.totalPages = parseInt(response.headers['x-total-pages']) || 1;
-                    this.totalElements = parseInt(response.headers['x-total-elements']) || 0;
+            fetch('/api/books?' + this.toURLSearchParams({...params}).toString(), {
+                method: 'GET',
+            })
+            .then(response => response.json()
+                .then(rsp => {
+                    if (!response.ok) {
+                        console.error('Error fetching chapters:', rsp);
+                        this.showToast(`Error: ${rsp.message || rsp.detail}`, true);
+                    } else {
+                        this.currentPage = parseInt(response.headers.get('x-current-page')) || 0;
+                        this.totalPages = parseInt(response.headers.get('x-total-pages')) || 1;
+                        this.totalElements = parseInt(response.headers.get('x-total-elements')) || 0;
 
-                    this.books = response.data;
-                    this.afterFetchBooks();
-                    callback();
-                });
+                        this.books = rsp;
+                        this.afterFetchBooks();
+                        callback();
+                    }
+                }));
         },
 
         afterFetchBooks() {
@@ -68,7 +90,7 @@ export function listApp() {
 
         changeActiveItem(bookId) {
             if(this.books && this.books.length > 0) {
-                const item = getById(this.books, bookId);
+                const item = this.getById(this.books, bookId);
                 if(item) {
                     this.activeId = item.id;
                 } else {
@@ -80,14 +102,14 @@ export function listApp() {
             }
 
             if(this.activeId) {
-                this.currentBook = getById(this.books, this.activeId);
+                this.currentBook = this.getById(this.books, this.activeId);
             }
         },
 
         editBook(chapter) {
             if(chapter && chapter.id) {
                 showLoader(500);
-                window.location.href = "/chapter?bookId=" + chapter.id;
+                window.location.href = "/chapters?bookId=" + chapter.id;
             }
         },
 
@@ -97,14 +119,16 @@ export function listApp() {
         },
 
         confirmDelete() {
-            axios.delete(`/api/books/${this.bookToDelete}`)
-                .then(() => {
-                    this.activeId = '';
-                    this.filters.bookId = '';
-                    this.fetchBooks(this.currentPage);
-                    this.cancelDelete();
-                    removeSearchParam('bookId');
-                });
+            fetch(`/api/books/${this.bookToDelete}`, {
+                method: 'DELETE'
+            })
+            .then(() => {
+                this.activeId = '';
+                this.filters.bookId = '';
+                this.fetchBooks(this.currentPage);
+                this.cancelDelete();
+                this.removeSearchParam('bookId');
+            });
         },
 
         cancelDelete() {
@@ -187,14 +211,26 @@ export function listApp() {
 
         translateGlossary(bookId) {
             this.executeWithMeasure(callback => {
-                axios.post(`/api/books/${bookId}/translate-glossary`, {
-                    operationName: 'translate-glossary',
-                    windowOperation: true
-                 })
-                    .then(response => {
-                        callback();
-                        this.fetchBooks();
-                    });
+                fetch(`/api/books/${bookId}/translate-glossary`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        operationName: 'translate-glossary',
+                        windowOperation: true
+                    })
+                })
+                .then(response => response.json()
+                    .then(rsp => {
+                        if (!response.ok) {
+                            console.error('Error glossary translating:', rsp);
+                            this.showToast(`Error glossary translating: ${rsp.message || rsp.detail}`, true);
+                        } else {
+                            callback();
+                            this.fetchBooks();
+                        }
+                    }));
             })
         },
 
@@ -287,21 +323,6 @@ export function listApp() {
             });
         },
 
-        init() {
-            const qBookId = new URLSearchParams(window.location.search).get('bookId');
-            if(qBookId) {
-                this.activeId = qBookId;
-                this.filters.bookId = qBookId;
-            }
 
-            this.fetchBooks(0);
-            this.registerHotkeys(this);
-            this.registerChangeListener(this, "fileInput", this.uploadBook);
-            this.registerChangeListener(this, "importTranslationInput", this.importTranslation);
-            this.registerChangeListener(this, "importGlossaryTranslateInput", this.importGlossaryTranslate);
-            if(this.statisticAppInit) {
-                this.statisticAppInit();
-            }
-        }
     };
 }

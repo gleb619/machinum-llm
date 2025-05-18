@@ -2,17 +2,17 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
 <!-- Layout -->
-<div th:fragment="tab-lines">
+<div th:fragment="tab-lines" th:remove="tag">
 
     <div class="mx-auto p-4">
         <!-- Lines Content -->
-        <div class="bg-white dark:bg-gray-800 p-2 mb-2">
-            <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Search & Replace</h2>
+        <div class="bg-white p-2 mb-2">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900">Search & Replace</h2>
 
             <!-- Search & Replace Panel -->
             <div class="mb-6">
                 <div class="mb-4 flex flex-wrap gap-2">
-                    <span class="block text-sm font-medium text-gray-700 dark:text-gray-300 mt-1">Search in:</span>
+                    <span class="block text-sm font-medium text-gray-700">Search in:</span>
                     <label class="inline-flex items-center mr-3">
                         <input class="form-radio disabled" disabled name="searchField" type="radio"
                                value="original" x-model="selectedField">
@@ -31,7 +31,7 @@
                         <label class="text-xs text-gray-500 block" for="lineSearch">Search for similar lines</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none"
+                                <svg class="w-4 h-4 text-gray-500" fill="none"
                                      stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"
                                           stroke-width="2"/>
@@ -49,7 +49,7 @@
                     <div class="w-full sm:w-1/5">
                         <button
                                 @click="fetchSimilarLines(lineSearchQuery, [selectedField])"
-                                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg p-2.5 transition duration-200"
+                                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg p-2 transition duration-200"
                                 type="button">
                             Find
                         </button>
@@ -62,7 +62,7 @@
                         <label class="text-xs text-gray-500 block" for="replaceText">Replace with</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none"
+                                <svg class="w-4 h-4 text-gray-500" fill="none"
                                      stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"
                                           stroke-width="2"/>
@@ -80,7 +80,7 @@
                     <div class="w-full sm:w-1/5">
                         <button
                                 @click="performReplace()"
-                                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg p-2.5 transition duration-200"
+                                class="w-full bg-yellow-400 hover:bg-yellow-600 text-white font-medium rounded-lg p-2 transition duration-200"
                                 type="button">
                             Replace
                         </button>
@@ -89,8 +89,8 @@
             </div>
 
             <!-- Global Actions -->
-            <div class="mt-4 bg-white dark:bg-gray-800 shadow rounded-lg p-4">
-                <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Batch Operations</h2>
+            <div class="mt-4 bg-white shadow rounded-lg p-4">
+                <h2 class="text-lg font-semibold mb-4 text-gray-900">Batch Operations</h2>
                 <div class="flex flex-wrap gap-2">
                     <button
                             @click="removeAllLines()"
@@ -111,14 +111,14 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-2 mb-2">
+        <div class="bg-white rounded-lg p-2 mb-2">
             <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Lines</h2>
+                <h2 class="text-lg font-semibold text-gray-900">Lines</h2>
 
                 <!-- Filter and Count -->
                 <div class="relative w-full md:w-1/2">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none"
+                        <svg class="w-4 h-4 text-gray-500" fill="none"
                              stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" stroke-linecap="round" stroke-linejoin="round"
                                   stroke-width="2"/>
@@ -133,18 +133,18 @@
             </div>
 
             <!-- Statistics Card -->
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-gray-50 rounded-lg p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="flex flex-col text-center">
-                    <span class="text-xs text-gray-500 dark:text-gray-400">Total Lines</span>
-                    <span class="text-xl font-bold text-gray-900 dark:text-white" x-text="lines.length"></span>
+                    <span class="text-xs text-gray-500">Total Lines</span>
+                    <span class="text-xl font-bold text-gray-900" x-text="lines.length"></span>
                 </div>
                 <div class="flex flex-col text-center">
-                    <span class="text-xs text-gray-500 dark:text-gray-400">Missing Original</span>
+                    <span class="text-xs text-gray-500">Missing Original</span>
                     <span class="text-xl font-bold text-red-500"
                           x-text="lines.filter(l => !l.originalLine).length"></span>
                 </div>
                 <div class="flex flex-col text-center">
-                    <span class="text-xs text-gray-500 dark:text-gray-400">Missing Translation</span>
+                    <span class="text-xs text-gray-500">Missing Translation</span>
                     <span class="text-xl font-bold text-red-500"
                           x-text="lines.filter(l => !l.translatedLine).length"></span>
                 </div>
@@ -154,7 +154,7 @@
             <div x-show="lines && lines.length > 0">
                 <ul class="divide-y divide-gray-200" x-data="{ openLinesMenu: false, selectedLine: null }">
                     <template :key="line.id" x-for="(line, index) in filteredLines">
-                        <li class="py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150 rounded-lg">
+                        <li class="py-4 hover:bg-gray-50 transition duration-150 rounded-lg">
                             <!-- Edit Mode -->
                             <div class="px-4" x-show="editingLineId === line.id">
                                 <div class="flex items-center justify-between mb-2">
@@ -201,7 +201,7 @@
                             <div class="relative px-4" x-show="editingLineId !== line.id">
                                 <div class="flex items-center justify-between mb-2">
                                     <div class="flex items-center">
-                                    <span class="text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded">
+                                    <span class="text-xs font-medium bg-gray-100 text-gray-700 px-2 py-1 rounded">
                                         Line #<span x-text="line.lineIndex"></span> | Ch. <span
                                             x-text="line.number"></span>
                                     </span>
@@ -307,8 +307,8 @@
                         <path d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"
                               stroke-width="2"></path>
                     </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No matching lines</h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Try adjusting your filter criteria.</p>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No matching lines</h3>
+                    <p class="mt-1 text-sm text-gray-500">Try adjusting your filter criteria.</p>
                     <div class="mt-4">
                         <button
                                 @click="lineFilter = ''"
@@ -328,8 +328,8 @@
                     <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round"
                           stroke-width="2"></path>
                 </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No lines available</h3>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by loading chapter lines.</p>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No lines available</h3>
+                <p class="mt-1 text-sm text-gray-500">Get started by loading chapter lines.</p>
                 <div class="mt-6" x-show="!!activeId">
                     <button
                             @click="fetchChapterLines(activeId)"

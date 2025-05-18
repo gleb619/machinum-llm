@@ -1,6 +1,3 @@
-// Import core functions
-import { addSearchParam, formatTime, formatBigNumberWithSpaces } from './core.js';
-
 /**
  * Creates an Alpine.js data object with list functionality
  */
@@ -8,8 +5,6 @@ export function statisticApp() {
     return {
         collapsed: false,
         open: false,
-        runnerPanelOpen: false,
-        runner: '',
         isExecuting: false,
         startTime: null,
         timePassed: '00:00:00',
@@ -31,10 +26,11 @@ export function statisticApp() {
 
         initStatistic() {
             this.loadState('collapsed');
+            this.fetchStatisticsData();
         },
 
         async executeOperation(operationName) {
-            addSearchParam('bookId', this.activeId);
+            this.addSearchParam('bookId', this.activeId);
 
             this.isExecuting = true;
             this.startTime = Date.now();
@@ -54,10 +50,18 @@ export function statisticApp() {
 
             while (retries < maxRetries) {
                 try {
-                    const response = await axios.post(`/api/books/${this.activeId}/execute`, {
+                    const request = {
+                        ...this.bookRequestTemplate,
                         operationName: operationName,
                         forceMode: false,
-                        runner: this.runner
+                    };
+
+                    const response = await fetch(`/api/books/${this.activeId}/execute`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(request)
                     });
 
                     // Check if the backend responded with a success status
@@ -69,9 +73,10 @@ export function statisticApp() {
                         break; // Exit the retry loop on success
                     }
                 } catch (error) {
-                    if (error.response && error.response.headers['x-retry-at']) {
+                    const response = error.response;
+                    if (response && response.headers.get('x-retry-at')) {
                         // Extract the retry time from the X-Retry-At header
-                        const retryAt = new Date(error.response.headers['x-retry-at']).getTime();
+                        const retryAt = new Date(response.headers.get('x-retry-at')).getTime();
                         const currentTime = Date.now();
                         const delay = Math.max(retryAt - currentTime, retryDelayBase * Math.pow(2, retries));
 
@@ -98,15 +103,20 @@ export function statisticApp() {
                 date: this.selectedDate
             };
 
-            axios.get('/api/statistics', { params })
-                .then(response => {
-                    this.statistics = response.data;
-                    this.calculateMetrics();
-                    this.renderCharts();
-                })
-                .catch(error => {
-                    console.error('Error fetching statistics:', error);
-                });
+            fetch('/api/statistics?' + this.toURLSearchParams({...params}).toString(), {
+              method: 'GET',
+            })
+            .then(response => response.json()
+                .then(rsp => {
+                    if (!response.ok) {
+                        console.error('Error fetching statistics:', rsp);
+                        this.showToast(`Error fetching statistics: ${rsp.message || rsp.detail}`, true);
+                    } else {
+                        this.statistics = rsp;
+                        this.calculateMetrics();
+                        this.renderCharts();
+                    }
+                }));
         },
 
         get statisticFilteredData() {
@@ -130,7 +140,7 @@ export function statisticApp() {
         },
 
         calculateMetrics() {
-            this.totalTokens = formatBigNumberWithSpaces(this.statistics.reduce((sum, stat) => sum + stat.outputHistoryTokens, 0));
+            this.totalTokens = this.formatBigNumberWithSpaces(this.statistics.reduce((sum, stat) => sum + stat.outputHistoryTokens, 0));
 
             const totalConversion = this.statistics.reduce((sum, stat) => sum + (stat.conversionPercent || 0), 0);
             this.avgConversion = this.statistics.length > 0
@@ -138,18 +148,26 @@ export function statisticApp() {
                 : 0;
 
             const latestStat = this.statistics.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-            this.operationsTime = formatTime(this.statistics.reduce((sum, stat) => sum + stat.operationTimeSeconds, 0));
+            this.operationsTime = this.formatTime(this.statistics.reduce((sum, stat) => sum + stat.operationTimeSeconds, 0));
         },
 
         renderCharts() {
-            this.renderTokenChart();
-            this.renderTimeChart();
-            this.renderOperationTypeChart();
-            this.renderTokensComparisonChart();
+            try {
+                this.renderTokenChart();
+                this.renderTimeChart();
+                this.renderOperationTypeChart();
+                this.renderTokensComparisonChart();
+            } catch (e) {
+                console.error("Chart error: ", e);
+            }
         },
 
         renderLineChart(id, fieldName, label, color) {
-            const ctx = document.getElementById(id).getContext('2d');
+            const el = document.getElementById(id);
+            if(!el) {
+                console.error(`Element with id='${id}' is not found`);
+                return;
+            }
 
             // Group data by date
             const groupedData = this.statistics.reduce((acc, stat) => {
@@ -164,33 +182,38 @@ export function statisticApp() {
             const labels = Object.keys(groupedData).sort((a, b) => new Date(a) - new Date(b));
             const data = labels.map(date => groupedData[date]);
 
-            if (this[id]) {
-                this[id].destroy();
-            }
-
-            this[id] = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: label,
-                        data: data,
-                        borderColor: color,
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        tension: 0.3,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
+            if (!this[id]) {
+                // Create new chart if it doesn't exist
+                const ctx = el.getContext('2d');
+                this[id] = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: label,
+                            data: data,
+                            borderColor: color,
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            tension: 0.3,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
                         }
                     }
-                }
-            });
+                });
+            } else {
+                // Update existing chart
+                this[id].data.labels = labels;
+                this[id].data.datasets[0].data = data;
+                this[id].update();
+            }
         },
 
         renderTokenChart() {
@@ -202,7 +225,11 @@ export function statisticApp() {
         },
 
         renderOperationTypeChart() {
-            const ctx = document.getElementById('operationTypeChart').getContext('2d');
+            const el = document.getElementById('operationTypeChart');
+            if(!el) {
+                console.error(`Element with id='operationTypeChart' is not found`);
+                return;
+            }
 
             // Group by operation type
             const typeData = this.statistics.reduce((acc, stat) => {
@@ -217,35 +244,44 @@ export function statisticApp() {
             const labels = Object.keys(typeData);
             const data = labels.map(type => typeData[type]);
 
-            if (this.operationTypeChart) {
-                this.operationTypeChart.destroy();
+            if (!this.operationTypeChart) {
+                // Create new chart if it doesn't exist
+                const ctx = el.getContext('2d');
+                this.operationTypeChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.7)',
+                                'rgba(16, 185, 129, 0.7)',
+                                'rgba(139, 92, 246, 0.7)',
+                                'rgba(245, 158, 11, 0.7)',
+                                'rgba(239, 68, 68, 0.7)',
+                                'rgba(75, 85, 99, 0.7)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            } else {
+                // Update existing chart
+                this.operationTypeChart.data.labels = labels;
+                this.operationTypeChart.data.datasets[0].data = data;
+                this.operationTypeChart.update();
             }
-
-            this.operationTypeChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: [
-                            'rgba(59, 130, 246, 0.7)',
-                            'rgba(16, 185, 129, 0.7)',
-                            'rgba(139, 92, 246, 0.7)',
-                            'rgba(245, 158, 11, 0.7)',
-                            'rgba(239, 68, 68, 0.7)',
-                            'rgba(75, 85, 99, 0.7)'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
         },
 
         renderTokensComparisonChart() {
-            const ctx = document.getElementById('tokensComparisonChart').getContext('2d');
+            const el = document.getElementById('tokensComparisonChart');
+            if(!el) {
+                console.error(`Element with id='tokensComparisonChart' is not found`);
+                return;
+            }
 
             // Group data by date (top 7 dates with most data)
             const dateGroups = {};
@@ -269,37 +305,43 @@ export function statisticApp() {
             const inputData = sortedDates.map(date => dateGroups[date].input);
             const outputData = sortedDates.map(date => dateGroups[date].output);
 
-            if (this.tokensComparisonChart) {
-                this.tokensComparisonChart.destroy();
-            }
-
-            this.tokensComparisonChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Input Tokens',
-                            data: inputData,
-                            backgroundColor: 'rgba(59, 130, 246, 0.7)'
-                        },
-                        {
-                            label: 'Output Tokens',
-                            data: outputData,
-                            backgroundColor: 'rgba(16, 185, 129, 0.7)'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
+            if (!this.tokensComparisonChart) {
+                // Create new chart if it doesn't exist
+                const ctx = el.getContext('2d');
+                this.tokensComparisonChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Input Tokens',
+                                data: inputData,
+                                backgroundColor: 'rgba(59, 130, 246, 0.7)'
+                            },
+                            {
+                                label: 'Output Tokens',
+                                data: outputData,
+                                backgroundColor: 'rgba(16, 185, 129, 0.7)'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
                         }
                     }
-                }
-            });
+                });
+            } else {
+                // Update existing chart
+                this.tokensComparisonChart.data.labels = labels;
+                this.tokensComparisonChart.data.datasets[0].data = inputData;
+                this.tokensComparisonChart.data.datasets[1].data = outputData;
+                this.tokensComparisonChart.update();
+            }
         },
 
         toggleAutoRefresh() {
@@ -355,8 +397,5 @@ export function statisticApp() {
           return pages;
         },
 
-        statisticAppInit() {
-            this.fetchStatisticsData();
-        }
     };
 }

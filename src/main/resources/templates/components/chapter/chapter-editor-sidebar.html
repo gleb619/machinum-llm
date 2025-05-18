@@ -2,7 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
 <!-- Layout -->
-<div th:fragment="sidebar">
+<div th:fragment="sidebar" th:remove="tag">
     <!-- Toggle Button -->
     <button @click="changeState('isSidebarCollapsed')"
             class="flex items-center justify-center w-full px-2 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none">
@@ -20,7 +20,7 @@
     <div x-show="!isSidebarCollapsed">
         <h2 class="text-xl font-bold mt-4 mb-4">
             Actions
-            <small class="ms-2 font-semibold text-gray-500 dark:text-gray-400" x-show="isExecuting"
+            <small class="ms-2 font-semibold text-gray-500" x-show="isExecuting"
                    x-text="timePassed"></small>
         </h2>
 
@@ -78,6 +78,14 @@
         <div class="mt-4 space-y-2">
             <div class="flex items-center justify-between">
                 <button :disabled="isExecuting"
+                        @click="executeOperation('summarize')" class="w-full bg-purple-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+                        title="Provide a brief statement and/or account of the main points of chapter's text.">
+                    <span>Summarize</span>
+                </button>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
                         @click="executeOperation('glossaryExtract')" class="w-full bg-purple-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
                         title="Extract list of term with description from clean text.">
                     <span>Glossary extract</span>
@@ -86,16 +94,16 @@
 
             <div class="flex items-center justify-between">
                 <button :disabled="isExecuting"
-                        @click="executeOperation('scoreAndTranslate')" class="w-full bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
-                        title="Provide scoring for translated text and then try to correct translation.">
-                    <span>Score and translate</span>
+                        @click="executeOperation('translate')" class="w-full bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+                        title="Translate original text.">
+                    <span>Translate</span>
                 </button>
             </div>
             <div class="flex items-center justify-between">
                 <button :disabled="isExecuting"
-                        @click="executeOperation('scoreAndFix')" class="w-full bg-green-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
-                        title="Provide scoring for fixed translated text and then try to correct grammar.">
-                    <span>Score and fix grammar</span>
+                        @click="executeOperation('scoreAndTranslate')" class="w-full bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed border-r-4 border-red-400"
+                        title="Provide scoring for translated text and then try to correct translation.">
+                    <span>Score and translate</span>
                 </button>
             </div>
             <div class="flex items-center justify-between">
@@ -103,6 +111,13 @@
                         @click="executeOperation('fixGrammar')" class="w-full bg-green-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
                         title="Correct grammar for fixed translated text.">
                     <span>Fix grammar</span>
+                </button>
+            </div>
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
+                        @click="executeOperation('scoreAndFix')" class="w-full bg-green-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed border-r-4 border-red-400"
+                        title="Provide scoring for fixed translated text and then try to correct grammar.">
+                    <span>Score and fix grammar</span>
                 </button>
             </div>
             <div class="flex items-center justify-between">
@@ -133,7 +148,7 @@
                        x-model="selectedField"/>
                 <div :class="selectedField === 'text' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
                      class="w-full px-4 py-2 rounded">
-                    Clean Text
+                    Original Text
                 </div>
             </label>
             <label class="flex items-center cursor-pointer">

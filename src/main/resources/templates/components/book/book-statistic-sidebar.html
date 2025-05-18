@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Layout -->
+<div th:fragment="processor-settings" th:remove="tag">
+<!-- Collapse Button -->
+<button @click="changeState('collapsed')"
+        class="flex items-center justify-center w-full px-2 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none">
+    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+         x-show="!collapsed" xmlns="http://www.w3.org/2000/svg">
+        <path d="M13 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+    </svg>
+    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+         x-show="collapsed" xmlns="http://www.w3.org/2000/svg">
+        <path d="M11 19l7-7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+    </svg>
+</button>
+
+<!-- Buttons -->
+<div x-show="!collapsed">
+    <h2 class="text-xl font-bold mt-4 mb-4">
+        Actions
+        <small class="ms-2 font-semibold text-gray-500" x-show="isExecuting"
+               x-text="timePassed"></small>
+    </h2>
+
+    <!-- Panel Header -->
+    <div :disabled="isExecuting"
+         @click="runnerPanelOpen = !runnerPanelOpen"
+         class="bg-blue-600 text-white p-1 cursor-pointer flex justify-between items-center disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed">
+        <h2 class="text-xs font-semibold">Settings</h2>
+        <svg :class="runnerPanelOpen ? 'transform rotate-180' : ''"
+             class="w-5 h-5 transition-transform duration-200"
+             fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+    </div>
+
+    <!-- Panel Content -->
+    <div :disabled="isExecuting"
+         class="p-6 border-t border-gray-200 transition ease-out duration-50 disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+         x-show="runnerPanelOpen">
+        <div class="space-y-4">
+            <!-- Radio Button Group -->
+            <div>
+                <label class="inline-flex items-center text-sm">
+                    <input class="form-radio text-blue-600" name="runner" type="radio" value=""
+                           x-model="bookRequestTemplate.runner"
+                           @change="changeValue('bookRequestTemplate', bookRequestTemplate)">
+                    <span class="ml-2 font-medium">Auto</span>
+                </label>
+                <p class="text-xs text-gray-600 ml-6 mt-1">Detect type of runer based on flow.</p>
+            </div>
+
+            <div>
+                <label class="inline-flex items-center text-sm">
+                    <input class="form-radio text-blue-600" name="runner" type="radio" value="OneStepRunner"
+                           x-model="bookRequestTemplate.runner"
+                           @change="changeValue('bookRequestTemplate', bookRequestTemplate)">
+                    <span class="ml-2 font-medium">OneStepRunner</span>
+                </label>
+                <p class="text-xs text-gray-600 ml-6 mt-1">Executes the flow in a single step without any
+                    branching or recursion.</p>
+            </div>
+
+            <div>
+                <label class="inline-flex items-center text-sm">
+                    <input class="form-radio text-blue-600" name="runner" type="radio"
+                           value="RecursiveFlowRunner" x-model="bookRequestTemplate.runner"
+                           @change="changeValue('bookRequestTemplate', bookRequestTemplate)">
+                    <span class="ml-2 font-medium">RecursiveFlowRunner</span>
+                </label>
+                <p class="text-xs text-gray-600 ml-6 mt-1">Handles complex flows with recursive patterns and
+                    nested execution paths.</p>
+            </div>
+
+            <div>
+                <label class="inline-flex items-center text-sm">
+                    <input class="form-radio text-blue-600" name="runner" type="radio"
+                           value="BatchFlowRunner" x-model="bookRequestTemplate.runner"
+                           @change="changeValue('bookRequestTemplate', bookRequestTemplate)">
+                    <span class="ml-2 font-medium">BatchFlowRunner</span>
+                </label>
+                <p class="text-xs text-gray-600 ml-6 mt-1">Processes multiple items in batches for improved
+                    performance and throughput.</p>
+            </div>
+        </div>
+
+
+        <!-- TODO: Add max chapter to process -->
+
+
+        <hr class="h-px my-8 bg-gray-200 border-0 dark:bg-gray-700">
+
+        <div class="space-y-4">
+            <div>
+                <label class="flex items-center space-x-2 cursor-pointer text-sm">
+                    <input class="form-checkbox text-blue-500"
+                           type="checkbox"
+                           x-model="bookRequestTemplate.allowOverride"
+                           @change="changeValue('bookRequestTemplate', bookRequestTemplate)"/>
+                    <span class="ml-2 font-medium">Allow Override</span>
+                </label>
+
+                <p class="text-xs text-gray-600 ml-6 mt-1">
+                    If checked, then allow to override field's value, like summary, names, etc.
+                    <span x-text="bookRequestTemplate.allowOverride ? 'Override is enabled.' : 'Override is disabled.'"></span>
+                </p>
+            </div>
+        </div>
+
+        <hr class="h-px my-8 bg-gray-200 border-0 dark:bg-gray-700">
+
+        <div class="space-y-4">
+            <h3 class="text-md font-medium text-gray-900 mb-2">Processor States</h3>
+            <p class="text-xs text-gray-600 mb-4">Select which processor states are available for action</p>
+
+            <!-- All States Toggle -->
+            <div class="flex items-center p-2 bg-gray-50 rounded-md mb-3 border border-gray-200">
+                <input id="toggle-all"
+                       type="checkbox"
+                       class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                       x-model="selectAllStates"
+                       @click="toggleAll()">
+                <label for="toggle-all" class="ml-3 text-sm font-medium text-gray-700">Select All States</label>
+            </div>
+
+            <!-- Individual States -->
+            <div class="grid grid-cols-1 mt-4">
+                <!-- TODO: Eclude state 'FINISHED' from iteration, add it manually after collection, we shouldn't let them change it -->
+                <template x-for="(state, index) in availableStates" :key="index">
+                    <div :class="{'bg-blue-50 border-blue-200': bookRequestTemplate.availableStates[state], 'bg-white border-gray-200': !bookRequestTemplate.availableStates[state]}"
+                         class="p-2 rounded-md border flex items-center transition-colors duration-200 hover:bg-gray-50">
+                        <input :id="'state-'+index"
+                               type="checkbox"
+                               class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                               x-model="bookRequestTemplate.availableStates[state]"
+                               @change="changeValue('bookRequestTemplate', bookRequestTemplate)">
+                        <label :for="'state-'+index" class="ml-3 text-sm font-medium text-gray-700 cursor-pointer flex-grow" x-text="state"></label>
+                        <span :class="{'bg-blue-500 text-white': bookRequestTemplate.availableStates[state], 'bg-gray-200 text-gray-600': !bookRequestTemplate.availableStates[state]}"
+                              class="text-xs px-2 py-1 rounded-full transition-colors duration-200">
+                            <span x-text="bookRequestTemplate.availableStates[state] ? 'Active' : 'Inactive'"></span>
+                        </span>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <hr class="h-px my-8 bg-gray-200 border-0 dark:bg-gray-700">
+
+        <!-- Additional Settings -->
+        <div class="mt-8 space-y-4">
+            <h3 class="text-md font-medium text-gray-900 mb-2">Advanced Settings <small>(disabled)</small></h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Batch Size</label>
+                    <div class="flex items-center">
+                        <input type="range" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                               disabled readonly
+                               min="1" max="100" x-model="bookRequestTemplate.batchSize"
+                               @change="changeValue('bookRequestTemplate', bookRequestTemplate)">
+                        <span class="ml-2 text-sm text-gray-600" x-text="bookRequestTemplate.batchSize"></span>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Timeout (seconds)</label>
+                    <input type="number" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                           disabled readonly
+                           min="1" max="3600" x-model="bookRequestTemplate.timeout"
+                           @change="changeValue('bookRequestTemplate', bookRequestTemplate)">
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Additional Options <small>(disabled)</small></label>
+                <div class="flex flex-wrap gap-3">
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                               disabled readonly
+                               x-model="bookRequestTemplate.debug"
+                               @change="changeValue('bookRequestTemplate', bookRequestTemplate)">
+                        <span class="ml-2 text-sm text-gray-700">Debug Mode</span>
+                    </label>
+
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                               disabled readonly
+                               x-model="bookRequestTemplate.failFast"
+                               @change="changeValue('bookRequestTemplate', bookRequestTemplate)">
+                        <span class="ml-2 text-sm text-gray-700">Fail Fast</span>
+                    </label>
+
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                               disabled readonly
+                               x-model="bookRequestTemplate.retryOnError"
+                               @change="changeValue('bookRequestTemplate', bookRequestTemplate)">
+                        <span class="ml-2 text-sm text-gray-700">Retry On Error</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Operations -->
+    <div class="mt-4 space-y-2">
+        <div class="flex items-center justify-between">
+            <button :disabled="isExecuting"
+                    @click="changeValue('bookActiveTab', 'flow'); executeOperation('simpleFlow')" class="w-full bg-purple-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+                    title="Execute simple flow for book(Glossary + Summary).">
+                <span>Simple Flow</span>
+            </button>
+        </div>
+
+        <div class="flex items-center justify-between">
+            <button :disabled="isExecuting"
+                    @click="changeValue('bookActiveTab', 'flow'); executeOperation('complexFlow')" class="w-full bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed border-r-4 border-red-400"
+                    title="Execute complex flow for book(All actions).">
+                <span>Complex Flow</span>
+            </button>
+        </div>
+    </div>
+</div>
+</div>
+</body>
+</html>

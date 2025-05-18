@@ -16,18 +16,12 @@ export function listApp() {
             englishText: false,
             suspiciousWords: false,
             userFilters: false,
-            userFiltersList: []
+            userFiltersList: [],
+            warnings: false,
         },
-        showPanel: false,
-        editing: true,
-        currentChapter: { id: '', title: '', bookId: '', names: [] },
-        showEditNamesPanel: false,
-        nameFilter: '',
         showDeleteModal: false,
         chapterToDelete: null,
-        isSaving: false,
         activeId: '',
-        targetName: undefined,
         currentRequest: undefined,
         activeSearchTab: 'filters',
         newUserFilter: '',
@@ -36,7 +30,7 @@ export function listApp() {
         initList() {
             this.loadFiltersFromLocalStorage();
 
-            const qBookId = new URLSearchParams(window.location.search).get('bookId');
+            const qBookId = this.fromSearchParams(window.location.search).get('bookId');
             if(qBookId) {
                 this.filters.bookId = qBookId;
                 this.saveFiltersToLocalStorage(false);
@@ -74,11 +68,15 @@ export function listApp() {
         },
 
         changeNumberFilter(newValue) {
+            //TODO refactor given code, based on active filter tab
             if(this.chapters && this.chapters.length > 1) {
                 const isLast = this.chapters.indexOf(this.currentChapter) == this.chapters.length - 1;
                 const isFirst = this.chapters.indexOf(this.currentChapter) == 0;
 
                 if((isLast && this.totalPages > this.currentPage && newValue > 0) || (isFirst && this.currentPage > 0 && newValue < 0)) {
+                   if(this.currentPage + newValue >= this.totalPages) return;
+                   if(this.currentPage + newValue < 0) return;
+
                    this.withDebounce(this, 'currentRequest', () => {
                       this.fetchChapters(this.currentPage + newValue);
                    }, 300);
@@ -95,9 +93,14 @@ export function listApp() {
             }
         },
 
-        clearSearchFilters() {
+        clearSearchFilters(name = 'englishText') {
             this.searchQuery = '';
             this.searchNames = '';
+            this.filters.englishText = false;
+            this.filters.suspiciousWords = false;
+            this.filters.userFilters = false;
+            this.filters.warnings = false;
+            this.filters[name] = true;
         },
 
         fetchChaptersDebounce(page = 0, callback = () => {}) {
@@ -130,7 +133,8 @@ export function listApp() {
             } else if (this.activeSearchTab === 'advancedFilters') {
                 request = {
                     ...request,
-                    englishText: this.filters.englishText
+                    englishText: this.filters.englishText,
+                    warnings: this.filters.warnings
                 };
 
                 if(this.filters.userFilters) {
@@ -138,7 +142,7 @@ export function listApp() {
                 }
 
                 if(this.filters.suspiciousWords) {
-                    const fieldName = this.selectedField == 'translatedText' ? 'suspiciousOriginalWords' : 'suspiciousTranslatedWords';
+                    const fieldName = this.selectedField === 'translatedText' ? 'suspiciousTranslatedWords' : 'suspiciousOriginalWords';
                     request[fieldName] = this.filters.suspiciousWords;
                 }
             }
@@ -181,130 +185,25 @@ export function listApp() {
             this.saveFiltersToLocalStorage();
         },
 
-        openCreatePanel() {
-            this.editing = false;
-            this.currentChapter = { id: '', title: '', bookId: '', names: [] };
-            this.showPanel = true;
+        getWarningColor(type) {
+            return {
+               'EMPTY_FIELD': 'bg-indigo-100 text-indigo-800',
+               'LANGUAGE': 'bg-blue-100 text-blue-800',
+               'PUNCTUATION': 'bg-yellow-100 text-yellow-800',
+               'R18_CONTENT': 'bg-red-100 text-red-800',
+               'OTHER': 'bg-gray-100 text-gray-800'
+           }[type] || 'bg-gray-100 text-gray-800';
         },
 
-        editChapter(chapter) {
-            this.activeId = chapter.id;
-            this.editing = true;
-            this.currentChapter = { ...chapter };
-            this.showPanel = true;
-        },
-
-        saveChapter(callback = () => {}) {
-            this.isSaving = true;
-            const method = this.editing ? axios.put : axios.post;
-            const url = this.editing ? `/api/chapters/${this.currentChapter.id}` : '/api/chapters';
-            method(url, this.currentChapter)
-                .then(() => {
-                    this.fetchChapters(this.currentPage);
-                    setTimeout(() => {
-                        this.isSaving = false;
-                    }, 1000);
-                    if(callback) {
-                        callback();
-                    }
-                });
-        },
-
-        closePanel() {
-            this.showPanel = false;
-        },
-
-        toggleEditNamesPanel() {
-            this.showEditNamesPanel = !this.showEditNamesPanel;
-            localStorage.setItem('showEditNamesPanel', '' + this.showEditNamesPanel);
-            if(this.showEditNamesPanel) {
-                this.openEditNamesPanelCurrent();
-            }
-        },
-
-        openEditNamesPanelCurrent() {
-            this.openEditNamesPanel(this.getById(this.chapters, this.activeId));
-        },
-
-        openEditNamesPanel(chapter) {
-            if(!chapter){
-                return;
-            }
-
-            this.activeId = chapter.id;
-            localStorage.setItem('showEditNamesPanel', 'true');
-            this.currentChapter = JSON.parse(JSON.stringify(chapter));
-            this.originalNames = JSON.parse(JSON.stringify(chapter.names));
-            this.showEditNamesPanel = true;
-        },
-
-        closeEditNamesPanel() {
-            localStorage.setItem('showEditNamesPanel', 'false');
-            this.showEditNamesPanel = false;
-        },
-
-        get filteredNames() {
-            return this.currentChapter.names.filter(name =>
-                name.name.toLowerCase().includes(this.nameFilter.toLowerCase()) ||
-                name.category.toLowerCase().includes(this.nameFilter.toLowerCase()) ||
-                name.description.toLowerCase().includes(this.nameFilter.toLowerCase()) ||
-                name.ruName.toLowerCase().includes(this.nameFilter.toLowerCase())
-            );
-        },
-
-        addName() {
-            this.currentChapter.names.push({ name: '', category: '', description: '', references: [], metadata: {} });
-        },
-
-        pasteName() {
-            if(!this.getByKey(this.currentChapter.names, 'name', this.targetName.name)) {
-                this.currentChapter.names.push(JSON.parse(JSON.stringify(this.targetName)));
-            } else {
-                console.warn("Collection already contains name: '", this.targetName.name, "'");
-            }
-        },
-
-        removeName(nameToRemove) {
-            this.currentChapter.names = this.currentChapter.names.filter(name => name.name !== nameToRemove);
-        },
-
-        copyName(nameToCopy) {
-            this.targetName = JSON.parse(JSON.stringify(nameToCopy));
-        },
-
-        editName(name) {
-            // Implement logic to edit a specific name (e.g., open a modal or inline edit).
-            alert(`Editing name: ${name.name}`);
-        },
-
-        saveChanges() {
-            if(this.showEditNamesPanel) {
-                this.saveNames();
-            } else if(this.showEditNamesPanel) {
-                this.saveChapter();
-            } else {
-                console.error("Panel doesn't opened");
-            }
-        },
-
-        saveNames() {
-            this.isSaving = true;
-            axios.put(`/api/chapters/${this.currentChapter.id}`, this.currentChapter)
-                .then(() => {
-                    this.fetchChapters(this.currentPage);
-                    setTimeout(() => {
-                        this.isSaving = false;
-                    }, 1000);
-                    //this.closeEditNamesPanel();
-                })
-                .catch(error => {
-                    console.error("Error saving names:", error);
-                });
-        },
-
-        cancelEditNames() {
-            this.currentChapter.names = JSON.parse(JSON.stringify(this.originalNames)); // Restore original names
-            this.closeEditNamesPanel();
+        getWarningLabel(type) {
+            const labels = {
+                'EMPTY_FIELD': 'Empty field',
+                'LANGUAGE': 'Language',
+                'PUNCTUATION': 'Punctuation',
+                'R18_CONTENT': 'Adult Content',
+                'OTHER': 'Other'
+            };
+            return labels[type] || type;
         },
 
         deleteChapter(id) {
@@ -313,11 +212,17 @@ export function listApp() {
         },
 
         confirmDelete() {
-            axios.delete(`/api/chapters/${this.chapterToDelete}`)
-                .then(() => {
-                    this.fetchChapters(this.currentPage);
-                    this.cancelDelete();
-                });
+            fetch(`/api/chapters/${this.chapterToDelete}`, { method: 'DELETE' })
+                .then(response => response.json()
+                    .then(rsp => {
+                        if (!response.ok) {
+                            console.error('Error removing chapter:', rsp);
+                            this.showToast(`Error removing chapter: ${rsp.message || rsp.detail}`, true);
+                        } else {
+                            this.fetchChapters(this.currentPage);
+                            this.cancelDelete();
+                        }
+                }));
         },
 
         cancelDelete() {
@@ -343,18 +248,6 @@ export function listApp() {
 
                 return false;
             });
-            Mousetrap.bind('ctrl+s', function(e) {
-                e.preventDefault(); // Prevent browser save dialog
-                app.saveChanges();
-
-                return false;
-            });
-            Mousetrap.bind('ctrl+e', function(e) {
-                e.preventDefault(); // Prevent browser save dialog
-                app.toggleEditNamesPanel();
-
-                return false;
-            });
         },
 
         afterInit() {
@@ -366,9 +259,7 @@ export function listApp() {
 }
 
 function doFetchChapters(app, page, params, callback) {
-     app.totalPages = 1;
-     app.totalElements = 0;
-     const queryParams = new URLSearchParams(params).toString();
+     const queryParams = app.toURLSearchParams({...params}).toString();
 
      fetch(`/api/chapters?${queryParams}`, {
              headers: {

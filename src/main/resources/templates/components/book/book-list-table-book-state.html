@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Layout -->
+<div th:fragment="table-book-state" th:remove="tag">
+    <div class="relative">
+
+        <!-- Compact View (when not editing) -->
+        <template x-if="editingState === null && activeId !== book.id">
+            <button @click="activeId = book.id; expanded = !expanded; $event.stopPropagation();"
+                    class="flex items-center space-x-2 text-blue-500 hover:text-blue-700">
+                <span x-show="!expanded">
+                    <span class="font-medium" x-text="book.bookState.state"></span>
+                    <span class="text-gray-400">|</span>
+                    <span>Item: <span class="font-medium" x-text="book.bookState.itemIndex"></span></span>
+                    <span class="text-gray-400">|</span>
+                    Show Details
+                </span>
+                <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                     viewBox="0 0 24 24" x-show="!expanded" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"
+                          stroke-width="2"/>
+                </svg>
+            </button>
+        </template>
+
+        <!-- Normal View (when not editing) -->
+        <template x-if="editingState === null && activeId === book.id">
+            <div>
+                <button @click="activeId = book.id; expanded = !expanded; $event.stopPropagation();"
+                        class="flex items-center space-x-2 text-blue-500 hover:text-blue-700">
+
+
+                    <span x-show="expanded">Hide Details</span>
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                         viewBox="0 0 24 24" x-show="expanded" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 15l7-7 7 7" stroke-linecap="round" stroke-linejoin="round"
+                              stroke-width="2"/>
+                    </svg>
+                </button>
+                <!-- Collapsed View -->
+                <!--<button @click="activeId = book.id; expanded = !expanded; $event.stopPropagation();"
+                        class="flex items-center space-x-2 text-blue-500 hover:text-blue-700">
+                    <span x-show="!expanded && activeId == book.id">
+                        <span class="font-medium" x-text="book.bookState.state"></span>
+                        <span class="text-gray-400">|</span>
+                        <span>Item: <span class="font-medium" x-text="book.bookState.itemIndex"></span></span>
+                        <span class="text-gray-400">|</span>
+                        Show Details
+                    </span>
+                    <span x-show="expanded">Hide Details</span>
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                         viewBox="0 0 24 24" x-show="!expanded" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"
+                              stroke-width="2"/>
+                    </svg>
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                         viewBox="0 0 24 24" x-show="expanded" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 15l7-7 7 7" stroke-linecap="round" stroke-linejoin="round"
+                              stroke-width="2"/>
+                    </svg>
+                </button>-->
+
+                <!-- Expanded View -->
+                <div class="mt-2 bg-gray-50 p-4 rounded-lg shadow-sm cursor-auto"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 transform scale-95"
+                     x-transition:enter-end="opacity-100 transform scale-100"
+                     x-transition:leave="transition ease-in duration-100"
+                     x-transition:leave-start="opacity-100 transform scale-100"
+                     x-transition:leave-end="opacity-0 transform scale-95"
+                     @click.stop>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <h4 class="font-medium">Book State Details</h4>
+                            <button @click="editBookState(book)"
+                                    class="text-blue-500 hover:text-blue-700 text-sm flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                </svg>
+                                Edit State
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <p class="text-xs text-gray-500">Item Index</p>
+                                <p class="font-medium" x-text="book.bookState.itemIndex"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Prompt Index</p>
+                                <p class="font-medium" x-text="book.bookState.promptIndex"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">State</p>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                      :class="{
+                                            'bg-green-100 text-green-600': book.bookState.state === 'CLEANING',
+                                            'bg-blue-100 text-blue-600': book.bookState.state === 'SUMMARY',
+                                            'bg-yellow-100 text-yellow-600': book.bookState.state === 'GLOSSARY',
+                                            'bg-gray-100 text-gray-600': book.bookState.state === 'PROCESSING',
+                                            'bg-green-100 text-green-800': book.bookState.state === 'PREPARE_TRANSLATE',
+                                            'bg-blue-100 text-blue-800': book.bookState.state === 'TRANSLATE',
+                                            'bg-yellow-100 text-yellow-800': book.bookState.state === 'COPYEDIT',
+                                            'bg-gray-100 text-gray-800': book.bookState.state === 'FINISHED',
+                                      }"
+                                      x-text="book.bookState.state">
+                                </span>
+                            </div>
+                            <div class="col-span-2">
+                                <p class="text-xs text-gray-500">Processed Chunks</p>
+                                <div class="mt-1">
+                                    <div x-show="book.bookState.processedChunks.length === 0" class="text-gray-400 italic text-xs">
+                                        No chunks processed yet
+                                    </div>
+                                    <ul x-show="book.bookState.processedChunks.length > 0" class="text-sm space-y-1 max-h-32 overflow-y-auto">
+                                        <template x-for="(chunk, idx) in book.bookState.processedChunks" :key="idx">
+                                            <li class="px-2 py-1 bg-gray-100 rounded truncate" x-text="chunk"></li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Edit View For Others-->
+        <template x-if="editingState !== null && activeId !== book.id">
+            <small class="text-xs italic">Preview disabled for edit mode</small>
+        </template>
+
+        <!-- Edit View For Active-->
+        <template x-if="editingState !== null && activeId === book.id">
+            <div class="bg-white rounded-lg shadow-lg border border-blue-200 p-4 cursor-auto" @click.stop>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Edit Book State</h3>
+                    <div class="flex space-x-2">
+                        <button @click="toggleJsonMode()"
+                                class="px-3 py-1 text-xs font-medium rounded-md"
+                                :class="jsonMode ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'">
+                            JSON Mode
+                        </button>
+                        <button @click="closeEditor()" class="text-gray-400 hover:text-gray-500">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Mode -->
+                <div x-show="!jsonMode" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Item Index</label>
+                            <input type="number" x-model.number="editingState.itemIndex"
+                                   class="p-1 m-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Prompt Index</label>
+                            <input type="number" x-model.number="editingState.promptIndex"
+                                   class="p-1 m-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">State</label>
+                            <select x-model="editingState.state"
+                                    class="p-1 m-1 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                <option value="CLEANING">CLEANING</option>
+                                <option value="SUMMARY">SUMMARY</option>
+                                <option value="GLOSSARY">GLOSSARY</option>
+                                <option value="PROCESSING">PROCESSING</option>
+                                <option value="PREPARE_TRANSLATE">PREPARE_TRANSLATE</option>
+                                <option value="TRANSLATE">TRANSLATE</option>
+                                <option value="COPYEDIT">COPYEDIT</option>
+                                <option value="FINISHED">FINISHED</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-sm font-medium text-gray-700">Processed Chunks</label>
+                            <button @click="addProcessedChunk()"
+                                    class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                Add Chunk
+                            </button>
+                        </div>
+                        <div class="space-y-2 max-h-48 overflow-y-auto">
+                            <div x-show="!editingState?.processedChunks || editingState?.processedChunks?.length === 0"
+                                 class="text-xs text-gray-500 italic">
+                                No processed chunks yet. Click "Add Chunk" to add one.
+                            </div>
+                            <template x-for="(chunk, idx) in editingState?.processedChunks" :key="idx">
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" x-model="editingState.processedChunks[idx]"
+                                           class="p-1 m-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                    <button @click="removeProcessedChunk(idx)"
+                                            class="inline-flex items-center p-1 border border-transparent rounded-full text-red-600 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JSON Mode -->
+                <div x-show="jsonMode" class="space-y-4">
+                    <textarea x-model="jsonString" rows="10"
+                              class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md font-mono"
+                              style="tab-size: 2;"></textarea>
+                    <div class="text-sm text-gray-500">
+                        Edit the JSON directly. Make sure it's valid before saving.
+                    </div>
+                </div>
+
+                <div class="mt-5 flex justify-end space-x-3">
+                    <button @click="closeEditor()"
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Cancel
+                    </button>
+                    <button @click="saveBookState(book.id)"
+                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
+</div>
+</body>
+</html>

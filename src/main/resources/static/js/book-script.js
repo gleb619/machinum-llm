@@ -3,6 +3,8 @@ import { initApp } from './init.js';
 import { utilsApp } from './utils.js';
 import { listApp } from './book-list.js';
 import { statisticApp } from './book-statistic.js';
+import { processorSettingsApp } from './components/book-statistic-sidebar.js';
+import { bookStateApp } from './components/book-state.js';
 
 const startTime = new Date().getTime();
 
@@ -22,6 +24,8 @@ export function app() {
             ...Object.getOwnPropertyDescriptors(utilsApp()),
             ...Object.getOwnPropertyDescriptors(listApp()),
             ...Object.getOwnPropertyDescriptors(statisticApp()),
+            ...Object.getOwnPropertyDescriptors(processorSettingsApp()),
+            ...Object.getOwnPropertyDescriptors(bookStateApp()),
         });
     } catch(e) {
         debugger;

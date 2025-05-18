@@ -2,6 +2,7 @@
 import { initApp } from './init.js';
 import { utilsApp } from './utils.js';
 import { listApp } from './chapter-list.js';
+import { chapterDrawerApp } from './components/chapter-drawer.js';
 import { editApp } from './chapter-edit.js';
 import { initEditorDirective } from './directive/editor-directive.js';
 import { lineListApp } from './components/line-list.js';
@@ -24,6 +25,7 @@ export function app() {
             ...Object.getOwnPropertyDescriptors(initApp()),
             ...Object.getOwnPropertyDescriptors(utilsApp()),
             ...Object.getOwnPropertyDescriptors(listApp()),
+            ...Object.getOwnPropertyDescriptors(chapterDrawerApp()),
             ...Object.getOwnPropertyDescriptors(editApp()),
             ...Object.getOwnPropertyDescriptors(lineListApp()),
             ...Object.getOwnPropertyDescriptors(textEditorApp()),

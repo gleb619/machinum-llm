@@ -8,14 +8,26 @@
     <nav aria-label="Breadcrumb" class="flex mb-5">
         <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
             <li class="inline-flex items-center">
-                <a class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600 dark:text-gray-400 dark:hover:text-white" href="/"
-                   x-bind:href="'/index?bookId=' + filters.bookId">
+                <a class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600"
+                   href="/books">
                     <svg aria-hidden="true" class="w-3 h-3 mr-2" fill="currentColor" viewBox="0 0 20 20"
                          xmlns="http://www.w3.org/2000/svg">
                         <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z"/>
                     </svg>
-                    Home
+                    Books
                 </a>
+            </li>
+            <li class="inline-flex items-center" x-show="filters.bookId">
+                <div class="flex items-center">
+                    <svg aria-hidden="true" class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1 mr-2"
+                         fill="none" viewBox="0 0 6 10" xmlns="http://www.w3.org/2000/svg">
+                        <path d="m1 9 4-4-4-4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                              stroke-width="2"/>
+                    </svg>
+                    <a class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2"
+                       x-bind:href="'/books?bookId=' + filters.bookId"
+                       x-text="filters.bookId">1</a>
+                </div>
             </li>
             <li>
                 <div class="flex items-center">
@@ -25,20 +37,20 @@
                               stroke-width="2"/>
                     </svg>
                     <a @click="clearSearchFilters();"
-                       class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white"
-                       href="/chapter">Chapters</a>
+                       class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2"
+                       x-bind:href="'/chapters?bookId=' + filters.bookId">Chapters</a>
                 </div>
             </li>
-            <!--changeValue-->
-            <li x-show="filters.chapterNumber">
+
+            <li x-show="filters.chapterNumber && activeSearchTab === 'filters'">
                 <div class="flex items-center">
                     <svg aria-hidden="true" class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1 mr-2"
                          fill="none" viewBox="0 0 6 10" xmlns="http://www.w3.org/2000/svg">
                         <path d="m1 9 4-4-4-4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
                               stroke-width="2"/>
                     </svg>
-                    <a class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white"
-                       x-bind:href="'/chapter?chapterId=' + filters.chapterNumber"
+                    <a class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2"
+                       x-bind:href="'/chapters?chapterId=' + filters.chapterNumber"
                        x-text="filters.chapterNumber">1</a>
                 </div>
             </li>
@@ -60,22 +72,30 @@
             <div class="flex justify-between items-center w-full">
                 <div>
                     <label class="inline-flex items-center mr-3">
-                        <input @change="filters.suspiciousWords = false; filters.userFilters = false; saveFiltersToLocalStorage()" class="form-checkbox h-5 w-5 text-blue-600"
+                        <input @change="clearSearchFilters('englishText'); saveFiltersToLocalStorage()" class="form-checkbox h-5 w-5 text-blue-600"
                                title="Find English Text"
                                type="checkbox"
                                x-model="filters.englishText"/>
                         <span class="ml-2">Find English Text <small class="text-gray-300">(in translated)</small></span>
                     </label>
                     <label class="inline-flex items-center mr-3">
-                        <input @change="filters.englishText = false; filters.userFilters = false; saveFiltersToLocalStorage()" class="form-checkbox h-5 w-5 text-blue-600"
+                        <input @change="clearSearchFilters('suspiciousWords'); saveFiltersToLocalStorage()" class="form-checkbox h-5 w-5 text-blue-600"
                                title="Find Suspicious Words"
                                type="checkbox"
                                x-model="filters.suspiciousWords"/>
-                        <span class="ml-2">Find Suspicious Words <small class="text-gray-300"
-                                                                        x-text="selectedField === 'translatedText' ? '(in translated)' : '(in original)'">(in translated)</small></span>
+                        <span class="ml-2">Find Suspicious Words
+                            <small class="text-gray-300" x-text="selectedField === 'translatedText' ? '(in translated)' : '(in original)'">(in translated)</small>
+                        </span>
                     </label>
                     <label class="inline-flex items-center mr-3">
-                        <input @change="filters.englishText = false; filters.suspiciousWords = false; saveFiltersToLocalStorage()" class="form-checkbox h-5 w-5 text-blue-600"
+                        <input @change="clearSearchFilters('warnings'); saveFiltersToLocalStorage()" class="form-checkbox h-5 w-5 text-blue-600"
+                               title="Find Warnings"
+                               type="checkbox"
+                               x-model="filters.warnings"/>
+                        <span class="ml-2">Find warnings</span>
+                    </label>
+                    <label class="inline-flex items-center mr-3">
+                        <input @change="clearSearchFilters('userFilters'); saveFiltersToLocalStorage()" class="form-checkbox h-5 w-5 text-blue-600"
                                title="Find Suspicious Words"
                                type="checkbox"
                                x-model="filters.userFilters"/>
@@ -84,7 +104,7 @@
                 </div>
                 <div>
                     <!-- Modal Open Button -->
-                    <button @click="showFiltersModal = true" class="ml-4 bg-blue-500 text-white px-4 py-2 rounded">
+                    <button @click="showFiltersModal = true" class="bg-blue-500 text-white px-4 py-2 rounded md:truncate">
                         Manage Filters
                     </button>
 
@@ -173,28 +193,54 @@
             <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Warnings</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
+            <template x-if="chapters.length > 0">
             <template :key="chapter.id" x-for="chapter in chapters">
-                <tr :class="activeId == chapter.id ? 'bg-blue-50' : 'even:bg-gray odd:bg-white'"
+                <tr :class="activeId == chapter.id ? 'bg-blue-50' : 'even:bg-gray-50 odd:bg-white'"
                     @click="setSelectedItem(chapter.id)"
-                    @dblclick="filters.chapterNumber = chapter.number">
+                    @dblclick="filters.chapterNumber = chapter.number"
+                    class="cursor-pointer">
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="chapter.id"></td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                        x-text="(chapter.title + ' / ' + (chapter.translatedTitle || '#no-translation'))"></td>
+                    <td class="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                        <div class="truncate" :title="(chapter.title + ' / ' + (chapter.translatedTitle || '#no-translation'))">
+                            <span x-text="chapter.title"></span>
+                            <span class="text-gray-500"> / </span>
+                            <span class="text-gray-600" x-text="chapter.translatedTitle || '#no-translation'"></span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div class="inline-flex items-center gap-1">
+                            <template x-for="(warning, warningIndex) in chapter.warnings" :key="warning.type + warningIndex">
+                                <span class="text-xs px-2 py-0.5 rounded-full capitalize"
+                                      :class="getWarningColor(warning.type)"
+                                      :title="warning.text"
+                                      x-text="warning?.metadata?.name || getWarningLabel(warning.type)"></span>
+                            </template>
+                            <span x-show="chapter.warnings.length === 0"
+                                  class="text-xs text-gray-400 italic">None</span>
+                        </div>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button @click="editChapter(chapter)" class="text-indigo-600 hover:text-indigo-900 mr-2">
+                        <button @click.stop="editChapter(chapter)" class="text-indigo-600 hover:text-indigo-900 mr-2">
                             Edit
                         </button>
-                        <button @click="openEditNamesPanel(chapter)" class="text-green-600 hover:text-green-900 mr-2">
+                        <button @click.stop="openEditNamesPanel(chapter)" class="text-green-600 hover:text-green-900 mr-2">
                             Edit Names
                         </button>
-                        <button @click="deleteChapter(chapter.id)" class="text-red-600 hover:text-red-900">
+                        <button @click.stop="deleteChapter(chapter.id)" class="text-red-600 hover:text-red-900">
                             Delete
                         </button>
                     </td>
+                </tr>
+            </template>
+            </template>
+            <template x-if="chapters.length === 0">
+                <tr>
+                    <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500 italic">No chapters found</td>
                 </tr>
             </template>
             </tbody>
@@ -202,136 +248,83 @@
     </div>
 
     <!-- Pagination -->
-    <div class="flex justify-between items-center text-gray-600">
+    <div class="flex justify-between items-center text-sm text-gray-700">
         <span x-text="'Page ' + (currentPage + 1) + ' of ' + totalPages + ' (' + totalElements + ' total items)'"></span>
         <small class="italic text-gray-400" x-show="!!filters.chapterNumber">Some of the data is hidden, please click on
             the <b>Chapters</b> button to display all chapters.</small>
+
         <div class="flex justify-center mt-4 mb-4 space-x-2">
-            <button :disabled="currentPage === 0"
-                    @click="fetchChapters(currentPage - 1)"
-                    class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed">Previous
-            </button>
-            <button @click="fetchChapters(currentPage + 1)"
-                    class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed">Next
-            </button>
-        </div>
-    </div>
-
-    <!-- Create/Edit Panel -->
-    <div :class="showPanel ? 'translate-x-0' : 'translate-x-full'"
-         class="fixed top-0 right-0 h-screen w-1/3 bg-white shadow-lg z-10 transform transition-transform duration-300" x-show="showPanel">
-        <div class="p-4">
-            <h2 class="text-xl font-bold mb-4" x-text="editing ? 'Edit Chapter' : 'Add Chapter'"></h2>
-            <form @submit.prevent="saveChapter">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">Title</label>
-                    <input class="mt-1 block w-full p-2 border rounded" type="text" x-model="currentChapter.title">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">Number</label>
-                    <input class="mt-1 block w-full p-2 border rounded" disabled readonly
-                           type="text" x-model="currentChapter.number">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">Translated title</label>
-                    <input class="mt-1 block w-full p-2 border rounded" type="text"
-                           x-model="currentChapter.translatedTitle">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">Source key</label>
-                    <input class="mt-1 block w-full p-2 border rounded" disabled readonly
-                           type="text" x-model="currentChapter.sourceKey">
-                </div>
-                <button class="bg-green-500 text-white px-4 py-2 rounded" type="submit">Save</button>
-                <button @click="closePanel()" class="ml-2 bg-gray-300 text-gray-700 px-4 py-2 rounded" type="button">
-                    Cancel
+            <nav aria-label="Pagination" class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                <!-- Previous button -->
+                <button
+                        :class="{'opacity-50 cursor-not-allowed': currentPage === 0}"
+                        :disabled="currentPage === 0"
+                        @click="fetchChapters(currentPage - 1)"
+                        class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    <span class="sr-only">Previous</span>
+                    &laquo;
                 </button>
-            </form>
+
+                <!-- First page button (always visible) -->
+                <button
+                        :class="{'bg-blue-50 border-blue-500 text-blue-600': currentPage === 0, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': currentPage !== 0}"
+                        @click="fetchChapters(0)"
+                        class="relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                    1
+                </button>
+
+                <!-- Ellipsis for gap at start (if needed) -->
+                <button
+                        x-show="currentPage > 4"
+                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
+                        disabled>
+                    &hellip;
+                </button>
+
+                <!-- Dynamic pages around current page -->
+                <template x-for="page in [...Array(totalPages).keys()].map(i => i + 1).filter(p => p !== 1 && p !== totalPages && p >= currentPage - 2 && p <= currentPage + 2)" :key="page">
+                    <button
+                            :class="{'bg-blue-50 border-blue-500 text-blue-600': currentPage + 1 === page, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': currentPage + 1 !== page}"
+                            @click="fetchChapters(page - 1)"
+                            class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
+                            x-text="page">
+                    </button>
+                </template>
+
+                <!-- Ellipsis for gap at end (if needed) -->
+                <button
+                        x-show="currentPage < totalPages - 3"
+                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
+                        disabled>
+                    &hellip;
+                </button>
+
+                <!-- Last page button (always visible if totalPages > 1) -->
+                <button
+                        x-show="totalPages > 1"
+                        :class="{'bg-blue-50 border-blue-500 text-blue-600': currentPage + 1 === totalPages, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': currentPage + 1 !== totalPages}"
+                        @click="fetchChapters(totalPages - 1)"
+                        class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
+                        x-text="totalPages">
+                </button>
+
+                <!-- Next button -->
+                <button
+                        :class="{'opacity-50 cursor-not-allowed': currentPage + 1 === totalPages}"
+                        :disabled="currentPage + 1 === totalPages"
+                        @click="fetchChapters(currentPage + 1)"
+                        class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    <span class="sr-only">Next</span>
+                    &raquo;
+                </button>
+            </nav>
         </div>
     </div>
 
-    <!-- Edit Names Panel -->
-    <div :class="showEditNamesPanel ? 'translate-x-0' : 'translate-x-full'"
-         class="fixed top-0 right-0 h-screen w-[90%] bg-white shadow-lg z-11 transform transition-transform duration-300 z-50 overflow-y-auto" x-show="showEditNamesPanel">
-        <div class="p-4">
-            <!-- Header with Save and Cancel Buttons -->
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">Edit Names for Chapter: <span x-text="currentChapter.title"></span></h2>
-                <div class="space-x-2">
-                    <button :class="isSaving ? 'bg-yellow-500 scale-110' : 'bg-green-500'"
-                            @click="saveNames()"
-                            class="text-white px-4 py-2 rounded transition duration-300 ease-in-out">Save
-                    </button>
-                    <button @click="cancelEditNames()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded">Cancel
-                    </button>
-                </div>
-            </div>
-
-            <!-- Local Table Filter -->
-            <input class="p-2 border rounded w-full mb-4" placeholder="Filter names..." type="text"
-                   x-model="nameFilter"/>
-
-            <!-- ObjectName Table -->
-            <div class="bg-white shadow overflow-hidden rounded-lg">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Name
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Category
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Description
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ru
-                            Name
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                        </th>
-                    </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                    <template :key="index" x-for="(objectName, index) in filteredNames">
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <input class="w-full p-2 border rounded" type="text" x-model="objectName.name">
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <input class="w-full p-2 border rounded" type="text" x-model="objectName.category">
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <input class="w-full p-2 border rounded" type="text" x-model="objectName.description">
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <input class="w-full p-2 border rounded" type="text" x-model="objectName.ruName">
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button @click="copyName(objectName)" class="text-blue-600 hover:text-blue-900 pr-2">
-                                    Copy
-                                </button>
-                                <button @click="removeName(index)" class="text-red-600 hover:text-red-900">Remove
-                                </button>
-                            </td>
-                        </tr>
-                    </template>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Add Name Button -->
-            <button @click="addName()" class="bg-blue-500 text-white px-4 py-2 rounded mt-4">Add Name</button>
-            <!-- Close Panel Button -->
-            <button @click="closeEditNamesPanel()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded mt-2">Close
-            </button>
-            <!-- Add Name Button -->
-            <button :class="targetName ? '' : 'hidden'" @click="pasteName()"
-                    class="bg-purple-500 text-white px-4 py-2 rounded mt-4" x-show="targetName && targetName.name">Paste Name `<span
-                    x-text="(targetName || {}).name"></span>`
-            </button>
-        </div>
+    <div th:remove="tag" th:replace="~{components/chapter/chapter-list-drawer::drawer}">
+        <textarea>
+            Here placed content of templates/components/chapter/chapter-list-drawer.html page, tag `th:fragment="drawer"`
+        </textarea>
     </div>
 
     <!-- Delete Confirmation Modal -->

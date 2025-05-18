@@ -19,7 +19,7 @@ export function editApp() {
         fieldsForAnalysis: [ "text", "translatedText" ],
         isSidebarCollapsed: false,
         actionSettingsOpen: false,
-        activeTab: 'editor',
+        chapterActiveTab: 'editor',
         requestTemplate: {
             shouldPersist: true,
             operationName: ''
@@ -41,34 +41,48 @@ export function editApp() {
             if (requestTemplate) {
               this.requestTemplate = JSON.parse(requestTemplate);
             }
-            this.loadValue('activeTab', 'editor');
+            this.loadValue('chapterActiveTab', 'editor');
         },
 
-        pullChapterChangesById(chapterId) {
-            fetch(`/api/chapters/${chapterId}`)
+        fetchChapter(chapterId) {
+            return fetch(`/api/chapters/${chapterId}`)
                 .then(response => {
-                    response.json()
-                        .then(rsp => {
-                            if (!response.ok) {
-                                console.error('Error fetching chapter by id:', rsp);
-                                this.showToast(`Error: ${rsp.message || rsp.detail}`, true);
-                            } else {
-                                const chapterToUpdate = this.getById(this.chapters, chapterId);
-                                if (chapterToUpdate) {
-                                    Object.assign(chapterToUpdate, rsp);
-                                    this.updateContent();
-                                    this.fetchHistory();
-                                }
-                            }
-                        });
+                    if (!response.ok) {
+                        console.error('Error fetching chapter by id:', rsp);
+                        this.showToast(`Error: ${rsp.message || rsp.detail}`, true);
+                    }
+
+                    return response.json();
                 });
+        },
+
+        pullChapterContentChangesById(chapterId) {
+           fetchChapter(chapterId)
+                .then(rsp => {
+                    const chapterToUpdate = this.getById(this.chapters, chapterId);
+                    if (chapterToUpdate) {
+                        Object.assign(chapterToUpdate, rsp);
+                        this.updateContent();
+                        this.fetchHistory();
+                    }
+                });
+        },
+
+        async handleTranslateText() {
+            try {
+                const summary = await this.executeOperation('translate');
+                this.pullChapterContentChangesById(this.activeId);
+            } catch (error) {
+                console.error('Failed to translate text:', error);
+                this.showToast(`Failed to translate text: ${error.message || error.detail || error}`, true);
+            }
         },
 
         updateContent() {
             this.analysis = {};
             if(this.currentChapter) {
-                this.currentContent = this.currentChapter[this.selectedField];
-                this.originalContent = this.currentChapter[this.selectedField];
+                this.currentContent = this.currentChapter[this.selectedField] || '';
+                this.originalContent = this.currentChapter[this.selectedField] || '';
                 this.fieldsForAnalysis.forEach(field => {
                     this.analysis[field] = analyzeText(this.currentChapter[field] || "");
                 });
@@ -86,23 +100,29 @@ export function editApp() {
             }
             this.history = [];
 
-            axios.get(`/api/chapters/${this.activeId}/history/${this.selectedField}`)
-                .then(response => {
-                    this.history = (response.data || []);
-                })
-                .catch(error => {
-                    console.error('History fetch error:', error);
-                });
+            fetch(`/api/chapters/${this.activeId}/history/${this.selectedField}`, { method: 'GET' })
+                .then(response => response.json()
+                    .then(rsp => {
+                        if (!response.ok) {
+                            console.error('History fetch error:', rsp);
+                            this.showToast(`History fetch error: ${rsp.message || rsp.detail}`, true);
+                        } else {
+                            this.history = (rsp || []);
+                        }
+                    }));
         },
 
         selectVersion(number) {
-            axios.get(`/api/chapters/${this.activeId}/history/${this.selectedField}/at?number=${number}`)
-                .then(response => {
-                    this.currentContent = response.data;
-                })
-                .catch(error => {
-                    console.error('Content fetch error:', error);
-                });
+            fetch(`/api/chapters/${this.activeId}/history/${this.selectedField}/at?number=${number}`, { method: 'GET' })
+                .then(response => response.json()
+                    .then(rsp => {
+                        if (!response.ok) {
+                            console.error('Content fetch error:', rsp);
+                            this.showToast(`Content fetch error: ${rsp.message || rsp.detail}`, true);
+                        } else {
+                            this.currentContent = rsp;
+                        }
+                    }));
         },
 
         selectField(field) {
@@ -119,12 +139,40 @@ export function editApp() {
             });
         },
 
+        saveChapter(callback = () => {}) {
+            this.isSaving = true;
+            const method = this.editing ? 'PUT' : 'POST';
+            const url = this.editing ? `/api/chapters/${this.currentChapter.id}` : '/api/chapters';
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(this.currentChapter)
+            })
+            .then(response => response.json()
+                .then(rsp => {
+                    if (!response.ok) {
+                        console.error('Error saving chapter:', rsp);
+                        this.showToast(`Error saving chapter: ${rsp.message || rsp.detail}`, true);
+                    } else {
+                        this.fetchChapters(this.currentPage);
+                        setTimeout(() => {
+                            this.isSaving = false;
+                        }, 1000);
+                        if(callback) {
+                            callback();
+                        }
+                    }
+                }));
+        },
+
         selectTab(tabName) {
-            this.changeValue('activeTab', tabName);
-            if(this.activeTab === 'preview') {
+            this.changeValue('chapterActiveTab', tabName);
+            if(this.chapterActiveTab === 'preview') {
                 this.previewChanges();
             }
-            if(this.activeTab === 'editor') {
+            if(this.chapterActiveTab === 'editor') {
                 setTimeout(() => {
                     const target = document.querySelector('div[x-editor="currentContent"]');
                     const editor = target._codemirror;
@@ -189,6 +237,7 @@ export function editApp() {
         },
 
         formatValue(value) {
+          if(value === undefined) return '-';
           if (typeof value === 'number') {
             return (Number.isInteger(value) ? value : value.toFixed(2)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
           }
@@ -220,7 +269,13 @@ export function editApp() {
 
             while (retries < maxRetries) {
                 try {
-                    const response = await axios.post(`/api/chapters/${this.activeId}/execute`, request);
+                    const response = await fetch(`/api/chapters/${this.activeId}/execute`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(request)
+                    });
 
                     // Check if the backend responded with a success status
                     if (response.status > 199 && response.status < 300) {
@@ -231,9 +286,10 @@ export function editApp() {
                         break; // Exit the retry loop on success
                     }
                 } catch (error) {
-                    if (error.response && error.response.headers['x-retry-at']) {
+                    const response = error.response;
+                    if (response && response.headers.get('x-retry-at')) {
                         // Extract the retry time from the X-Retry-At header
-                        const retryAt = new Date(error.response.headers['x-retry-at']).getTime();
+                        const retryAt = new Date(response.headers.get('x-retry-at')).getTime();
                         const currentTime = Date.now();
                         const delay = Math.max(retryAt - currentTime, retryDelayBase * Math.pow(2, retries));
 

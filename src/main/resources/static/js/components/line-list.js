@@ -15,7 +15,7 @@ export function lineListApp() {
             this.loadValue('lineSearchQuery', '');
             this.loadValue('lineReplaceWith', '');
 
-            const qLineSearchQuery = new URLSearchParams(window.location.search).get('lineSearchQuery');
+            const qLineSearchQuery = this.fromSearchParams(window.location.search).get('lineSearchQuery');
             if(qLineSearchQuery) {
                 this.lineSearchQuery = qLineSearchQuery;
                 setTimeout(() => {
@@ -139,6 +139,8 @@ export function lineListApp() {
                             .then(rsp => {
                                 console.error('Error removing lines:', rsp);
                                 this.showToast(`Error: ${rsp.message || rsp.detail}`, true);
+
+                                this.fetchChapters(this.currentPage);
                             });
                     } else {
                         this.lines = [];
@@ -220,7 +222,7 @@ export function lineListApp() {
                 } else {
                     this.removeById(this.lines, lineId);
                     this.showToast('Line updated successfully!');
-                    this.pullChapterChangesById(this.line.chapterId);
+                    this.pullChapterContentChangesById(this.line.chapterId);
                 }
             })
             .catch(error => {

@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS chapter_info (
     foreshadowing TEXT,
     names JSON,
     scenes JSON,
+    warnings JSONB,
     book_id VARCHAR(36),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

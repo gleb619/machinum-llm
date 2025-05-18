@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Layout -->
+<div th:fragment="editor" th:remove="tag">
+
+    <!-- New Section with Two Panels -->
+    <div class="mt-8 flex gap-4">
+        <!-- Left Panel: Collapsible -->
+        <div :class="collapsed ? 'w-12' : 'w-1/4'"
+             class="bg-white rounded-lg shadow-md p-2 transition-all duration-300 overflow-hidden">
+
+            <div th:remove="tag" th:replace="~{components/book/book-statistic-sidebar::processor-settings}">
+                <p>
+                    Here placed content of templates/components/book/book-statistic-sidebar.html page, tag
+                    `th:fragment="processor-settings"`
+                </p>
+            </div>
+        </div>
+
+        <!-- Central Panel: Diagram -->
+        <div :class="collapsed ? 'w-full' : 'w-3/4'"
+             class="bg-white rounded-lg shadow-md relative transition-all duration-300"
+             x-data="{ bookActiveTab: 'report' }" x-init="loadValue('bookActiveTab', 'report')">
+
+            <div class="border-b border-gray-200">
+                <!-- Tabs -->
+                <nav aria-label="Tabs" class="flex space-x-4 p-4">
+                    <button :class="{
+                                'text-gray-500 border-transparent': bookActiveTab !== 'report',
+                                'text-blue-600 border-blue-600': bookActiveTab === 'report'
+                            }"
+                            @click="changeValue('bookActiveTab', 'report')"
+                            class="font-bold border-b-2 pb-2">Report
+                    </button>
+                    <button :class="{
+                                'text-gray-500 border-transparent': bookActiveTab !== 'flow',
+                                'text-blue-600 border-blue-600': bookActiveTab === 'flow'
+                            }"
+                            @click="changeValue('bookActiveTab', 'flow')"
+                            class="font-bold border-b-2 pb-2">Flow
+                    </button>
+                    <button :class="{
+                                'text-gray-500 border-transparent': bookActiveTab !== 'titles',
+                                'text-blue-600 border-blue-600': bookActiveTab === 'titles'
+                            }"
+                            @click="changeValue('bookActiveTab', 'titles')"
+                            class="font-bold border-b-2 pb-2">Titles
+                    </button>
+                    <button :class="{
+                                'text-gray-500 border-transparent': bookActiveTab !== 'lines',
+                                'text-blue-600 border-blue-600': bookActiveTab === 'lines'
+                            }"
+                            @click="changeValue('bookActiveTab', 'lines')"
+                            class="font-bold border-b-2 pb-2">Lines
+                    </button>
+                </nav>
+            </div>
+
+            <div class="h-full overflow-hidden">
+                <!-- Report Tab -->
+                <div th:remove="tag" th:replace="~{book-report::report}">
+                    <p>
+                        Here placed content of templates/book-report.html page, tag `th:fragment="report"`
+                    </p>
+                </div>
+
+                <!-- Statistic Tab -->
+                <div th:remove="tag" th:replace="~{book-statistic::statistic}">
+                    <p>
+                        Here placed content of templates/book-statistic.html page, tag `th:fragment="statistic"`
+                    </p>
+                </div>
+
+                <!-- Titles Tab -->
+                <div class="h-full" x-show="bookActiveTab === 'titles'">
+                </div>
+
+                <!-- Lines Tab -->
+                <div class="h-full" x-show="bookActiveTab === 'lines'">
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

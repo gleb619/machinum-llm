@@ -3,9 +3,9 @@
 <body>
 <!-- Layout -->
 <div th:fragment="editor" th:remove="tag">
+
     <!-- New Section with Two Panels -->
     <div class="mt-8 flex gap-4">
-
         <!-- Left Panel: Collapsible Sidebar -->
         <div :class="isSidebarCollapsed ? 'w-12' : 'w-1/4'"
              class="bg-white rounded-lg shadow-md p-2 transition-all duration-300 overflow-y-auto">
@@ -21,33 +21,34 @@
         <!-- Center Panel: Editor -->
         <div :class="isSidebarCollapsed ? 'w-full' : 'w-3/4'"
              class="bg-white rounded-lg shadow-md relative transition-all duration-300">
+
             <div class="border-b border-gray-200">
                 <!-- Tabs -->
                 <nav aria-label="Tabs" class="flex space-x-4 p-4">
                     <button :class="{
-                            'text-gray-500 border-transparent': activeTab !== 'editor',
-                            'text-blue-600 border-blue-600': activeTab === 'editor'
+                            'text-gray-500 border-transparent': chapterActiveTab !== 'editor',
+                            'text-blue-600 border-blue-600': chapterActiveTab === 'editor'
                          }"
                             @click="selectTab('editor')"
                             class="font-bold border-b-2 pb-2">Editor
                     </button>
                     <button :class="{
-                            'text-gray-500 border-transparent': activeTab !== 'preview',
-                            'text-blue-600 border-blue-600': activeTab === 'preview'
+                            'text-gray-500 border-transparent': chapterActiveTab !== 'preview',
+                            'text-blue-600 border-blue-600': chapterActiveTab === 'preview'
                         }"
                             @click="selectTab('preview')"
                             class="font-bold border-b-2 pb-2">Preview Changes
                     </button>
                     <button :class="{
-                            'text-gray-500 border-transparent': activeTab !== 'report',
-                            'text-blue-600 border-blue-600': activeTab === 'report'
+                            'text-gray-500 border-transparent': chapterActiveTab !== 'report',
+                            'text-blue-600 border-blue-600': chapterActiveTab === 'report'
                         }"
                             @click="selectTab('report')"
                             class="font-bold border-b-2 pb-2">Report
                     </button>
                     <button :class="{
-                            'text-gray-500 border-transparent': activeTab !== 'lines',
-                            'text-blue-600 border-blue-600': activeTab === 'lines'
+                            'text-gray-500 border-transparent': chapterActiveTab !== 'lines',
+                            'text-blue-600 border-blue-600': chapterActiveTab === 'lines'
                         }"
                             @click="selectTab('lines')"
                             class="font-bold border-b-2 pb-2">Lines
@@ -58,7 +59,7 @@
             <!-- Tab Content -->
             <div class="h-full overflow-hidden">
                 <!-- Editor Tab -->
-                <div class="h-full" x-show="activeTab === 'editor'">
+                <div class="h-full" x-show="chapterActiveTab === 'editor'">
                     <div class="font-bold flex items-center space-x-2 m-2 p-2">
                         <div class="space-x-2 mr-2 border-r-4 border-grey-700 pr-1">
                             <label for="highlightSuspicious">Highlight Suspicious Lines:</label>
@@ -106,7 +107,7 @@
                              data-content-menu="line-numbers"
                              x-show="contextMenuVisible">
                             <div class="px-4 py-2">
-                                <h4 class="text-xl font-extrabold dark:text-whit">Line Menu</h4>
+                                <h4 class="text-xl font-extrabold">Line Menu</h4>
                             </div>
                             <ul class="py-1">
                                 <li @click="findSameLine()" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Find the
@@ -115,7 +116,7 @@
                                 <li @click="findAndPrepareTranslation()"
                                     class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Find similar and prepare translation
                                 </li>
-                                <hr class="h-px my-1 bg-gray-200 border-0 dark:bg-gray-700">
+                                <hr class="h-px my-1 bg-gray-200 border-0">
                                 <li @click="copyLine()" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Copy line
                                 </li>
                                 <li @click="deleteLine()" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Delete
@@ -138,14 +139,14 @@
                              style="top: 10px; right: 8px; width: 180px;"
                              x-show="selectionMenuVisible">
                             <div class="px-4 py-2">
-                                <h4 class="text-xl font-extrabold dark:text-whit">Selection Menu</h4>
+                                <h4 class="text-xl font-extrabold">Selection Menu</h4>
                             </div>
                             <div class="px-4 py-2">
                                 <small class="text-xs text-gray-300 truncate w-32" x-text="selectionContent">Selection
                                     Content</small>
                             </div>
                             <ul class="py-1">
-                                <hr class="h-px my-1 bg-gray-200 border-0 dark:bg-gray-700">
+                                <hr class="h-px my-1 bg-gray-200 border-0">
                                 <li @click="findSameSelection()" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Find
                                     lines with similar content
                                 </li>
@@ -153,7 +154,7 @@
                                     class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Find similar and prepare
                                     translation
                                 </li>
-                                <hr class="h-px my-1 bg-gray-200 border-0 dark:bg-gray-700">
+                                <hr class="h-px my-1 bg-gray-200 border-0">
                                 <li @click="copySelection()" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Copy
                                 </li>
                                 <li @click="removeSelection()" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">
@@ -164,6 +165,19 @@
                                 </li>
                             </ul>
                         </div>
+
+                        <button @click="handleTranslateText()"
+                                class="absolute bottom-0 right-2 flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105 z-10"
+                                :disabled="isExecuting"
+                                :class="{
+                                    'opacity-75 cursor-not-allowed': isExecuting,
+                                    'hidden': currentContent?.trim()?.length > 0,
+                                }">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                            </svg>
+                            <span x-text="isExecuting ? 'Translating...' : 'Translate Text'"></span>
+                        </button>
                     </div>
                     <div class="p-4 flex justify-end">
                         <button :class="isSaving ? 'bg-yellow-500 scale-110' : 'bg-green-500'"
@@ -174,18 +188,18 @@
                 </div>
 
                 <!-- Preview Changes Tab -->
-                <div class="h-full" x-show="activeTab === 'preview'">
+                <div class="h-full" x-show="chapterActiveTab === 'preview'">
                     <div class="relative h-full">
                         <div class="h-full merge-view " id="merge-view"></div>
                     </div>
                 </div>
 
                 <!-- Report Tab -->
-                <div class="h-full" x-show="activeTab === 'report'">
+                <div class="h-full" x-show="chapterActiveTab === 'report'">
                     <h2 class="text-xl font-bold m-3">Analysis Results</h2>
                     <div class="relative overflow-x-auto">
-                        <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <table class="w-full text-sm text-left rtl:text-right text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3" scope="col">Metric</th>
                                 <template :key="'th-' + col + '-' + colIndex"
@@ -197,14 +211,18 @@
                             <tbody>
                             <template :key="'th-' + prop + '-' + propIndex"
                                       x-for="(prop, propIndex) in getPropertyNames()">
-                                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
-                                    <th class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                                <tr class="bg-white border-b border-gray-200">
+                                    <th class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
                                         scope="row"
+                                        :class="{
+                                            '': prop.toLowerCase().indexOf('time'),
+                                            '': prop.toLowerCase().indexOf('time')
+                                        }"
                                         x-text="camelCaseToWords(prop)">
                                     </th>
                                     <template :key="'td-' + col + '-' + colIndex"
                                               x-for="(col, colIndex) in fieldsForAnalysis">
-                                        <td class="px-6 py-4" x-text="formatValue(analysis[col][prop])"></td>
+                                        <td class="px-6 py-4" x-text="formatValue(analysis?.[col]?.[prop])"></td>
                                     </template>
                                 </tr>
                             </template>
@@ -213,7 +231,7 @@
                     </div>
                 </div>
 
-                <div class="h-full" x-show="activeTab === 'lines'">
+                <div class="h-full" x-show="chapterActiveTab === 'lines'">
                     <div th:remove="tag" th:replace="~{components/chapter/chapter-editor-tab-line-list::tab-lines}">
                         <p>
                             Here placed content of templates/components/chapter/chapter-editor-tab-line-list.html page,
