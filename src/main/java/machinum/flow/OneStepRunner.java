@@ -1,8 +1,6 @@
 package machinum.flow;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -27,120 +25,143 @@ public class OneStepRunner<T> implements FlowRunner<T> {
         var sm = flow.getStateManager();
         var metadata = flow.getMetadata();
         var extendEnabled = (Boolean) metadata.getOrDefault(EXTEND_ENABLED, Boolean.FALSE);
-        var context = new AtomicReference<FlowContext<T>>(FlowContextActions.of(currentState, metadata));
+        var flowContextRef = new AtomicReference<FlowContext<T>>(FlowContextActions.of(currentState, metadata));
 
-        executeFlow(currentState, sm, metadata, extendEnabled, context);
+        var runnerContext = RunnerContext.<T>of(b -> b
+                .flow(flow)
+                .currentState(currentState)
+                .sm(sm)
+                .metadata(metadata)
+                .extendEnabled(extendEnabled)
+                .flowContextRef(flowContextRef));
+        executeFlow(runnerContext);
     }
 
-    private void executeFlow(Flow.State currentState, StateManager sm, Map<String, Object> metadata,
-                             boolean extendEnabled, AtomicReference<FlowContext<T>> context) {
-        flow.getBeforeAllAction().accept(context.get());
+    private void executeFlow(RunnerContext<T> runnerContext) {
+        runnerContext.getFlow().getBeforeAllAction().accept(runnerContext.getFlowContextRef().get());
 
         try {
-            flow.getAroundAllAction().accept(context.get(), () ->
-                    processItems(sm, metadata, extendEnabled, context, currentState));
+            runnerContext.getFlow().getAroundAllAction().accept(runnerContext.getFlowContextRef().get(), () ->
+                    processItems(runnerContext));
         } finally {
-            flow.getAfterAllAction().accept(context.get());
-            log.debug("Flow has been executed for given state: {}", currentState);
+            runnerContext.getFlow().getAfterAllAction().accept(runnerContext.getFlowContextRef().get());
+            log.debug("Flow has been executed for given state: {}", runnerContext.getCurrentState());
         }
     }
 
-    private void processItems(StateManager sm, Map<String, Object> metadata, boolean extendEnabled,
-                              AtomicReference<FlowContext<T>> context, Flow.State currentState) {
-        var currentItemIndex = sm.getLastProcessedItem(metadata);
-        var currentPipeIndex = sm.getLastProcessorIndex(metadata);
-        var originItem = flow.getSource().get(currentItemIndex);
+    private void processItems(RunnerContext<T> runnerContext) {
+        var currentItemIndex = runnerContext.getSm().getLastProcessedItem(runnerContext.getMetadata());
+        var currentPipeIndex = runnerContext.getSm().getLastProcessorIndex(runnerContext.getMetadata());
+        var originItem = runnerContext.getFlow().getSource().get(currentItemIndex);
 
-        prepareContext(extendEnabled, context, originItem);
+        prepareContext(runnerContext, originItem);
 
-        for (int i = currentItemIndex; i < flow.getSource().size(); i++) {
-            processItem(i, sm, metadata, context, currentPipeIndex);
+        for (int i = currentItemIndex; i < runnerContext.getFlow().getSource().size(); i++) {
+            processItem(runnerContext, i, currentPipeIndex);
         }
 
-        updateNextState(sm, metadata, currentState);
+        updateNextState(runnerContext);
     }
 
-    private void prepareContext(boolean extendEnabled, AtomicReference<FlowContext<T>> context, T originItem) {
-        if (extendEnabled) {
-            var extendContext = context.get()
-                    .copy(b -> b.flow(flow.copy(Function.identity())));
-            context.set(flow.getExtendAction().apply(extendContext));
+    private void prepareContext(RunnerContext<T> runnerContext, T originItem) {
+        if (runnerContext.isExtendEnabled()) {
+            var extendContext = runnerContext.getFlowContextRef().get()
+                    .copy(b -> b.flow(runnerContext.getFlow().copy(Function.identity())));
+            runnerContext.getFlowContextRef().set(runnerContext.getFlow().getExtendAction().apply(extendContext));
         }
 
-        var bootstrapContext = flow.getBootstrapAction().apply(context.get().copy(b -> b.currentItem(originItem)
-                .flow(flow.copy(Function.identity()))));
-        context.set(bootstrapContext);
+        var bootstrapContext = runnerContext.getFlow().getBootstrapAction().apply(runnerContext.getFlowContextRef().get().copy(b -> b.currentItem(originItem)
+                .flow(runnerContext.getFlow().copy(Function.identity()))));
+        runnerContext.getFlowContextRef().set(bootstrapContext);
     }
 
-    private void processItem(int itemIndex, StateManager sm, Map<String, Object> metadata,
-                             AtomicReference<FlowContext<T>> context, int startPipeIndex) {
-        var itemFromSource = flow.getSource().get(itemIndex);
-        var refreshContext = context.get().copy(b -> b.currentItem(itemFromSource)
-                .flow(flow.copy(Function.identity())));
-        var itemAfterRefresh = flow.getRefreshAction().apply(refreshContext);
+    private void processItem(RunnerContext<T> runnerContext, int itemIndex, int startPipeIndex) {
+        var itemFromSource = runnerContext.getFlow().getSource().get(itemIndex);
+        var refreshContext = runnerContext.getFlowContextRef().get().copy(b -> b.currentItem(itemFromSource)
+                .flow(runnerContext.getFlow().copy(Function.identity())));
+        var itemAfterRefresh = runnerContext.getFlow().getRefreshAction().apply(refreshContext);
         var currentItemContext = refreshContext.withCurrentItem(itemAfterRefresh)
-                .rearrange(FlowContext::iterationArg, iteration(itemIndex + 1));
-        context.set(currentItemContext);
+                .rearrange(FlowContext::iterationArg, iteration(itemIndex + 1)); // Assuming iteration() is a static helper
+        runnerContext.getFlowContextRef().set(currentItemContext);
 
         var state = currentItemContext.getState();
-        var pipes = Objects.requireNonNull(flow.getStatePipes().get(state),
+        var pipes = Objects.requireNonNull(runnerContext.getFlow().getStatePipes().get(state),
                 "At least one pipe must be present for handling: " + state);
 
-        flow.getAroundEachStateAction().accept(currentItemContext, () ->
-                processPipes(itemIndex, startPipeIndex, metadata, pipes, context, state, sm));
+        runnerContext.getFlow().getAroundEachStateAction().accept(currentItemContext, () ->
+                processPipes(runnerContext, itemIndex, startPipeIndex, pipes, state));
 
-        sm.saveState(metadata, itemIndex + 1, 0, state);
+        runnerContext.getSm().saveState(runnerContext.getMetadata(), itemIndex + 1, 0, state);
     }
 
-    private void processPipes(int itemIndex, int startPipeIndex, Map<String, Object> metadata,
-                              List<Function<FlowContext<T>, FlowContext<T>>> pipes,
-                              AtomicReference<FlowContext<T>> context, Flow.State state, StateManager sm) {
+    private void processPipes(RunnerContext<T> runnerContext, int itemIndex, int startPipeIndex,
+                              List<Function<FlowContext<T>, FlowContext<T>>> pipes, Flow.State state) {
         for (int j = startPipeIndex; j < pipes.size(); j++) {
             try {
-                processSinglePipe(itemIndex, j, pipes.get(j), metadata, context, state, sm);
+                processSinglePipe(runnerContext, itemIndex, j, pipes.get(j), state);
             } catch (Exception e) {
-                handlePipeException(context, e);
+                handlePipeException(runnerContext, e);
             }
         }
     }
 
-    private void processSinglePipe(int itemIndex, int pipeIndex, Function<FlowContext<T>, FlowContext<T>> pipe,
-                                   Map<String, Object> metadata, AtomicReference<FlowContext<T>> context, Flow.State state, StateManager sm) {
-        var eachContext = Objects.requireNonNull(flow.getAroundEachAction().apply(context.get().withCurrentPipeIndex(pipeIndex), pipe),
+    private void processSinglePipe(RunnerContext<T> runnerContext, int itemIndex, int pipeIndex,
+                                   Function<FlowContext<T>, FlowContext<T>> pipe, Flow.State state) {
+        var eachContext = Objects.requireNonNull(runnerContext.getFlow().getAroundEachAction().apply(runnerContext.getFlowContextRef().get().withCurrentPipeIndex(pipeIndex), pipe),
                 "Context can't be null");
 
         var sinkEnabled = !Boolean.TRUE.equals(eachContext.metadata(PREVENT_SINK));
         var stateUpdateEnabled = !Boolean.TRUE.equals(eachContext.metadata(PREVENT_STATE_UPDATE));
-        context.set(eachContext.enableChanges());
+        runnerContext.getFlowContextRef().set(eachContext.enableChanges());
 
         if (sinkEnabled) {
-            flow.getSinkAction().accept(eachContext.copy(b -> b.flow(flow)));
+            runnerContext.getFlow().getSinkAction().accept(eachContext.copy(b -> b.flow(runnerContext.getFlow())));
         }
 
         if (stateUpdateEnabled) {
-            sm.saveState(metadata, itemIndex, pipeIndex + 1, state);
+            runnerContext.getSm().saveState(runnerContext.getMetadata(), itemIndex, pipeIndex + 1, state);
         }
     }
 
-    private void handlePipeException(AtomicReference<FlowContext<T>> context, Exception e) {
+    private void handlePipeException(RunnerContext<T> runnerContext, Exception e) {
         try {
-            flow.getExceptionAction().accept(context.get(), e);
+            runnerContext.getFlow().getExceptionAction().accept(runnerContext.getFlowContextRef().get(), e);
         } catch (Exception ex) {
             //ignore
         }
-        flow.getErrorStrategy().handleError(context.get(), e);
+        runnerContext.getFlow().getErrorStrategy().handleError(runnerContext.getFlowContextRef().get(), e);
     }
 
-    private void updateNextState(StateManager sm, Map<String, Object> metadata, Flow.State currentState) {
-        var nextState = flow.nextState(currentState);
+    private void updateNextState(RunnerContext<T> runnerContext) {
+        var nextState = runnerContext.getFlow().nextState(runnerContext.getCurrentState());
         if (Objects.nonNull(nextState)) {
-            sm.saveState(metadata, 0, 0, nextState);
+            runnerContext.getSm().saveState(runnerContext.getMetadata(), 0, 0, nextState);
         }
     }
 
     @Override
     public FlowRunner<T> recreate(Flow<T> subFlow) {
         return new OneStepRunner<>(subFlow);
+    }
+
+    /* ============= */
+
+    @Value
+    @AllArgsConstructor
+    @Builder(toBuilder = true)
+    private static class RunnerContext<T> {
+
+        Flow<T> flow;
+        Flow.State currentState;
+        StateManager sm;
+        Map<String, Object> metadata;
+        boolean extendEnabled;
+        AtomicReference<FlowContext<T>> flowContextRef;
+
+        public static <U> RunnerContext<U> of(Function<RunnerContextBuilder<U>, RunnerContextBuilder<U>> creator) {
+            return creator.apply(builder()).build();
+        }
+
     }
 
 }
