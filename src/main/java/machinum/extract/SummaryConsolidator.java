@@ -1,5 +1,6 @@
 package machinum.extract;
 
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.processor.core.Assistant;
 import machinum.processor.core.AssistantContext;
@@ -18,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static machinum.flow.FlowContext.consolidatedContext;
+import static machinum.flow.FlowContextActions.consolidatedContext;
 import static machinum.util.JavaUtil.calculatePart;
 import static machinum.util.TextUtil.*;
 

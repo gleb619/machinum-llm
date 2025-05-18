@@ -7,6 +7,7 @@ import machinum.controller.LineController.FindSimilarRequest;
 import machinum.controller.LineController.RemoveLineRequest;
 import machinum.converter.LineMapper;
 import machinum.entity.LineView;
+import machinum.exception.AppIllegalStateException;
 import machinum.model.Chapter;
 import machinum.model.Line;
 import machinum.repository.LineDao;
@@ -24,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.function.Function;
 
 import static machinum.listener.ChapterEntityListener.ChapterInfoConstants.CLEAN_TEXT;
 import static machinum.listener.ChapterEntityListener.ChapterInfoConstants.TRANSLATED_TEXT;
@@ -56,7 +58,7 @@ public class LineService {
     public List<Line> findSimilarForBook(String bookId, FindSimilarRequest request) {
         for (String field : request.fields()) {
             if (!SUPPORTED_FIELDS.contains(field)) {
-                throw new IllegalStateException("Unknown field: " + field);
+                throw new AppIllegalStateException("Unknown field: " + field);
             }
         }
 
@@ -76,7 +78,7 @@ public class LineService {
     public List<Line> findSimilarForChapter(String chapterId, FindSimilarRequest request) {
         for (String field : request.fields()) {
             if (!SUPPORTED_FIELDS.contains(field)) {
-                throw new IllegalStateException("Unknown field: " + field);
+                throw new AppIllegalStateException("Unknown field: " + field);
             }
         }
 
@@ -149,7 +151,7 @@ public class LineService {
         }
         for (String field : fields) {
             if (!SUPPORTED_FIELDS.contains(field)) {
-                throw new IllegalStateException("Unknown field: " + field);
+                throw new AppIllegalStateException("Unknown field: " + field);
             }
         }
 
@@ -163,12 +165,14 @@ public class LineService {
             chapterLineMap.computeIfAbsent(line.getChapterId(), k -> new ArrayList<>()).add(line);
         });
 
+        var results = new ArrayList<Boolean>();
+
         // Process each chapter's lines
         for (var entry : chapterLineMap.entrySet()) {
             String chapterId = entry.getKey();
             List<Line> lines = entry.getValue();
 
-            updateChapterLines(chapterId, lines, (line, originalLines, translatedLines, lineIndex) -> {
+            results.add(updateChapterLines(chapterId, lines, (line, originalLines, translatedLines, lineIndex) -> {
                 // Verify hash before modifying
                 String currentOriginalLine = originalLines.get(lineIndex);
                 String currentTranslatedLine = translatedLines.get(lineIndex);
@@ -182,7 +186,12 @@ public class LineService {
                     checkHash(line.getTranslatedLine(), currentTranslatedLine);
                     translatedLines.set(lineIndex, "");
                 }
-            });
+            }));
+        }
+
+        if(results.stream().anyMatch(b -> b)) {
+            asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(lineDao::refreshMaterializedView))
+                    .whenComplete((unused, throwable) -> log.debug("MatView has been updated"));
         }
     }
 
@@ -194,7 +203,7 @@ public class LineService {
                 .map(mapper::toDto)
                 .orElseThrow(() -> new RuntimeException("Line not found with id: " + updatedLine.getId()));
 
-        updateChapterLines(currentLine.getChapterId(), Collections.singletonList(currentLine),
+        var result = updateChapterLines(currentLine.getChapterId(), Collections.singletonList(currentLine),
                 (line, originalLines, translatedLines, lineIndex) -> {
                     // Verify hash before modifying
                     String currentOriginalLine = originalLines.get(lineIndex);
@@ -210,6 +219,11 @@ public class LineService {
                         translatedLines.set(lineIndex, updatedLine.getTranslatedLine());
                     }
                 });
+
+        if(result) {
+            asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(lineDao::refreshMaterializedView))
+                    .whenComplete((unused, throwable) -> log.debug("MatView has been updated"));
+        }
     }
 
     /**
@@ -218,8 +232,9 @@ public class LineService {
      * @param chapterId     the chapter ID
      * @param lines         list of lines to process
      * @param lineOperation operation to perform on each line
+     * @return
      */
-    private void updateChapterLines(String chapterId, List<Line> lines, LineOperation lineOperation) {
+    private boolean updateChapterLines(String chapterId, List<Line> lines, LineOperation lineOperation) {
         // Fetch the chapter entity
         Chapter chapter = chapterService.getById(chapterId);
 
@@ -266,8 +281,9 @@ public class LineService {
                     .build();
 
             chapterService.save(chapter);
-            asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(lineDao::refreshMaterializedView));
         }
+
+        return hasChanges;
     }
 
     private List<String> splitTextIntoLines(String text) {

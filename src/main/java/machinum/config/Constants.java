@@ -62,6 +62,10 @@ public class Constants {
 
     public static final String IGNORE_CACHE_MODE = "IGNORE_CACHE_MODE";
 
+    public static final String ALLOW_OVERRIDE_MODE = "ALLOW_OVERRIDE_MODE";
+
+    public static final String AVAILABLE_STATES = "AVAILABLE_STATES";
+
     public static final String ALLOW_EMPTY_TEXT = "ALLOW_EMPTY_TEXT";
 
     public static final String ID = "id";

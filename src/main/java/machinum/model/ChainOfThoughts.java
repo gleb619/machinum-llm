@@ -1,5 +1,6 @@
 package machinum.model;
 
+import machinum.exception.AppIllegalStateException;
 import machinum.model.core.Mergeable;
 import machinum.processor.core.JsonSupport.JsonDescription;
 import machinum.processor.core.JsonSupport.SchemaIgnore;
@@ -36,7 +37,7 @@ public class ChainOfThoughts implements Mergeable<ChainOfThoughts> {
                         .map(s -> {
                             String[] data = s.split("\n");
                             if (data.length != 2) {
-                                throw new IllegalStateException("Unknown type of CoT found, please check logs: " + s);
+                                throw new AppIllegalStateException("Unknown type of CoT found, please check logs: " + s);
                             }
                             return QuestionAndAnswer.builder()
                                     .question(data[0])

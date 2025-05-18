@@ -8,11 +8,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class UiController {
 
     @GetMapping({"/index", "/"})
+    public String showIndexPage(Model model) {
+        return "index";
+    }
+
+    @GetMapping({"/books", "/books/"})
     public String showBookPage(Model model) {
         return "book";
     }
 
-    @GetMapping({"/chapter", "/chapter/"})
+    @GetMapping({"/chapters", "/chapters/"})
     public String showChapterPage(Model model) {
         return "chapter";
     }

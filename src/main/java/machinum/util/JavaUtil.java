@@ -22,6 +22,16 @@ public class JavaUtil {
 
     private static final int DEFAULT_PAGE_SIZE = 10;
 
+    public static <T> T firstNotNull(T... objects) {
+        for (T input : objects) {
+            if (Objects.nonNull(input)) {
+                return input;
+            }
+        }
+
+        throw new NullPointerException("All arguments is null");
+    }
+
     public static <T> Function<T, T> combine(
             Function<T, T>... functions) {
 

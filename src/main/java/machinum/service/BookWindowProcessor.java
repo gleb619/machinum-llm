@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Constants;
 import machinum.controller.BookOperationController.BookOperationRequest;
+import machinum.exception.AppIllegalStateException;
 import machinum.extract.Glossary;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
@@ -17,14 +18,15 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Map;
 
-import static machinum.flow.FlowContext.glossary;
-import static machinum.flow.FlowContext.iteration;
+import static machinum.flow.FlowContextActions.glossary;
+import static machinum.flow.FlowContextActions.iteration;
 import static machinum.service.BookProcessor.ProcessorState.defaultState;
 import static machinum.service.BookWindowProcessor.Operations.TRANSLATE_GLOSSARY;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Deprecated(forRemoval = true)
 public class BookWindowProcessor {
 
     private final BookFacade bookFacade;
@@ -32,16 +34,17 @@ public class BookWindowProcessor {
     private final TemplateAiFacade templateAiFacade;
 
 
+    @Deprecated(forRemoval = true)
     public void doStart(BookOperationRequest request) {
         log.debug("Prepare to eecute window operation for book: {}", request.getId());
 
         switch (request.getOperationName()) {
             case TRANSLATE_GLOSSARY -> translateGlossary(request);
-            default -> throw new IllegalStateException("Unknown operation: " + request.getOperationName());
+            default -> throw new AppIllegalStateException("Unknown operation: " + request.getOperationName());
         }
     }
 
-    public void translateGlossary(BookOperationRequest request) {
+    private void translateGlossary(BookOperationRequest request) {
         var names = bookFacade.exportGlossaryTranslation(request.getId());
         var namesChunks = JavaUtil.toChunks(names, 5);
         var translatedNames = new ArrayList<ObjectName>();

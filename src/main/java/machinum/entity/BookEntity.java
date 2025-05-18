@@ -3,6 +3,7 @@ package machinum.entity;
 import machinum.model.Book;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.id.UUIDGenerator;
@@ -16,6 +17,7 @@ import java.util.List;
 @Builder(toBuilder = true)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Entity
+@DynamicUpdate
 @Table(name = "books", uniqueConstraints = @UniqueConstraint(columnNames = "title"))
 public class BookEntity {
 

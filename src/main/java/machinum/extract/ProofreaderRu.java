@@ -1,6 +1,7 @@
 package machinum.extract;
 
 import machinum.flow.FlowContext;
+import machinum.flow.FlowContextActions;
 import machinum.flow.FlowSupport;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
@@ -61,7 +62,7 @@ public class ProofreaderRu implements ChunkSupport, FlowSupport {
 
         log.info("Proofread text: text={}...", toShortDescription(result));
 
-        return flowContext.rearrange(FlowContext::translatedTextArg, FlowContext.translatedText(result));
+        return flowContext.rearrange(FlowContext::translatedTextArg, FlowContextActions.translatedText(result));
     }
 
     private String doAction(FlowContext<Chapter> flowContext, String text, List<Message> history, Integer iteration,

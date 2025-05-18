@@ -3,6 +3,7 @@ package machinum.controller;
 import machinum.model.Book;
 import machinum.model.Chapter;
 import machinum.service.BookProcessor;
+import machinum.service.BookProcessor.ProcessorState;
 import machinum.service.RawProcessor;
 import io.micrometer.core.instrument.util.IOUtils;
 import lombok.*;
@@ -13,9 +14,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -73,15 +77,24 @@ public class BookOperationController {
         private String id;
         private String operationName;
         private String runner;
+        @Deprecated(forRemoval = true)
         private boolean shouldPersist;
+        @Deprecated(forRemoval = true)
         private boolean windowOperation;
         private boolean ignoreCache;
+        private boolean allowOverride;
+        @Builder.Default
+        private Map<String, Boolean> availableStates = new HashMap<>();
 
         public BookOperationRequest copy(Function<BookOperationRequest.BookOperationRequestBuilder, BookOperationRequest.BookOperationRequestBuilder> builderFn) {
             return builderFn.apply(toBuilder())
                     .build();
         }
 
+        public Map<ProcessorState, Boolean> availableStates() {
+            return availableStates.entrySet().stream()
+                    .collect(Collectors.toMap(e -> ProcessorState.parse(e.getKey()), Map.Entry::getValue, (f, s) -> f));
+        }
 
     }
 

@@ -3,18 +3,29 @@ package machinum.service;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import machinum.exception.AppIllegalStateException;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
+import machinum.processor.core.GeminiClient;
+import machinum.repository.LineDao;
+import machinum.util.JavaUtil;
+import machinum.util.TextUtil;
+import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.async.AsyncHelper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.db.DbHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 import static machinum.config.Constants.*;
+import static machinum.listener.ChapterEntityListener.ChapterInfoConstants.*;
 
 @Slf4j
 @Service
@@ -24,6 +35,9 @@ public class ChapterFacade {
     private final ChapterService chapterService;
     private final LineService lineService;
     private final TemplateAiFacade templateAiFacade;
+    private final LineDao lineDao;
+    private final AsyncHelper asyncHelper;
+    private final DbHelper dbHelper;
 
     public Chapter refresh(FlowContext<Chapter> context) {
         return chapterService.refresh(context);
@@ -51,6 +65,14 @@ public class ChapterFacade {
         chapterService.saveWithContext(context);
     }
 
+    public Chapter updateChapter(Chapter updatedChapter) {
+        var result = chapterService.updateChapter(updatedChapter);
+        asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(lineDao::refreshMaterializedView))
+                .whenComplete((unused, throwable) -> log.debug("MatView has been updated"));
+
+        return result;
+    }
+
     public FlowContext<Chapter> extend(FlowContext<Chapter> context) {
         List<String> processedChunks = context.metadata(PROCESSED_CHUNKS);
         if (processedChunks.isEmpty()) {
@@ -76,15 +98,17 @@ public class ChapterFacade {
 
     public Page<Chapter> getSuspiciousChapters(@NonNull String bookId, boolean findAberrationsInTranslate,
                                                boolean suspiciousOriginalWords, boolean suspiciousTranslatedWords,
-                                               PageRequest request) {
+                                               PageRequest request, boolean warnings) {
         if (findAberrationsInTranslate && (suspiciousOriginalWords || suspiciousTranslatedWords)) {
-            throw new IllegalStateException("Not supported!");
+            throw new AppIllegalStateException("Not supported!");
         } else if (findAberrationsInTranslate) {
             return getAberrationChapters(bookId, request);
         } else if (suspiciousOriginalWords) {
             return getSuspiciousOriginalChapters(bookId, request);
         } else if (suspiciousTranslatedWords) {
             return getSuspiciousTranslatedChapters(bookId, request);
+        } else if (warnings) {
+            return chapterService.getChaptersWithWarnings(bookId, request);
         }
 
         return new PageImpl<>(Collections.emptyList());
@@ -103,6 +127,50 @@ public class ChapterFacade {
     public Page<Chapter> getSuspiciousTranslatedChapters(@NonNull String bookId, PageRequest request) {
         var ids = lineService.getSuspiciousInTranslatedChapterIds(bookId, request);
         return new PageImpl<>(chapterService.getChapterByIds(ids.getContent()), ids.getPageable(), ids.getTotalElements());
+    }
+
+    public void handleChapterException(@NonNull FlowContext<Chapter> ctx, @NonNull Exception e) {
+        if (e instanceof GeminiClient.BusinessGeminiException bge) {
+            var context = ObjectUtils.firstNonNull(bge.getFlowContext(), ctx);
+            chapterService.addWarning((FlowContext) context);
+        }
+
+        log.warn("Handled chapter's exception: context={}, e={}", ctx, e.getMessage());
+    }
+
+    /**
+     * 'false' - pipe won't be executed
+     * 'true' - pipe will be executed
+     *
+     * @param ctx
+     * @return
+     */
+    public boolean checkExecutionIsAllowed(FlowContext<Chapter> ctx) {
+        log.debug("Prepare to update chapter in db: {}", ctx);
+        var state = (BookProcessor.ProcessorState) ctx.getState();
+
+        switch (state) {
+            case CLEANING, PROCESSING -> {
+                //TODO: This will not work
+                return TextUtil.isEmpty(ctx.getCurrentItem().getText());
+            }
+            case SUMMARY -> {
+                return TextUtil.isEmpty(ctx.getCurrentItem().getSummary());
+            }
+            case GLOSSARY, TRANSLATE_GLOSSARY -> {
+                return CollectionUtils.isEmpty(ctx.getCurrentItem().getNames());
+            }
+            case TRANSLATE_TITLE -> {
+                return TextUtil.isEmpty(ctx.getCurrentItem().getTranslatedTitle());
+            }
+            case TRANSLATE, COPYEDIT -> {
+                return TextUtil.isEmpty(ctx.getCurrentItem().getTranslatedText());
+            }
+            case FINISHED -> {
+                return true;
+            }
+            default -> throw new AppIllegalStateException("Unknown state: %s".formatted(state));
+        }
     }
 
 }

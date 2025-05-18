@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
 import machinum.converter.ChapterMapper;
 import machinum.entity.ChapterEntity;
+import machinum.exception.AppIllegalStateException;
 import machinum.flow.FlowContext;
 import machinum.listener.ChapterEntityListener;
 import machinum.model.Book;
@@ -76,6 +77,13 @@ public class ChapterService {
                 .collect(Collectors.toList()));
     }
 
+    @Transactional(readOnly = true)
+    public Page<Chapter> getChaptersWithWarnings(String bookId, PageRequest pageRequest) {
+        log.debug("Get chapters with warnings for book: {}", bookId);
+        return chapterRepository.findChaptersWithWarningsByBookId(bookId, pageRequest)
+                .map(chapterMapper::toDto);
+    }
+
     @Transactional
     public Chapter createChapter(Chapter chapter) {
         log.debug("Creating chapter in db: {}", chapter);
@@ -84,12 +92,12 @@ public class ChapterService {
     }
 
     @Transactional
-    public Optional<Chapter> updateChapter(String id, Chapter updatedChapter) {
-        log.debug("Update chapter in db: {}, chapter={}", id, updatedChapter);
+    public Chapter updateChapter(Chapter updatedChapter) {
+        log.debug("Update chapter in db: {}", updatedChapter);
         var inputItem = chapterMapper.toEntity(updatedChapter);
         var updatedItem = chapterRepository.save(inputItem);
 
-        return Optional.ofNullable(chapterMapper.toDto(updatedItem));
+        return chapterMapper.toDto(updatedItem);
     }
 
     @Transactional
@@ -230,7 +238,7 @@ public class ChapterService {
                             chapterRepository.updateProofreadText(chapterInfo.getId(), proofreadText);
                         });
             }
-            case PREPARE_TRANSLATE -> {
+            case TRANSLATE_GLOSSARY -> {
                 ctx.optionalValue(FlowContext::glossaryArg)
                         .ifPresent(glossary -> {
                             ctx.getCurrentItem().setNames(glossary);
@@ -260,7 +268,7 @@ public class ChapterService {
             }
             case FINISHED -> {
             }
-            default -> throw new IllegalStateException("Unknown state: %s".formatted(state));
+            default -> throw new AppIllegalStateException("Unknown state: %s".formatted(state));
         }
     }
 
@@ -303,7 +311,7 @@ public class ChapterService {
     @Transactional(readOnly = true)
     public Chapter getById(@NonNull String id) {
         return findById(id)
-                .orElseThrow(IllegalStateException::new);
+                .orElseThrow(AppIllegalStateException::new);
     }
 
     @Transactional(readOnly = true)
@@ -483,6 +491,18 @@ public class ChapterService {
                 entityManager.clear();
             }
         }
+    }
+
+    @Transactional
+    public void addWarning(FlowContext<Chapter> ctx) {
+        var chapterInfo = ctx.getCurrentItem();
+
+        ctx.optionalValue(FlowContext::warningArg)
+                .ifPresent(warning -> {
+                    var warnings = ctx.getCurrentItem().addWarning(warning).getWarnings();
+                    var warningText = objectMapperHolder.execute(mapper -> toJsonString(mapper, warnings));
+                    chapterRepository.updateWarning(chapterInfo.getId(), warningText);
+                });
     }
 
     /* ============= */

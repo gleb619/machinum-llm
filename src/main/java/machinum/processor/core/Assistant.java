@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Constants;
+import machinum.exception.AppIllegalStateException;
 import machinum.flow.FlowContext;
 import machinum.processor.core.AssistantContext.OutputType;
 import machinum.processor.exception.NoDataException;
@@ -11,6 +12,7 @@ import machinum.util.CodeBlockExtractor;
 import machinum.util.DurationUtil;
 import machinum.util.PropertiesParser;
 import machinum.util.TraceUtil;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -134,8 +136,9 @@ public class Assistant {
 
                 return resultContext;
             } catch (Exception e) {
-                cacheHelper.evictValue(hashStringWithCRC32(prompt.getContents()));
-                ReflectionUtils.rethrowException(e);
+                var cacheKey = hashStringWithCRC32(prompt.getContents());
+                cacheHelper.evictValue(cacheKey);
+                ExceptionUtils.rethrow(e);
                 return null;
             }
         });
@@ -237,7 +240,7 @@ public class Assistant {
                     var properties = PropertiesParser.parseProperties(cleanText);
                     yield assistantConverter.convert(properties, outputClass);
                 }
-                default -> throw new IllegalStateException("Unexpected value: " + outputType);
+                default -> throw new AppIllegalStateException("Unexpected value: " + outputType);
             };
         } catch (Exception e) {
             return mapper.apply(content);

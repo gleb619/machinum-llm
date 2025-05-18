@@ -1,27 +1,34 @@
 package machinum.processor.core;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Builder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import machinum.flow.FlowContext;
+import machinum.flow.FlowContextArgs;
+import machinum.flow.FlowException;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-import swiss.ameri.gemini.api.Content;
-import swiss.ameri.gemini.api.GenAi;
-import swiss.ameri.gemini.api.GenerativeModel;
-import swiss.ameri.gemini.api.ModelVariant;
+import swiss.ameri.gemini.api.*;
 import swiss.ameri.gemini.spi.JsonParser;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+
+import static machinum.flow.FlowContextActions.warning;
+import static machinum.processor.core.ChapterWarning.createNew;
 
 /**
  * A client for interacting with the Gemini AI service, implementing the {@link AiClient} interface.
@@ -53,8 +60,17 @@ public class GeminiClient implements AiClient {
         var model = parsePrompt(prompt);
 
         log.info("Executing gemini request with context: {}", assistantContext);
-        var content = execute(model, assistantContext)
-                .get(timeout.toSeconds(), TimeUnit.SECONDS);
+        GenAi.GeneratedContent content = null;
+        try {
+            content = execute(model, assistantContext)
+                    .get(timeout.toSeconds(), TimeUnit.SECONDS);
+        } catch (ExecutionException e) {
+            if(e.getCause() instanceof FlowException) {
+                ExceptionUtils.rethrow(e.getCause());
+            } else {
+                ExceptionUtils.rethrow(e);
+            }
+        }
 
         return new AssistantMessage(content.text());
     }
@@ -63,19 +79,19 @@ public class GeminiClient implements AiClient {
      * Executes the generation of content using the specified generative model.
      *
      * @param model            The generative model to use for content generation.
-     * @param assistantContext
+     * @param ctx
      * @return A {@link CompletableFuture} representing the generated content.
      */
-    private CompletableFuture<GenAi.GeneratedContent> execute(GenerativeModel model, AssistantContext assistantContext) {
+    private CompletableFuture<GenAi.GeneratedContent> execute(GenerativeModel model, AssistantContext ctx) {
         return genAi.generateContent(model)
+                .exceptionally(ex -> {
+                    handleException(ctx, ex);
+
+                    return null;
+                })
                 .whenComplete((result, e) -> {
                     if (Objects.nonNull(e)) {
-                        boolean isCSAM = e.getMessage().contains("PROHIBITED_CONTENT");
-                        log.error("Error during Gemini execution: ", e);
-                        if (isCSAM) {
-                            //TODO add chapter errors, for next filter
-                            //assistantContext.setResult();
-                        }
+                        log.error("Error during Gemini execution: {}|{}", e.getClass(), e.getMessage());
                     } else {
                         log.info("Successfully execute Gemini request.");
                     }
@@ -137,6 +153,46 @@ public class GeminiClient implements AiClient {
         return ModelVariant.GEMINI_2_0_FLASH_EXP;
     }
 
+    private void handleException(AssistantContext ctx, Throwable ex) {
+        Throwable e;
+        if (ex instanceof ExecutionException ee) {
+            e = ee.getCause();
+        } else {
+            e = ex;
+        }
+
+        boolean isCSAM = ex.getMessage().contains("PROHIBITED_CONTENT");
+
+        if(isCSAM) {
+            String reason = """
+            Got PROHIBITED_CONTENT response - probably it's a non-configurable safety filters, \
+            which block child sexual abuse material (CSAM) \
+            and personally identifiable information (PII)\
+            """;
+
+            var flowContext = ctx.getFlowContext().rearrange(FlowContextArgs::warningArg, warning(createNew(b -> b
+                    .text(reason)
+                    .type(ChapterWarning.WarningType.R18_CONTENT)
+                    .metadata("exception", e.getMessage())
+            )));
+
+            //If not isCSAM then stop execution
+            //@see https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/configure-safety-filters
+            throw BusinessGeminiException.createNew(b -> b
+                    .message("Found R21 content, execution is prohibited")
+                    .cause(e)
+                    .shouldStopExecution(false)
+                    .flowContext(flowContext)
+                    .reason(reason)
+            );
+        } else {
+            throw BusinessGeminiException.createNew(b -> b
+                    .message("Business error: " + e.getMessage())
+                    .cause(e));
+        }
+
+    }
+
     /**
      * A JSON parser implementation using Jackson's ObjectMapper.
      */
@@ -156,5 +212,20 @@ public class GeminiClient implements AiClient {
         public <T> T fromJson(String s, Class<T> aClass) {
             return mapper.readValue(s, aClass);
         }
+
     }
+
+    public static class BusinessGeminiException extends FlowException {
+
+        @Builder
+        public BusinessGeminiException(String message, Throwable cause, boolean shouldStopExecution, String reason, FlowContext<?> flowContext) {
+            super(message, cause, shouldStopExecution, reason, flowContext);
+        }
+
+        public static BusinessGeminiException createNew(Function<BusinessGeminiExceptionBuilder, BusinessGeminiExceptionBuilder> creator) {
+            return creator.apply(builder()).build();
+        }
+
+    }
+
 }

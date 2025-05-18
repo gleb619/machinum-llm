@@ -7,8 +7,10 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Constants;
 import machinum.controller.ChapterOperationController.ChapterOperationRequest;
+import machinum.exception.AppIllegalStateException;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
+import machinum.service.BookProcessor.ProcessorState;
 import org.springframework.async.AsyncHelper;
 import org.springframework.stereotype.Service;
 
@@ -16,9 +18,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import static machinum.flow.FlowContext.iteration;
+import static machinum.flow.FlowContextActions.iteration;
 import static machinum.service.BookProcessor.ProcessorState.*;
 import static machinum.service.ChapterProcessor.Operations.*;
+import static machinum.service.ChapterProcessor.Operations.TRANSLATE;
 
 @Slf4j
 @Service
@@ -51,8 +54,12 @@ public class ChapterProcessor {
         var flowContext = prepareContext(request);
 
         var result = switch (request.getOperationName()) {
+            case SUMMARIZE -> templateAiFacade.summary(flowContext)
+                    .withState(SUMMARY);
+            case TRANSLATE -> templateAiFacade.translateInChunks(flowContext)
+                    .withState(ProcessorState.TRANSLATE);
             case SCORE_AND_TRANSLATE -> templateAiFacade.scoreAndTranslateInChunks(flowContext)
-                    .withState(TRANSLATE);
+                    .withState(ProcessorState.TRANSLATE);
             case SCORE_AND_FIX -> templateAiFacade.scoreAndEditGrammarInChunks(flowContext)
                     .withState(COPYEDIT);
 //            case FIX_GRAMMAR -> templateAiFacade.editGrammarInChunks(flowContext)
@@ -63,7 +70,7 @@ public class ChapterProcessor {
             case PROOFREAD_RU -> templateAiFacade.proofreadRu(flowContext)
                     .withState(COPYEDIT);
             case CONVERT_TO_SSML -> templateAiFacade.convertToSSML(flowContext);
-            default -> throw new IllegalStateException("Unknown operation: " + request.getOperationName());
+            default -> throw new AppIllegalStateException("Unknown operation: " + request.getOperationName());
         };
 
         log.debug("Processed chapter: {}", result);
@@ -100,6 +107,10 @@ public class ChapterProcessor {
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Operations {
+
+        public static final String SUMMARIZE = "summarize";
+
+        public static final String TRANSLATE = "translate";
 
         public static final String SCORE_AND_TRANSLATE = "scoreAndTranslate";
 

@@ -8,8 +8,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
 import machinum.exception.StopException;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ollama.autoconfigure.OllamaChatProperties;
@@ -58,11 +62,11 @@ public class OllamaAiClient implements AiClient {
                 try {
                     return executeOriginRequest(spec);
                 } catch (Exception ex) {
-                    ReflectionUtils.rethrowRuntimeException(StopException.create(e));
+                    ExceptionUtils.rethrow(StopException.create(e));
                     return null;
                 }
             } else {
-                ReflectionUtils.rethrowRuntimeException(e);
+                ExceptionUtils.rethrow(e);
                 return null;
             }
         }
@@ -86,7 +90,7 @@ public class OllamaAiClient implements AiClient {
      * @param spec   The request specification for the chat client.
      * @return True if the error was handled and a retry is attempted, false otherwise.
      */
-    private boolean onError(Prompt prompt, Exception e, ChatClient.ChatClientRequestSpec spec) {
+    private boolean onError(Prompt prompt, Exception e, ChatClientRequestSpec spec) {
         var llamaError = e.getMessage().contains("llama runner process has terminated");
         var timedOutError = e instanceof ResourceAccessException rae && rae.getMessage().contains("Request timed out");
         if (timedOutError) {
@@ -102,7 +106,7 @@ public class OllamaAiClient implements AiClient {
             cleanRunner(prompt);
             return true;
         } else {
-            ReflectionUtils.rethrowRuntimeException(e);
+            ExceptionUtils.rethrow(e);
         }
 
         return false;
@@ -114,10 +118,12 @@ public class OllamaAiClient implements AiClient {
      * @param spec The request specification for the chat client.
      * @return The response message from the AI assistant.
      */
-    private AssistantMessage executeOriginRequest(ChatClient.ChatClientRequestSpec spec) {
-        return spec.call().chatResponse()
-                .getResult()
-                .getOutput();
+    private AssistantMessage executeOriginRequest(ChatClientRequestSpec spec) {
+        var call = spec.call();
+        var response = call.chatResponse();
+        var result = response.getResult();
+
+        return result.getOutput();
     }
 
     /**

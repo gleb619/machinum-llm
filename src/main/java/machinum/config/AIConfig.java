@@ -11,6 +11,7 @@ import io.micrometer.observation.ObservationRegistry;
 import lombok.extern.slf4j.Slf4j;
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.TokenNameFinderModel;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.ai.autoconfigure.ollama.OllamaReserveProperties;
 import org.springframework.ai.autoconfigure.ollama.OllamaTransformProperties;
 import org.springframework.ai.chat.client.ChatClient;
@@ -36,6 +37,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.web.client.RestClientBuilderConfigurer;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.http.client.JdkClientHttpRequestFactoryBuilder;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -84,7 +86,7 @@ public class AIConfig {
                                        ObjectProvider<WebClient.Builder> webClientBuilderProvider,
                                        WiremockRequestInterceptor requestInterceptorHolder) {
         var clientHttpRequestFactory = new JdkClientHttpRequestFactory();
-        clientHttpRequestFactory.setReadTimeout(Duration.ofMinutes(10));
+        clientHttpRequestFactory.setReadTimeout(Duration.ofMinutes(15));
 
         var builder = RestClient.builder()
                 .requestFactory(new BufferingClientHttpRequestFactory(clientHttpRequestFactory))
@@ -100,9 +102,10 @@ public class AIConfig {
                 }))
                 .requestInterceptor(requestInterceptorHolder);
 
-        return OllamaApi.builder().baseUrl(connectionDetails.getBaseUrl())
-                .restClientBuilder(restClientBuilderConfigurer.configure(builder))
-                .webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
+        return OllamaApi.builder()
+                .baseUrl(connectionDetails.getBaseUrl())
+                .restClientBuilder(builder)
+//                .webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
                 .responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
                 .build();
     }
@@ -223,7 +226,7 @@ public class AIConfig {
                 TokenNameFinderModel model = new TokenNameFinderModel(modelIn);
                 return new NameFinderME(model);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                return ExceptionUtils.rethrow(e);
             }
         };
 

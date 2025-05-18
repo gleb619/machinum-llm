@@ -51,7 +51,7 @@ public class StatisticService {
     @Transactional(readOnly = true)
     public List<StatisticsDto> getStatisticsUpToDate(LocalDate date) {
         log.info("Fetching statistics up to date: {}", date);
-        var statisticsViews = statisticsRepository.findByDate(date, Sort.by("operationDate"));
+        var statisticsViews = statisticsRepository.findByDate(date, Sort.by("operationDate").descending());
         return statisticsMapper.toDto(statisticsViews);
     }
 

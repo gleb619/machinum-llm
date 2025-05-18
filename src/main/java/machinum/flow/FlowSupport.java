@@ -62,7 +62,7 @@ public interface FlowSupport {
         var currentContext = targetTokens + countHistoryTokens(history);
         int result = currentContext >= (contextLength * 0.8) ? currentContext + targetTokens : contextLength;
 //        if(result >= 20_000) {
-//            throw new IllegalStateException("Context window is too big: " + result);
+//            throw new AppIllegalStateException("Context window is too big: " + result);
 //        }
 
         return result;

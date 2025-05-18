@@ -10,6 +10,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,7 +52,7 @@ public class JsonlConverter {
                     try {
                         return objectMapper.writeValueAsString(o);
                     } catch (JsonProcessingException e) {
-                        throw new RuntimeException(e);
+                        return ExceptionUtils.rethrow(e);
                     }
                 })
                 .collect(Collectors.joining("\n"));

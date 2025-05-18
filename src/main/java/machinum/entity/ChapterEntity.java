@@ -5,6 +5,7 @@ import machinum.model.*;
 import machinum.model.Character;
 import jakarta.persistence.*;
 import lombok.*;
+import machinum.processor.core.ChapterWarning;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -13,6 +14,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 @Data
 @AllArgsConstructor
@@ -113,5 +115,10 @@ public class ChapterEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
     private List<Scene> scenes = new ArrayList<>();
+
+    @Builder.Default
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "json")
+    private List<ChapterWarning> warnings = new ArrayList<>();
 
 }

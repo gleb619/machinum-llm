@@ -1,6 +1,7 @@
 package machinum.model;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import machinum.processor.core.ChapterWarning;
 import machinum.processor.core.HashSupport;
 import machinum.util.JavaUtil;
 import lombok.*;
@@ -56,6 +57,8 @@ public class Chapter implements HashSupport {
     @JsonAlias({"sourceKey", "key"})
     @ToString.Include
     private String sourceKey;
+    @Builder.Default
+    private List<ChapterWarning> warnings = new ArrayList<>();
 
     @Override
     public List<String> hashValues() {
@@ -71,6 +74,12 @@ public class Chapter implements HashSupport {
         if (oldIndex > -1) {
             names.set(oldIndex, newOne);
         }
+
+        return this;
+    }
+
+    public Chapter addWarning(ChapterWarning warning) {
+        warnings.add(warning);
 
         return this;
     }

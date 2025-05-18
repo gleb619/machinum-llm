@@ -1,5 +1,6 @@
 package machinum.extract;
 
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowSupport;
@@ -93,7 +94,7 @@ public class TranslaterBody implements FlowSupport, PreconditionSupport {
 
         log.debug("Prepared translated version: text={}...", toShortDescription(context.result()));
 
-        return flowContext.rearrange(FlowContext::translatedTextArg, FlowContext.translatedText(context.result()));
+        return flowContext.rearrange(FlowContext::translatedTextArg, FlowContextActions.translatedText(context.result()));
     }
 
     private List<Message> prepareHistory(FlowContext<Chapter> flowContext, Integer textTokens, String text, AtomicBoolean hasScoring) {

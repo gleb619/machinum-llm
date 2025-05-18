@@ -1,6 +1,7 @@
 package machinum.extract;
 
 import machinum.flow.FlowContext;
+import machinum.flow.FlowContextActions;
 import machinum.flow.FlowSupport;
 import machinum.model.Chapter;
 import machinum.processor.core.Assistant;
@@ -56,7 +57,7 @@ public class SSMLSerializer implements ChunkSupport, FlowSupport {
 
         log.info("SSML text: text={}...", toShortDescription(ssml));
 
-        return flowContext.rearrange(FlowContext::resultArg, FlowContext.result(ssml));
+        return flowContext.rearrange(FlowContext::resultArg, FlowContextActions.result(ssml));
     }
 
     private String doAction(FlowContext<Chapter> flowContext, String text, List<Message> history, Integer iteration,

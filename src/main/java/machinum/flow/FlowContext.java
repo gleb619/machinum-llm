@@ -6,6 +6,7 @@ import machinum.model.ObjectName;
 import machinum.processor.core.ArgumentException;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import machinum.processor.core.ChapterWarning;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -16,7 +17,7 @@ import java.util.stream.Stream;
 
 import static machinum.config.Constants.PREVENT_SINK;
 import static machinum.config.Constants.PREVENT_STATE_UPDATE;
-import static machinum.flow.FlowContext.Constants.*;
+import static machinum.flow.FlowContextConstants.*;
 import static machinum.util.JavaUtil.newId;
 
 @Slf4j
@@ -25,7 +26,7 @@ import static machinum.util.JavaUtil.newId;
 @Builder(toBuilder = true)
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
-public class FlowContext<T> {
+public class FlowContext<T> implements FlowContextArgs {
 
     @ToString.Include
     @Builder.Default
@@ -48,97 +49,12 @@ public class FlowContext<T> {
     @Singular
     private List<FlowArgument<?>> arguments = new ArrayList<>();
 
-    public static FlowArgument<String> context(String value) {
-        return createArg(CONTEXT_PARAM, value);
-    }
-
-    public static FlowArgument<String> consolidatedContext(String value) {
-        return createArg(CONSOLIDATED_CONTEXT_PARAM, value);
-    }
-
-    public static FlowArgument<String> text(String value) {
-        return createArg(TEXT_PARAM, value);
-    }
-
-    public static FlowArgument<String> translatedText(String value) {
-        return createArg(TRANSLATED_TEXT_PARAM, value);
-    }
-
-    public static FlowArgument<List<ObjectName>> glossary(List<ObjectName> value) {
-        return createArg(GLOSSARY_PARAM, value);
-    }
-
-    public static FlowArgument<List<ObjectName>> consolidatedGlossary(List<ObjectName> value) {
-        return createArg(CONSOLIDATED_GLOSSARY_PARAM, value);
-    }
-
-    public static FlowArgument<String> proofread(String value) {
-        return createArg(PROOFREAD_PARAM, value);
-    }
-
-    public static FlowArgument<Integer> chapterNumber(Integer number) {
-        return createArg(CHAPTER_NUMBER_PARAM, number);
-    }
-
-    public static FlowArgument<Chunks> chunks(Chunks chunks) {
-        return createArg(CHUNKS_PARAM, chunks);
-    }
-
-    public static FlowArgument<ChunkItem> chunk(ChunkItem chunk) {
-        return createArg(CHUNK_PARAM, chunk);
-    }
-
-    public static FlowArgument<Chunks> translatedChunks(Chunks chunks) {
-        return createArg(TRANSLATED_CHUNKS_PARAM, chunks);
-    }
-
-    public static FlowArgument<ChunkItem> translatedChunk(ChunkItem chunk) {
-        return createArg(TRANSLATED_CHUNK_PARAM, chunk);
-    }
-
-    public static FlowArgument<Integer> iteration(Integer value) {
-        return createArg(ITERATION_PARAM, value);
-    }
-
-    public static FlowArgument<Integer> subIteration(Integer value) {
-        return createArg(SUB_ITERATION_PARAM, value);
-    }
-
-    public static FlowArgument<Object> result(Object value) {
-        return createArg(RESULT_PARAM, value);
-    }
-
-    public static <U> FlowArgument<U> createArg(String name, U value) {
-        return FlowArgument.<U>builder()
-                .name(name)
-                .value(value)
-                .build();
-    }
-
-    public static <U, T> FlowContext<T> of(FlowArgument<U> arg) {
-        return of(b -> b.argument(arg));
-    }
-
-    public static FlowContext<?> of(FlowArgument<?>... args) {
-        return of(b -> b.arguments(List.of(args)));
-    }
-
-    public static FlowContext<?> of(Flow.State state) {
-        return of(state, Map.of());
-    }
-
-    public static FlowContext<?> of(Flow.State state, Map<String, Object> metadata) {
-        return of(b -> b.state(state)
-                .metadata(metadata));
-    }
-
-    public static <U> FlowContext<U> of(Function<FlowContext.FlowContextBuilder<U>, FlowContext.FlowContextBuilder<U>> fn) {
-        return fn.apply(FlowContext.builder())
-                .build();
-    }
-
     public <U> U metadata(String name) {
-        return (U) metadata.get(name);
+        return metadata(name, null);
+    }
+
+    public <U> U metadata(String name, U defaultValue) {
+        return (U) metadata.getOrDefault(name, defaultValue);
     }
 
     public String text() {
@@ -346,14 +262,14 @@ public class FlowContext<T> {
 
     public FlowArgument<Integer> iterationArg() {
         var argument = (FlowArgument) findArgument(ITERATION_PARAM, NEW_FLAG)
-                .orElseGet(() -> createArg(ITERATION_PARAM, 1));
+                .orElseGet(() -> FlowContextActions.createArg(ITERATION_PARAM, 1));
 
         return argument;
     }
 
     public FlowArgument<Integer> subIterationArg() {
         var argument = (FlowArgument) findArgument(SUB_ITERATION_PARAM, NEW_FLAG)
-                .orElseGet(() -> createArg(SUB_ITERATION_PARAM, 1));
+                .orElseGet(() -> FlowContextActions.createArg(SUB_ITERATION_PARAM, 1));
 
         return argument;
     }
@@ -665,7 +581,7 @@ public class FlowContext<T> {
     }
 
     private <U> Optional<FlowArgument<U>> findArgument(String name, String flag) {
-        return arguments.stream()
+        return getArguments().stream()
                 .filter(flowArgument -> flowArgument.getName().equals(name))
                 .filter(flowArgument -> flowArgument.getType().equals(flag))
                 .filter(Predicate.not(FlowArgument::isEmpty))
@@ -679,47 +595,6 @@ public class FlowContext<T> {
         } catch (ArgumentException e) {
             return e.getFlowArgument();
         }
-    }
-
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class Constants {
-
-        public static final String NEW_FLAG = "new";
-
-        public static final String OLD_FLAG = "old";
-
-        public static final String COPY_FLAG = "copy";
-
-        public static final String TEXT_PARAM = "text";
-
-        public static final String TRANSLATED_TEXT_PARAM = "translatedText";
-
-        public static final String CONTEXT_PARAM = "context";
-
-        public static final String CONSOLIDATED_CONTEXT_PARAM = "consolidatedContext";
-
-        public static final String GLOSSARY_PARAM = "glossary";
-
-        public static final String CONSOLIDATED_GLOSSARY_PARAM = "consolidatedGlossary";
-
-        public static final String PROOFREAD_PARAM = "proofread";
-
-        public static final String CHAPTER_NUMBER_PARAM = "chapterNumber";
-
-        public static final String CHUNKS_PARAM = "chunks";
-
-        public static final String CHUNK_PARAM = "chunk";
-
-        public static final String TRANSLATED_CHUNKS_PARAM = "translatedChunks";
-
-        public static final String TRANSLATED_CHUNK_PARAM = "translatedChunk";
-
-        public static final String ITERATION_PARAM = "iteration";
-
-        public static final String SUB_ITERATION_PARAM = "subIteration";
-
-        public static final String RESULT_PARAM = "result";
-
     }
 
 }

@@ -1,5 +1,6 @@
 package machinum.extract;
 
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowSupport;
@@ -80,7 +81,7 @@ public class TranslaterHeader implements FlowSupport {
 
         log.debug("Prepared translated version: title={}...", toShortDescription(result));
 
-        return flowContext.rearrange(ctx -> ctx.arg(TRANSLATED_TITLE), FlowContext.createArg(TRANSLATED_TITLE, result));
+        return flowContext.rearrange(ctx -> ctx.arg(TRANSLATED_TITLE), FlowContextActions.createArg(TRANSLATED_TITLE, result));
     }
 
 }

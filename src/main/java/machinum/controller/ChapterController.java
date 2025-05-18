@@ -63,9 +63,7 @@ public class ChapterController {
                     .build();
         }
 
-        return chapterService.updateChapter(id, updatedChapter)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        return ResponseEntity.ok(chapterFacade.updateChapter(updatedChapter));
     }
 
     @DeleteMapping("/{id}")
@@ -90,9 +88,9 @@ public class ChapterController {
                         .map(chapter -> List.of(chapter))
                         .map(list -> (Page<Chapter>) new PageImpl(list))
                         .orElse(Page.empty());
-            } else if (request.isEnglishText() || request.isSuspiciousOriginalWords() || request.isSuspiciousTranslatedWords()) {
+            } else if (request.isEnglishText() || request.isSuspiciousOriginalWords() || request.isSuspiciousTranslatedWords() || request.isWarnings()) {
                 return chapterFacade.getSuspiciousChapters(request.getBookId(), request.isEnglishText(),
-                        request.isSuspiciousOriginalWords(), request.isSuspiciousTranslatedWords(), request.getPageRequest());
+                        request.isSuspiciousOriginalWords(), request.isSuspiciousTranslatedWords(), request.getPageRequest(), request.isWarnings());
             } else {
                 return chapterService.loadBookChapters(request.getBookId(), request.getPageRequest());
             }
@@ -114,6 +112,7 @@ public class ChapterController {
         private boolean englishText;
         private boolean suspiciousOriginalWords;
         private boolean suspiciousTranslatedWords;
+        private boolean warnings;
         private List<String> userFilters;
         private int page = 0;
         private int size = 10;

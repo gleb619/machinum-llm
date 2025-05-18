@@ -5,6 +5,7 @@ import machinum.processor.core.StringSupport;
 import machinum.util.TextUtil;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.util.List;
 import java.util.Objects;
@@ -12,8 +13,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static machinum.flow.FlowContext.Constants.NEW_FLAG;
-import static machinum.flow.FlowContext.Constants.OLD_FLAG;
+import static machinum.flow.FlowContextConstants.NEW_FLAG;
+import static machinum.flow.FlowContextConstants.OLD_FLAG;
 import static machinum.util.JavaUtil.newId;
 
 @Slf4j
@@ -134,7 +135,7 @@ public class FlowArgument<U> implements StringSupport {
                     .writeValueAsString(value);
         } catch (Exception e) {
             log.error("Found corrupted value: {}", value);
-            throw new RuntimeException(e);
+            return ExceptionUtils.rethrow(e);
         }
     }
 

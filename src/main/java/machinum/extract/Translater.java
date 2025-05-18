@@ -1,5 +1,6 @@
 package machinum.extract;
 
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.Chunks;
 import machinum.model.ScoringResult;
@@ -17,8 +18,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static machinum.config.Constants.SCORE;
-import static machinum.flow.FlowContext.translatedChunk;
-import static machinum.flow.FlowContext.translatedChunks;
+import static machinum.flow.FlowContextActions.translatedChunk;
+import static machinum.flow.FlowContextActions.translatedChunks;
 import static machinum.util.TextUtil.toShortDescription;
 
 @Slf4j
@@ -196,9 +197,9 @@ public class Translater implements FlowSupport {
         log.debug("Prepare to translate in chunks: {}", chunks.size());
 
         var result = chunks.stream()
-                .map(chunk -> store.get().replace(FlowContext::textArg, FlowContext.text(chunk.stringValue()))
-                        .rearrange(FlowContext::chunkArg, FlowContext.chunk(chunk))
-                        .rearrange(FlowContext::subIterationArg, FlowContext.subIteration(counter.getAndIncrement()))
+                .map(chunk -> store.get().replace(FlowContext::textArg, FlowContextActions.text(chunk.stringValue()))
+                        .rearrange(FlowContext::chunkArg, FlowContextActions.chunk(chunk))
+                        .rearrange(FlowContext::subIterationArg, FlowContextActions.subIteration(counter.getAndIncrement()))
                 )
                 .map(fn::apply)
                 .map(ctx -> ctx.rearrange(FlowContext::translatedChunkArg, translatedChunk(ctx.chunkArg()
@@ -210,7 +211,7 @@ public class Translater implements FlowSupport {
                         Chunks::accumulate,
                         Chunks::merge);
 
-        return context.rearrange(FlowContext::translatedTextArg, FlowContext.translatedText(result.stringValue()))
+        return context.rearrange(FlowContext::translatedTextArg, FlowContextActions.translatedText(result.stringValue()))
                 .rearrange(FlowContext::translatedChunksArg, translatedChunks(result))
                 .removeArgs(FlowContext::subIterationArg, FlowContext::oldSubIterationArg);
     }
@@ -223,11 +224,11 @@ public class Translater implements FlowSupport {
         log.debug("Prepare to fix grammar in chunks: {}", biChunks.size());
 
         var result = biChunks.stream()
-                .map(chunk -> store.get().replace(FlowContext::textArg, FlowContext.text(chunk.getOrigin().stringValue()))
-                        .replace(FlowContext::translatedTextArg, FlowContext.translatedText(chunk.getTranslated().stringValue()))
-                        .rearrange(FlowContext::chunkArg, FlowContext.chunk(chunk.getOrigin()))
+                .map(chunk -> store.get().replace(FlowContext::textArg, FlowContextActions.text(chunk.getOrigin().stringValue()))
+                        .replace(FlowContext::translatedTextArg, FlowContextActions.translatedText(chunk.getTranslated().stringValue()))
+                        .rearrange(FlowContext::chunkArg, FlowContextActions.chunk(chunk.getOrigin()))
                         .rearrange(FlowContext::translatedChunkArg, translatedChunk(chunk.getTranslated()))
-                        .rearrange(FlowContext::subIterationArg, FlowContext.subIteration(counter.getAndIncrement()))
+                        .rearrange(FlowContext::subIterationArg, FlowContextActions.subIteration(counter.getAndIncrement()))
                 )
                 .map(fn::apply)
                 .map(ctx -> ctx.rearrange(FlowContext::translatedChunkArg, ctx.translatedChunkArg()
@@ -239,7 +240,7 @@ public class Translater implements FlowSupport {
                         Chunks::accumulate,
                         Chunks::merge);
 
-        return context.rearrange(FlowContext::translatedTextArg, FlowContext.translatedText(result.stringValue()))
+        return context.rearrange(FlowContext::translatedTextArg, FlowContextActions.translatedText(result.stringValue()))
                 .rearrange(FlowContext::translatedChunksArg, translatedChunks(result))
                 .removeArgs(FlowContext::subIterationArg, FlowContext::oldSubIterationArg);
     }

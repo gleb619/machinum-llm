@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.victools.jsonschema.generator.MemberScope;
 import com.github.victools.jsonschema.generator.TypeScope;
 import machinum.config.Holder;
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.ScoringResult;
 import machinum.flow.FlowContext;
@@ -75,7 +76,7 @@ public abstract class AbstractScoring implements FlowSupport, JsonSupport {
 
         log.debug("Prepared score of translated: text={}...", toShortDescription(context.result()));
 
-        return flowContext.rearrange(ctx -> ctx.arg(SCORE), FlowContext.createArg(SCORE, context.entity()));
+        return flowContext.rearrange(ctx -> ctx.arg(SCORE), FlowContextActions.createArg(SCORE, context.entity()));
     }
 
     private List<Message> prepareHistory(FlowContext<Chapter> context, String text, Integer targetLength) {

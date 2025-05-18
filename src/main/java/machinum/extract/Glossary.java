@@ -1,8 +1,10 @@
 package machinum.extract;
 
 
+import machinum.exception.AppIllegalStateException;
 import machinum.extract.util.ProperNameExtractor;
 import machinum.flow.FlowArgument;
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.service.ChapterService;
@@ -16,7 +18,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static machinum.flow.FlowContext.consolidatedGlossary;
+import static machinum.flow.FlowContextActions.consolidatedGlossary;
 import static machinum.util.JavaUtil.*;
 
 @Slf4j
@@ -50,10 +52,10 @@ public class Glossary {
                 .findReferences(chapterNumber, references, bookId, 1);
         var newGlossary = joinNames(currentGlossary, additionalGlossary);
 
-        return flowContext.replace(FlowContext::glossaryArg, FlowContext.glossary(newGlossary));
+        return flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(newGlossary));
     }
 
-    public FlowContext<Chapter> glossary(FlowContext<Chapter> flowContext) {
+    public FlowContext<Chapter> extractGlossary(FlowContext<Chapter> flowContext) {
         var namesExtractedByNLP = properNameExtractor.extract(flowContext.text()).stream()
                 .map(ObjectName::forName)
                 .toList();
@@ -66,8 +68,8 @@ public class Glossary {
             var fullGlossary = enrichCurrentGlossaryFromDB(flowContext, service, glossaryFromLastChapter, namesExtractedByNLP);
 
             //Run again
-            return glossaryExtractor.secondExtract(flowContext.rearrange(FlowContext::glossaryArg, FlowContext.glossary(fullGlossary))
-                            .rearrange(FlowContext::oldGlossaryArg, FlowContext.glossary(glossaryFromLastChapter).obsolete())
+            return glossaryExtractor.secondExtract(flowContext.rearrange(FlowContext::glossaryArg, FlowContextActions.glossary(fullGlossary))
+                            .rearrange(FlowContext::oldGlossaryArg, FlowContextActions.glossary(glossaryFromLastChapter).obsolete())
                             .rearrange(FlowContext::consolidatedGlossaryArg, consolidatedGlossary(fullGlossary)))
                     .then(ctx -> {
                         var chapterNames = new ArrayList<>(ctx.glossary());
@@ -81,10 +83,10 @@ public class Glossary {
                             }
                         }
 
-                        return ctx.replace(FlowContext::glossaryArg, FlowContext.glossary(chapterNames));
+                        return ctx.replace(FlowContext::glossaryArg, FlowContextActions.glossary(chapterNames));
                     });
         } else {
-            throw new IllegalStateException("Service not found, please check the logs");
+            throw new AppIllegalStateException("Service not found, please check the logs");
         }
     }
 
@@ -108,7 +110,7 @@ public class Glossary {
             list.addAll(flowContext.glossary());
         }
 
-        return glossaryJsonTranslate.translateWithCache(flowContext.replace(FlowContext::glossaryArg, FlowContext.glossary(list)));
+        return glossaryJsonTranslate.translateWithCache(flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(list)));
     }
 
     public FlowContext<Chapter> glossaryTranslate(FlowContext<Chapter> flowContext) {

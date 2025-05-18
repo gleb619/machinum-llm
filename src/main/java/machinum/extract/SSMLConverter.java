@@ -2,6 +2,7 @@ package machinum.extract;
 
 import machinum.flow.FlowArgument;
 import machinum.flow.FlowContext;
+import machinum.flow.FlowContextActions;
 import machinum.flow.FlowSupport;
 import machinum.model.Chapter;
 import machinum.processor.core.ChunkSupport;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static machinum.flow.FlowContext.result;
 import static machinum.util.JavaUtil.calculatePercent;
 import static machinum.util.TextUtil.countTokens;
 import static machinum.util.TextUtil.toShortDescription;
@@ -36,8 +36,8 @@ public class SSMLConverter implements ChunkSupport, FlowSupport {
         var items = splitter.work(flowContext.translatedText(), chunkSize);
         var rawSSMLText = items.stream()
                 .map(chunk -> ssmlSerializer.convert(
-                        flowContext.replace(FlowContext::translatedTextArg, FlowContext.translatedText(chunk.getText()))
-                                .rearrange(FlowContext::subIterationArg, FlowContext.subIteration(counter.getAndIncrement()))
+                        flowContext.replace(FlowContext::translatedTextArg, FlowContextActions.translatedText(chunk.getText()))
+                                .rearrange(FlowContext::subIterationArg, FlowContextActions.subIteration(counter.getAndIncrement()))
                 ))
                 .map(FlowContext::resultArg)
                 .map(FlowArgument::stringValue)
@@ -47,7 +47,7 @@ public class SSMLConverter implements ChunkSupport, FlowSupport {
 
         System.out.println("SSMLConverter.convert: " + ssmlText);
 
-        return flowContext.rearrange(FlowContext::resultArg, result(ssmlText));
+        return flowContext.rearrange(FlowContext::resultArg, FlowContextActions.result(ssmlText));
     }
 
     private String joinSSML(String ssmlText) {

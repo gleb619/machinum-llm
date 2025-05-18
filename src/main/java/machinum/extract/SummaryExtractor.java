@@ -1,5 +1,6 @@
 package machinum.extract;
 
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.processor.core.Assistant;
 import machinum.processor.core.AssistantContext;
@@ -12,6 +13,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.retry.RetryHelper;
@@ -21,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static machinum.flow.FlowContext.context;
 import static machinum.util.TextUtil.*;
 
 @Slf4j
@@ -47,25 +48,39 @@ public class SummaryExtractor implements ChunkSupport, FlowSupport, Precondition
     private final RetryHelper retryHelper;
 
 
+    public FlowContext<Chapter> simpleExtract(FlowContext<Chapter> flowContext) {
+        return doExtractSummary(flowContext, false);
+    }
+
     public FlowContext<Chapter> extractSummary(FlowContext<Chapter> flowContext) {
+        return doExtractSummary(flowContext, true);
+    }
+
+    private FlowContext<Chapter> doExtractSummary(FlowContext<Chapter> flowContext, boolean createHistory) {
         var text = flowContext.text();
         var awaitedLines = String.valueOf(Math.min((int) Math.ceil(countLines(text) / 6.5), 25));
         log.debug("Prepare to summarize text to fit the content window: text={}..., awaitedLines={}", toShortDescription(text), awaitedLines);
 
-        var history = fulfillHistory(systemTemplate, flowContext);
+        List<Message> history;
+        if(createHistory) {
+            history = fulfillHistory(systemTemplate, flowContext);
+        } else {
+            history = List.of(new SystemMessage(systemTemplate));
+        }
 
         var contextResult = doAction(flowContext, text, history, awaitedLines);
 
-        //TODO add check and retey for short list
+        //TODO add check and retry for short list
         String result = parseResult(contextResult);
 
         log.debug("Prepared summary chunks text to fit the content window: text={}...", toShortDescription(result));
 
-        return flowContext.rearrange(FlowContext::contextArg, context(result));
+        return flowContext.rearrange(FlowContext::contextArg, FlowContextActions.context(result));
     }
 
     private AssistantContext.Result doAction(FlowContext<Chapter> flowContext, String text, List<Message> history, String awaitedLines) {
         var context = AssistantContext.builder()
+                .flowContext(flowContext)
                 .operation("extractSummary-%s-".formatted(flowContext.iteration()))
                 .text(text)
                 .actionResource(summaryTemplate)

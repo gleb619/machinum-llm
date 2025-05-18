@@ -2,6 +2,7 @@ package machinum.processor.core;
 
 import lombok.*;
 import machinum.flow.FlowContext;
+import machinum.flow.FlowContextActions;
 import machinum.model.ObjectName;
 import machinum.model.core.Mergeable;
 import org.springframework.ai.chat.messages.Message;
@@ -77,7 +78,7 @@ public class AssistantContext implements Mergeable<AssistantContext> {
     private AiClient.Provider provider = AiClient.Provider.OLLAMA;
 
     @Builder.Default
-    private FlowContext<?> flowContext = FlowContext.of();
+    private FlowContext<?> flowContext = FlowContextActions.of();
 
     @ToString.Include
     @Builder.Default

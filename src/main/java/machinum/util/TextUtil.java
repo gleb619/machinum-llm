@@ -47,6 +47,10 @@ public class TextUtil {
         return Objects.isNull(input) || input.isBlank();
     }
 
+    public static int length(String input) {
+        return isNotEmpty(input) ? input.length() : 0;
+    }
+
     public static String toShortDescription(String input) {
         return toShortDescription(input, 30);
     }

@@ -1,5 +1,6 @@
 package machinum.extract;
 
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.Chunks;
 import machinum.model.Chunks.ChunkItem;
@@ -15,7 +16,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
-import static machinum.flow.FlowContext.chunks;
 import static machinum.util.TextUtil.countTokens;
 import static machinum.util.TextUtil.toShortDescription;
 
@@ -33,7 +33,7 @@ public class Splitter {
     public FlowContext<Chapter> split(FlowContext<Chapter> flowContext) {
         var text = flowContext.text();
         var list = work(text, chunkSize);
-        return flowContext.rearrange(FlowContext::chunksArg, chunks(Chunks.of(list)));
+        return flowContext.rearrange(FlowContext::chunksArg, FlowContextActions.chunks(Chunks.of(list)));
     }
 
     public List<ChunkItem> work(String text, Integer chunkSize) {

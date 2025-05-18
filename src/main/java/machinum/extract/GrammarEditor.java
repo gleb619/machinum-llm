@@ -1,5 +1,6 @@
 package machinum.extract;
 
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowSupport;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -25,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static machinum.config.Constants.FLOW_TYPE;
 import static machinum.config.Constants.SCORE;
 import static machinum.flow.FlowSupport.HistoryItem.*;
 import static machinum.flow.FlowSupport.HistoryItem.CONSOLIDATED_GLOSSARY;
@@ -82,22 +85,34 @@ public class GrammarEditor implements FlowSupport, PreconditionSupport {
     private final RawInfoTool rawInfoTool;
 
     public FlowContext<Chapter> fixTranslate(FlowContext<Chapter> flowContext) {
+        boolean isSimpleFlow = "simple".equals(flowContext.metadata(FLOW_TYPE, "none"));
+        return doFixTranslate(flowContext, !isSimpleFlow);
+    }
+
+    private FlowContext<Chapter> doFixTranslate(FlowContext<Chapter> flowContext, boolean createHistory) {
         var text = flowContext.text();
         var translatedText = flowContext.translatedText();
         var translatedTextTokens = countTokens(translatedText);
         log.debug("Prepare to copy edit translation: text={}...", toShortDescription(text));
         var hasScoring = new AtomicBoolean(false);
 
-        var history = prepareHistory(flowContext, text, hasScoring, translatedTextTokens);
+        List<Message> history;
+        //TODO redo to only existed entries, for provider
+        if(createHistory) {
+            history = prepareHistory(flowContext, text, hasScoring, translatedTextTokens);
+        } else {
+            history = List.of(new SystemMessage(systemTemplate));
+        }
 
         var resource = parseResource(hasScoring);
-        var context = doAction(translatedText, history, resource, flowContext.iteration(), hasScoring.get(), translatedTextTokens);
+        var context = doAction(translatedText, history, resource, flowContext.iteration(), hasScoring.get(),
+                translatedTextTokens, flowContext);
 
         String result = context.result();
 
         log.debug("Prepared copy edit translation version: text={}...", toShortDescription(result));
 
-        return flowContext.rearrange(FlowContext::translatedTextArg, FlowContext.translatedText(result));
+        return flowContext.rearrange(FlowContext::translatedTextArg, FlowContextActions.translatedText(result));
     }
 
     private Resource parseResource(AtomicBoolean hasScoring) {
@@ -175,8 +190,10 @@ public class GrammarEditor implements FlowSupport, PreconditionSupport {
     }
 
     private AssistantContext.Result doAction(String translatedText, List<Message> history, Resource actionResource,
-                                             Integer iteration, boolean hasScoring, Integer translatedTextTokens) {
+                                             Integer iteration, boolean hasScoring, Integer translatedTextTokens,
+                                             FlowContext<Chapter> flowContext) {
         var context = AssistantContext.builder()
+                .flowContext(flowContext)
                 .operation("copyEdit-%s-".formatted(iteration))
                 .text(translatedText)
                 .actionResource(actionResource)

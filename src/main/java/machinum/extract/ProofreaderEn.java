@@ -1,5 +1,6 @@
 package machinum.extract;
 
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.processor.core.Assistant;
 import machinum.processor.core.AssistantContext;
@@ -65,7 +66,7 @@ public class ProofreaderEn implements ChunkSupport, FlowSupport {
 
         log.info("Proofread text: text={}...", toShortDescription(result));
 
-        return flowContext.rearrange(FlowContext::proofreadArg, FlowContext.proofread(result));
+        return flowContext.rearrange(FlowContext::proofreadArg, FlowContextActions.proofread(result));
     }
 
 }

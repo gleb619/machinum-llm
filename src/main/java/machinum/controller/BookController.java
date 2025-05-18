@@ -3,6 +3,7 @@ package machinum.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import machinum.converter.JsonlConverter;
 import machinum.model.Book;
+import machinum.model.Book.BookState;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.service.BookFacade;
@@ -76,7 +77,7 @@ public class BookController {
         Page<Book> result;
 
         if (Objects.nonNull(bookId)) {
-            List<Book> book = List.of(bookService.get(bookId));
+            List<Book> book = List.of(bookService.getById(bookId));
             result = new PageImpl<>(book);
         } else if (TextUtil.isNotEmpty(query) && TextUtil.isNotEmpty(query)) {
             result = bookService.findByCriteria(query, pageRequest);
@@ -273,14 +274,26 @@ public class BookController {
                 .build();
     }
 
-    /* ============= */
-
     @GetMapping("/titles")
     public ResponseEntity<Map<String, String>> getBookTitles(@RequestParam(name = "page", defaultValue = "0") int page,
                                                              @RequestParam(name = "size", defaultValue = "10") int size) {
         var result = bookService.getBookTitles(page, size);
         return result.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(result);
     }
+
+    @GetMapping("/{id}/state")
+    public ResponseEntity<BookState> getBookState(@PathVariable("id") String id) {
+        BookState bookState = bookService.getBookState(id);
+        return ResponseEntity.ok(bookState);
+    }
+
+    @PatchMapping("/{id}/state")
+    public ResponseEntity<Void> updateBookState(@PathVariable("id") String id, @RequestBody BookState bookState) {
+        bookService.updateBookState(id, bookState);
+        return ResponseEntity.noContent().build();
+    }
+
+    /* ============= */
 
     private List<Chapter> processZipFile(InputStream inputStream) throws IOException {
         try (var zipInputStream = new ZipInputStream(inputStream)) {

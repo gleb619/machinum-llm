@@ -3,6 +3,7 @@ package machinum.extract;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.processor.core.*;
@@ -16,6 +17,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
@@ -27,6 +29,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static machinum.config.Constants.FLOW_TYPE;
 import static machinum.flow.FlowSupport.HistoryItem.*;
 import static machinum.flow.FlowSupport.HistoryItem.CONSOLIDATED_GLOSSARY;
 import static machinum.util.JavaUtil.calculatePercent;
@@ -59,17 +62,24 @@ public class GlossaryExtractor implements JsonSupport, ObjectNameSupport, ChunkS
     private final Assistant assistant;
 
     public FlowContext<Chapter> firstExtract(FlowContext<Chapter> flowContext) {
-        return doAction("glossaryExtract", flowContext, firstSystemTemplate);
+        return doAction("glossaryExtract", flowContext, firstSystemTemplate, true);
     }
 
     public FlowContext<Chapter> secondExtract(FlowContext<Chapter> flowContext) {
-        return doAction("glossaryEnrich", flowContext, secondSystemTemplate);
+        boolean isSimpleFlow = "simple".equals(flowContext.metadata(FLOW_TYPE, "none"));
+
+        return doAction("glossaryEnrich", flowContext, secondSystemTemplate, !isSimpleFlow);
     }
 
-    private FlowContext<Chapter> doAction(String name, FlowContext<Chapter> flowContext, Resource sysTemplate) {
+    private FlowContext<Chapter> doAction(String name, FlowContext<Chapter> flowContext, Resource sysTemplate, boolean createHistory) {
         var text = flowContext.text();
         var textTokens = countTokens(text);
-        var history = prepareHistory(flowContext, sysTemplate, textTokens);
+        List<Message> history;
+        if(createHistory) {
+            history = prepareHistory(flowContext, sysTemplate, textTokens);
+        } else {
+            history = fulfillHistory(sysTemplate, flowContext, GLOSSARY);
+        }
 
         log.debug("Preparing a extract names for given: text={}...", toShortDescription(text));
 
@@ -85,7 +95,7 @@ public class GlossaryExtractor implements JsonSupport, ObjectNameSupport, ChunkS
                 .map("`%s`"::formatted)
                 .collect(Collectors.joining(";")));
 
-        return flowContext.rearrange(FlowContext::glossaryArg, FlowContext.glossary(names));
+        return flowContext.rearrange(FlowContext::glossaryArg, FlowContextActions.glossary(names));
     }
 
     private List<Message> prepareHistory(FlowContext<Chapter> flowContext, Resource sysTemplate, Integer textTokens) {

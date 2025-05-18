@@ -1,5 +1,6 @@
 package machinum.extract;
 
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.processor.core.Assistant;
 import machinum.processor.core.AssistantContext;
@@ -11,6 +12,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.retry.RetryHelper;
@@ -19,7 +21,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-import static machinum.flow.FlowContext.text;
+import static machinum.config.Constants.FLOW_TYPE;
 import static machinum.flow.FlowSupport.HistoryItem.*;
 import static machinum.flow.FlowSupport.HistoryItem.CONSOLIDATED_GLOSSARY;
 import static machinum.util.JavaUtil.calculatePercent;
@@ -46,18 +48,29 @@ public class Rewriter implements ChunkSupport, FlowSupport {
     private final RawInfoTool rawInfoTool;
 
     public FlowContext<Chapter> rewrite(FlowContext<Chapter> flowContext) {
+        boolean isSimpleFlow = "simple".equals(flowContext.metadata(FLOW_TYPE, "none"));
+
+        return doRewrite(flowContext, !isSimpleFlow);
+    }
+
+    private FlowContext<Chapter> doRewrite(FlowContext<Chapter> flowContext, boolean createHistory) {
         String text = flowContext.text();
 
         log.debug("Rewriting story for given: text={}", toShortDescription(text));
 
         var textTokens = countTokens(flowContext.text());
-        var history = prepareHistory(flowContext, textTokens);
+        List<Message> history;
+        if(createHistory) {
+            history = fulfillHistory(systemTemplate, flowContext);
+        } else {
+            history = List.of(new SystemMessage(systemTemplate));
+        }
 
         String result = doAction(flowContext, text, history, textTokens);
 
         log.debug("Rewritten text to fit the content window: text={}...", toShortDescription(result));
 
-        return flowContext.rearrange(FlowContext::textArg, text(result));
+        return flowContext.rearrange(FlowContext::textArg, FlowContextActions.text(result));
     }
 
     private String doAction(FlowContext<Chapter> flowContext, String text, List<Message> history, Integer textTokens) {

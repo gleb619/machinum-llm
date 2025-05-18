@@ -104,7 +104,7 @@ public class BookFacade {
     }
 
     public Book get(String id) {
-        var book = bookService.get(id);
+        var book = bookService.getById(id);
         var chapters = chapterService.loadBookChapters(id, PageRequest.of(0, 10_000))
                 .getContent();
 

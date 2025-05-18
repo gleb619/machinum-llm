@@ -53,7 +53,7 @@ public class BookFlowManager implements StateManager {
     @Override
     public void setChunkIsProcessed(Map<String, Object> metadata, String hashString) {
         var bookId = resolveBookId(metadata);
-        var book = bookService.get(bookId);
+        var book = bookService.getById(bookId);
         bookService.changeBookState(bookId, book.getBookState()
                 .addProcessedChunks(hashString)
                 .clearState());

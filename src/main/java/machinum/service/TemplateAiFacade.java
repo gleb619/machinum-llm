@@ -3,14 +3,16 @@ package machinum.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Constants;
+import machinum.exception.AppIllegalStateException;
 import machinum.extract.*;
 import machinum.flow.FlowContext;
+import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.Chunks;
 import org.springframework.stereotype.Service;
 
 import static machinum.config.Constants.TITLE;
-import static machinum.flow.FlowContext.*;
+import static machinum.flow.FlowContextActions.*;
 import static machinum.util.TextUtil.isNotEmpty;
 
 @Slf4j
@@ -41,7 +43,7 @@ public class TemplateAiFacade {
     }
 
     public FlowContext<Chapter> glossary(FlowContext<Chapter> context) {
-        return glossary.glossary(context);
+        return glossary.extractGlossary(context);
     }
 
     public FlowContext<Chapter> proofread(FlowContext<Chapter> context) {
@@ -122,11 +124,11 @@ public class TemplateAiFacade {
                 .rearrange(FlowContext::textArg, text(textValue))
                 .rearrange(FlowContext::contextArg, context(contextValue))
                 .rearrange(FlowContext::consolidatedContextArg, consolidatedContext(consolidatedContextValue))
-                .rearrange(FlowContext::glossaryArg, FlowContext.glossary(glossaryValue))
-                .rearrange(ctx -> ctx.arg(TITLE), FlowContext.createArg(TITLE, title))
-                .rearrange(FlowContext::translatedTextArg, FlowContext.translatedText(translatedText))
-                .rearrange(FlowContext::chunksArg, FlowContext.chunks(cleanChunks))
-                .rearrange(FlowContext::translatedChunksArg, FlowContext.translatedChunks(translatedChunks));
+                .rearrange(FlowContext::glossaryArg, FlowContextActions.glossary(glossaryValue))
+                .rearrange(ctx -> ctx.arg(TITLE), FlowContextActions.createArg(TITLE, title))
+                .rearrange(FlowContext::translatedTextArg, FlowContextActions.translatedText(translatedText))
+                .rearrange(FlowContext::chunksArg, FlowContextActions.chunks(cleanChunks))
+                .rearrange(FlowContext::translatedChunksArg, FlowContextActions.translatedChunks(translatedChunks));
     }
 
     /* ============= */
@@ -141,10 +143,11 @@ public class TemplateAiFacade {
         } else if (isNotEmpty(cleanText)) {
             return cleanText;
         } else {
+            //TODO replce with feature method, with javadoc
             if (Boolean.TRUE.equals(context.metadata(Constants.ALLOW_EMPTY_TEXT))) {
                 return "";
             } else {
-                throw new IllegalStateException("Unknown state for text");
+                throw new AppIllegalStateException("Unknown state for text field: %s", currentItem);
             }
         }
     }

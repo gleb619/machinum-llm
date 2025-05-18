@@ -4,8 +4,10 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import machinum.config.Constants;
 import machinum.controller.BookOperationController.BookOperationRequest;
 import machinum.converter.ChapterConverter;
+import machinum.exception.AppIllegalStateException;
 import machinum.flow.*;
 import machinum.model.Chapter;
 import machinum.util.DurationUtil;
@@ -22,18 +24,19 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static machinum.config.Constants.BOOK_ID;
-import static machinum.config.Constants.FLOW_TYPE;
+import static machinum.config.Constants.*;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class BookProcessor {
 
+    @Deprecated(forRemoval = true)
     private final BookWindowProcessor bookWindowProcessor;
     private final BookFacade bookFacade;
     private final FlowFactory flowFactory;
@@ -60,10 +63,18 @@ public class BookProcessor {
             var bookId = book.getId();
             var bookState = book.getBookState().state();
 
-            var flow = flowFactory.createFlow(request.getOperationName(), bookId, chapters);
+            var flow = enrichMetadata(flowFactory.createFlow(request.getOperationName(), bookId, chapters), request);
             flowFactory.createRunner(request, flow)
                     .run(bookState);
         }
+    }
+
+    private Flow<Chapter> enrichMetadata(Flow<Chapter> flow, BookOperationRequest request) {
+        return flow.metadata(Map.of(
+                ALLOW_OVERRIDE_MODE, request.isAllowOverride(),
+                IGNORE_CACHE_MODE, request.isIgnoreCache(),
+                AVAILABLE_STATES, request.availableStates()
+        ));
     }
 
     public enum ProcessorState implements Flow.State {
@@ -72,7 +83,8 @@ public class BookProcessor {
         SUMMARY,
         GLOSSARY,
         PROCESSING,
-        PREPARE_TRANSLATE,
+        TRANSLATE_GLOSSARY,
+        TRANSLATE_TITLE,
         TRANSLATE,
         COPYEDIT,
         FINISHED,
@@ -86,6 +98,14 @@ public class BookProcessor {
             return ProcessorState.CLEANING.name();
         }
 
+        public static ProcessorState parse(String value) {
+            try {
+                return valueOf(value.toUpperCase().trim());
+            } catch (IllegalArgumentException e) {
+                return CLEANING;
+            }
+        }
+
     }
 
     @Configuration
@@ -94,8 +114,7 @@ public class BookProcessor {
         public BiFunction<String, List<Chapter>, Flow<Chapter>> baseFlow(ChapterConverter chapterConverter,
                                                                          ChapterFacade chapterFacade,
                                                                          BookFlowManager bookFlowManager,
-                                                                         @Value("${app.run-id}") String runId,
-                                                                         @Value("${app.flow.cooldown}") Duration cooldown) {
+                                                                         @Value("${app.run-id}") String runId) {
             //@formatter:off
             return (bookId, chapters) -> Flow.from(chapters)
                     .metadata(BOOK_ID, bookId)
@@ -108,18 +127,30 @@ public class BookProcessor {
                     .beforeAll(ctx -> log.info("┌── Started book state[{}] processing: {}", ctx.getState(), runId))
                     .aroundAll((ctx, action) -> DurationUtil.measure("bookFlow-%s".formatted(ctx.getState()), action))
                     .aroundEachState((ctx, action) -> DurationUtil.measure("stateFlow-%s-%s".formatted(ctx.iteration(), ctx.getState()), () -> {
-                        log.info("|== Current item is : {}) {}", ctx.iteration(), ctx.getCurrentItem());
-                        TraceUtil.trace("pipeAction", action);
+                        Map<ProcessorState, Boolean> availableStates = ctx.metadata(AVAILABLE_STATES);
+
+                        if(Objects.nonNull(availableStates) && !availableStates.get(ctx.getState())) {
+                            log.info("|== Execution of state is forbidden by settings : {}) {}", ctx.iteration(), ctx.getCurrentItem());
+                        } else {
+                            log.info("|== Current item is : {}) {}", ctx.iteration(), ctx.getCurrentItem());
+                            TraceUtil.trace("pipeAction", action);
+                        }
                     }))
                     .aroundEach((ctx, action) -> DurationUtil.measure("pipeFlow-%s-%s-%s".formatted(ctx.getCurrentPipeIndex(), ctx.iteration(), ctx.getState()), () -> {
+                        Boolean allowOverrideMode = ctx.metadata(ALLOW_OVERRIDE_MODE, Boolean.FALSE);
+                        if(allowOverrideMode && !chapterFacade.checkExecutionIsAllowed(ctx)) {
+                            log.info("|-- Data already exists, skip execution of pipe №%s".formatted(ctx.getCurrentPipeIndex()));
+                            return ctx.preventSink();
+                        }
+
                         log.info("|-- Working with pipe №%s".formatted(ctx.getCurrentPipeIndex()));
 
-                        if(ctx.getCurrentItem().getNumber() >= 268) {
-                            throw new IllegalArgumentException("Stop");
-                        }
-                        if(ctx.getCurrentItem().getNumber() >= 338) {
-                            throw new IllegalArgumentException("Stop");
-                        }
+//                        if(ctx.getCurrentItem().getNumber() >= 268) {
+//                            throw new IllegalArgumentException("Stop");
+//                        }
+//                        if(ctx.getCurrentItem().getNumber() >= 338) {
+//                            throw new IllegalArgumentException("Stop");
+//                        }
 //
 //                        if(ctx.getCurrentPipeIndex() == 0 || ctx.getCurrentItem().getNumber() == 10) {
 //                            var result = action.apply(ctx);
@@ -141,7 +172,11 @@ public class BookProcessor {
                             return result;
                         }
                     }).result())
-                    .exception((ctx, e) -> log.error("|-- Got exception(%s iteration): {}|{}".formatted(ctx.iteration()), e.getClass(), e.getMessage()))
+                    .exception((ctx, e) -> {
+                        log.error("|-- Got exception(%s iteration): {}|{}".formatted(ctx.iteration()), e.getClass(), e.getMessage());
+
+                        chapterFacade.handleChapterException(ctx, e);
+                    })
                     .afterAll(ctx -> log.info("└── Finished book state[{}] processing: {}\n\n\n\n", ctx.getState(), runId))
                     .sink(chapterFacade::saveWithContext);
             //@formatter:on
@@ -155,7 +190,7 @@ public class BookProcessor {
                                                                            @Value("${app.run-id}") String runId,
                                                                            @Value("${app.flow.cooldown}") Duration cooldown) {
             //@formatter:off
-            return baseFlow(chapterConverter, chapterFacade, bookFlowManager, runId, cooldown)
+            return baseFlow(chapterConverter, chapterFacade, bookFlowManager, runId)
                     .andThen(flow -> flow.copy(Function.identity()))
                     .andThen(flow -> flow
                         .metadata(FLOW_TYPE, "simple")
@@ -175,15 +210,15 @@ public class BookProcessor {
 //
 //                            return action.apply(ctx);
 //                        })
-                        .onState(ProcessorState.SUMMARY)
-                            .comment("On %s state we use qwen"::formatted)
-                            .pipe(templateAiFacade::bootstrapWith)
-                            .pipe(templateAiFacade::summary)
                         .onState(ProcessorState.CLEANING)
                             .comment("On %s state we use gemma2"::formatted)
 //                            .nothing()
                             .pipe(Map.of(), templateAiFacade::bootstrapWith)
                             .pipe(templateAiFacade::rewrite)
+                        .onState(ProcessorState.SUMMARY)
+                            .comment("On %s state we use qwen"::formatted)
+                            .pipe(templateAiFacade::bootstrapWith)
+                            .pipe(templateAiFacade::summary)
                         .onState(ProcessorState.GLOSSARY)
                             .pipe(templateAiFacade::bootstrapWith)
                             .pipe(templateAiFacade::glossary)
@@ -206,9 +241,10 @@ public class BookProcessor {
                                                                             ChapterFacade chapterFacade,
                                                                             BookFlowManager bookFlowManager,
                                                                             @Value("${app.run-id}") String runId,
-                                                                            @Value("${app.flow.cooldown}") Duration cooldown) {
+                                                                            @Value("${app.flow.cooldown}") Duration cooldown,
+                                                                            @Value("${app.flow.batch-size}") int batchSize) {
             //@formatter:off
-            return baseFlow(chapterConverter, chapterFacade, bookFlowManager, runId, cooldown)
+            return baseFlow(chapterConverter, chapterFacade, bookFlowManager, runId )
                     .andThen(flow -> flow.copy(Function.identity()))
                     .andThen(flow -> flow
                         .metadata(FLOW_TYPE, "complex")
@@ -229,11 +265,17 @@ public class BookProcessor {
 //                        .comment("On %s state we use gemma2"::formatted)
 //                        .pipe(templateAiFacade::bootstrapWith)
 //                        .pipe(templateAiFacade::proofread)
-                        .onState(ProcessorState.PREPARE_TRANSLATE)
+                        .onState(ProcessorState.TRANSLATE_GLOSSARY)
                             .comment("On %s state we use t-pro"::formatted)
                             .pipe(templateAiFacade::bootstrapWith)
                             .pipe(templateAiFacade::glossaryTranslate)
+                        .onState(ProcessorState.TRANSLATE_TITLE)
+                            .comment("On %s state we use t-pro"::formatted)
+                            .pipe(templateAiFacade::bootstrapWith)
                             .pipe(templateAiFacade::translateTitle)
+//                            .slidingWindow(batchSize, sub ->
+//                                sub -> sub.pipe(templateAiFacade::translateTitle)
+//                            )
                         .onState(ProcessorState.TRANSLATE)
                             .comment("On %s state we use t-pro"::formatted)
                             .pipe(templateAiFacade::bootstrapWith)
@@ -271,7 +313,7 @@ public class BookProcessor {
             return switch (discriminator) {
                 case Operations.SIMPLE_FLOW -> simpleFlow.apply(bookId, chapters);
                 case Operations.COMPLEX_FLOW -> complexFlow.apply(bookId, chapters);
-                default -> throw new IllegalStateException("Unknown flow: " + discriminator);
+                default -> throw new AppIllegalStateException("Unknown flow: " + discriminator);
             };
         }
 
@@ -285,14 +327,14 @@ public class BookProcessor {
                     case "OneStepRunner" -> runner;
                     case "RecursiveFlowRunner" -> recursiveRunner;
                     case "BatchFlowRunner" -> batchRunner;
-                    default -> throw new IllegalStateException("Unknown type of runner: " + request.getRunner());
+                    default -> throw new AppIllegalStateException("Unknown type of runner: " + request.getRunner());
                 };
             }
 
             return switch (request.getOperationName()) {
                 case Operations.SIMPLE_FLOW -> runner;
                 case Operations.COMPLEX_FLOW -> batchRunner;
-                default -> throw new IllegalStateException("Unknown flow: " + request.getOperationName());
+                default -> throw new AppIllegalStateException("Unknown flow: " + request.getOperationName());
             };
         }
 

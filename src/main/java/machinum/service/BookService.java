@@ -8,8 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
 import machinum.converter.BookMapper;
 import machinum.entity.BookEntity;
+import machinum.exception.AppIllegalStateException;
 import machinum.flow.Flow.State;
 import machinum.model.Book;
+import machinum.model.Book.BookState;
 import machinum.model.ObjectName;
 import machinum.repository.BookRepository;
 import machinum.repository.BookRepository.BookTitlesQueryResult;
@@ -31,12 +33,12 @@ public class BookService {
 
     private final BookRepository bookRepository;
     private final BookMapper bookMapper;
-    private final RawProcessor processor;
     private final ObjectMapper mapper;
     private final Holder<ObjectMapper> objectMapperHolder;
 
 
     @Transactional
+    //TODO split into two different methods by responsibility
     public Book save(boolean overwrite, @NonNull Book book) {
         log.debug("Prepare to save book to db: {}", book);
         var entity = bookMapper.toEntity(book);
@@ -57,16 +59,17 @@ public class BookService {
     }
 
     @Transactional
-    public Book save(@NonNull Book book) {
-        return save(false, book);
+    public Book update(@NonNull Book book) {
+        log.debug("Prepare to update book: {}", book);
+        return bookMapper.toDto(bookRepository.save(bookMapper.toEntity(book)));
     }
 
     @Transactional(readOnly = true)
-    public Book get(@NonNull String id) {
+    public Book getById(@NonNull String id) {
         log.debug("Prepare to load book to db: {}", id);
         return bookRepository.findById(id)
                 .map(bookMapper::toDto)
-                .orElseThrow(() -> new IllegalStateException("Book for given id, is not found"));
+                .orElseThrow(() -> new AppIllegalStateException("Book for given id, is not found"));
     }
 
     @Transactional
@@ -95,7 +98,7 @@ public class BookService {
 
     @SneakyThrows
     @Transactional
-    public void changeBookState(@NonNull String id, @NonNull Book.BookState bookState) {
+    public void changeBookState(@NonNull String id, @NonNull BookState bookState) {
         bookRepository.changeBookState(id, mapper.writeValueAsString(bookState));
     }
 
@@ -132,6 +135,19 @@ public class BookService {
         var result = bookRepository.findBy(PageRequest.of(page, size, Sort.by("createdAt")));
         return result.stream()
                 .collect(Collectors.toMap(BookTitlesQueryResult::id, BookTitlesQueryResult::title, (f, s) -> f));
+    }
+
+    @Transactional(readOnly = true)
+    public BookState getBookState(String id) {
+        var book = getById(id);
+        return book.getBookState();
+    }
+
+    @Transactional
+    public void updateBookState(String id, BookState bookState) {
+        var book = getById(id);
+        book.setBookState(bookState);
+        update(book);
     }
 
 }

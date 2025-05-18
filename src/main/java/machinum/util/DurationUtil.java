@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import machinum.processor.core.MarkdownSupport;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -153,7 +154,7 @@ public class DurationUtil {
                 try {
                     return function.get();
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    return ExceptionUtils.rethrow(e);
                 }
             });
         }

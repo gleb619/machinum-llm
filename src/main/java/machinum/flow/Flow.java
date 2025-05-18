@@ -2,6 +2,7 @@ package machinum.flow;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.time.Duration;
 import java.util.*;
@@ -119,6 +120,10 @@ public class Flow<T> {
         return copy(b -> b.metadata(key, value));
     }
 
+    public Flow<T> metadata(Map<String, Object> map) {
+        return copy(b -> b.metadata(map));
+    }
+
     public Flow<T> beforeAll(Consumer<FlowContext<T>> action) {
         return copy(b -> b.beforeAllAction(action));
     }
@@ -200,7 +205,7 @@ public class Flow<T> {
             return new FailFast<>();
         }
 
-        void handleError(Exception e, FlowContext<T> context);
+        void handleError(FlowContext<T> context, Exception e);
 
     }
 
@@ -244,7 +249,7 @@ public class Flow<T> {
                     log.debug("Waiting for {} to cool down GPU", humanReadableDuration(duration));
                     TimeUnit.MILLISECONDS.sleep(duration.toMillis());
                 } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                    return ExceptionUtils.rethrow(e);
                 }
 
                 return ctx;
@@ -270,7 +275,7 @@ public class Flow<T> {
     static class IgnoreErrors<T> implements ErrorStrategy<T> {
 
         @Override
-        public void handleError(Exception e, FlowContext<T> context) {
+        public void handleError(FlowContext<T> context, Exception e) {
             log.warn("Ignoring error: {}", e.getMessage());
         }
 
@@ -280,8 +285,17 @@ public class Flow<T> {
     static class FailFast<T> implements ErrorStrategy<T> {
 
         @Override
-        public void handleError(Exception e, FlowContext<T> context) {
-            throw new RuntimeException("FailFast strategy triggered", e);
+        public void handleError(FlowContext<T> context, Exception e) {
+            if (e instanceof FlowException fe) {
+                if(fe.isShouldStopExecution()) {
+                    throw new FlowException("FailFast strategy triggered", e);
+                } else {
+                    log.warn("Execution will no be stopped, due reason: {}", fe.getReason());
+                    return;
+                }
+            }
+
+            throw new FlowException("FailFast strategy triggered", e);
         }
 
     }

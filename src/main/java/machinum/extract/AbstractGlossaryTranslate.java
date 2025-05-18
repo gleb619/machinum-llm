@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.victools.jsonschema.generator.MemberScope;
 import com.github.victools.jsonschema.generator.TypeScope;
 import machinum.config.Holder;
+import machinum.exception.AppIllegalStateException;
 import machinum.flow.FlowContext;
+import machinum.flow.FlowContextActions;
 import machinum.flow.FlowSupport;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
@@ -115,7 +117,7 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
 
         var newNames = checkAndFixTranslations(flowContext, localContext, nameMap, names);
 
-        return flowContext.replace(FlowContext::glossaryArg, FlowContext.glossary(newNames));
+        return flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(newNames));
     }
 
     private AssistantContext.Result doAction(FlowContext<Chapter> flowContext, String text, List<Message> history, String terms) {
@@ -180,7 +182,7 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
 
             if (!namesWithoutTranslation.isEmpty()) {
                 //If still have some names without translation, we try to translate again
-                var subFlow = translateWithCache(flowContext.replace(FlowContext::glossaryArg, FlowContext.glossary(namesWithoutTranslation)));
+                var subFlow = translateWithCache(flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(namesWithoutTranslation)));
                 var subNamesList = subFlow.glossary();
 
                 for (var subObjectName : subNamesList) {
@@ -217,7 +219,7 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
 
                 throw new IllegalArgumentException("Broken format");
             }
-            default -> throw new IllegalStateException("Unexpected value: " + getOutputType());
+            default -> throw new AppIllegalStateException("Unexpected value: " + getOutputType());
         };
     }
 

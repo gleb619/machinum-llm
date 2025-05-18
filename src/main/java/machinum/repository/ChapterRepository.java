@@ -1,17 +1,16 @@
 package machinum.repository;
 
 import machinum.entity.ChapterEntity;
+import machinum.model.Chapter;
 import machinum.util.TextUtil;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -244,6 +243,10 @@ public interface ChapterRepository extends JpaRepository<ChapterEntity, String> 
     void updateGlossary(@Param("id") String id, @Param("glossary") String glossary);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = "UPDATE chapter_info SET warnings = cast(:warningText as jsonb) WHERE id = :id", nativeQuery = true)
+    void updateWarning(@Param("id") String id, @Param("warningText") String warningText);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = "UPDATE chapter_info SET clean_chunks = cast(:chunks as json) WHERE id = :id", nativeQuery = true)
     void updateCleanChunks(@Param("id") String id, @Param("chunks") String glossary);
 
@@ -288,75 +291,75 @@ public interface ChapterRepository extends JpaRepository<ChapterEntity, String> 
                                           @Param("endNumber") Integer endNumber,
                                           Sort sort);
 
-    List<ChapterEntity> findByIdIn(List<String> ids, PageRequest pageRequest);
-
-
     // 1) Search by title, translatedTitle, rawText, text, proofreadText, translatedText, fixedTranslatedText, summary, consolidatedSummary contains ignore case given string
     @Query(value = """
-            SELECT c.id FROM chapter_info c WHERE\s
+            SELECT c.id FROM chapter_info c WHERE 
             c.book_id = :bookId AND (
-                LOWER(c.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.translated_title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.raw_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.proofread_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.translated_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.fixed_translated_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.summary) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
+                LOWER(c.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.translated_title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.raw_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.proofread_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.translated_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.fixed_translated_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.summary) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
                 LOWER(c.consolidated_summary) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
             )
             """, nativeQuery = true)
-    List<String> searchByChapterInfoFields_Native(@Param("bookId") String bookId, @Param("searchTerm") String searchTerm);
+    Page<String> searchByChapterInfoFields_Native(@Param("bookId") String bookId, @Param("searchTerm") String searchTerm, PageRequest pageRequest);
 
     default Page<ChapterEntity> searchByChapterInfoFields(String bookId, String searchTerm, PageRequest pageRequest) {
-        var ids = searchByChapterInfoFields_Native(bookId, searchTerm);
-        return new PageImpl<>(findByIdIn(ids, pageRequest.withSort(Sort.by("number"))));
+        var withSort = pageRequest.withSort(Sort.by("number"));
+        var ids = searchByChapterInfoFields_Native(bookId, searchTerm, withSort);
+        return page(findAllById(ids.getContent()), withSort, ids.getTotalElements());
     }
 
     // 2) Search by name, category, description, ruName contains ignore case given string in ObjectName JSON field
     @Query(value = """
-            SELECT c.id FROM chapter_info c WHERE\s
+            SELECT c.id FROM chapter_info c WHERE 
             c.book_id = :bookId AND (
-                EXISTS (SELECT 1 FROM json_array_elements(c.names::json) AS elem\s
-                WHERE LOWER(elem->>'name') LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(elem->>'category') LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(elem->>'description') LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
+                EXISTS (SELECT 1 FROM json_array_elements(c.names::json) AS elem 
+                WHERE LOWER(elem->>'name') LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(elem->>'category') LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(elem->>'description') LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
                 LOWER(elem->>'ruName') LIKE LOWER(CONCAT('%', :searchTerm, '%')))
             )
             """, nativeQuery = true)
-    List<String> searchByObjectNameFields_Native(@Param("bookId") String bookId, @Param("searchTerm") String searchTerm);
+    Page<String> searchByObjectNameFields_Native(@Param("bookId") String bookId, @Param("searchTerm") String searchTerm, PageRequest pageRequest);
 
     default Page<ChapterEntity> searchByObjectNameFields(String bookId, String searchTerm, PageRequest pageRequest) {
-        var ids = searchByObjectNameFields_Native(bookId, searchTerm);
-        return new PageImpl<>(findByIdIn(ids, pageRequest.withSort(Sort.by("number"))));
+        var withSort = pageRequest.withSort(Sort.by("number"));
+        var ids = searchByObjectNameFields_Native(bookId, searchTerm, withSort);
+        return page(findAllById(ids), withSort, ids.getTotalElements());
     }
 
     // 3) Combined search: both Chapter fields and ObjectName JSON fields contain ignore case given string
     @Query(value = """
-            SELECT c.id FROM chapter_info c WHERE\s
+            SELECT c.id FROM chapter_info c WHERE 
             c.book_id = :bookId AND (
-                (LOWER(c.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.translated_title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.raw_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.proofread_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.translated_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.fixed_translated_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.summary) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR\s
-                LOWER(c.consolidated_summary) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) OR\s
-                EXISTS (SELECT 1 FROM json_array_elements(c.names::json) AS elem\s
-                WHERE LOWER(elem->>'name') LIKE LOWER(CONCAT('%', :searchNameTerm, '%')) OR\s
-                LOWER(elem->>'category') LIKE LOWER(CONCAT('%', :searchNameTerm, '%')) OR\s
-                LOWER(elem->>'description') LIKE LOWER(CONCAT('%', :searchNameTerm, '%')) OR\s
+                (LOWER(c.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.translated_title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.raw_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.proofread_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.translated_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.fixed_translated_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.summary) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                LOWER(c.consolidated_summary) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) OR 
+                EXISTS (SELECT 1 FROM json_array_elements(c.names::json) AS elem 
+                WHERE LOWER(elem->>'name') LIKE LOWER(CONCAT('%', :searchNameTerm, '%')) OR 
+                LOWER(elem->>'category') LIKE LOWER(CONCAT('%', :searchNameTerm, '%')) OR 
+                LOWER(elem->>'description') LIKE LOWER(CONCAT('%', :searchNameTerm, '%')) OR 
                 LOWER(elem->>'ruName') LIKE LOWER(CONCAT('%', :searchNameTerm, '%')))
             )
             """, nativeQuery = true)
-    List<String> searchByCombinedCriteria_Native(@Param("bookId") String bookId, @Param("searchTerm") String searchTerm,
-                                                 @Param("searchNameTerm") String searchNameTerm);
+    Page<String> searchByCombinedCriteria_Native(@Param("bookId") String bookId, @Param("searchTerm") String searchTerm,
+                                                 @Param("searchNameTerm") String searchNameTerm, PageRequest pageRequest);
 
     default Page<ChapterEntity> searchByCombinedCriteria(String bookId, String searchTerm, String searchNameTerm, PageRequest pageRequest) {
-        var ids = searchByCombinedCriteria_Native(bookId, searchTerm, searchNameTerm);
-        return new PageImpl<>(findByIdIn(ids, pageRequest.withSort(Sort.by("number"))));
+        var withSort = pageRequest.withSort(Sort.by("number"));
+        var ids = searchByCombinedCriteria_Native(bookId, searchTerm, searchNameTerm, withSort);
+        return page(findAllById(ids), withSort, ids.getTotalElements());
     }
 
     @Query(value = """
@@ -379,6 +382,34 @@ public interface ChapterRepository extends JpaRepository<ChapterEntity, String> 
         } else {
             return Optional.empty();
         }
+    }
+
+    @Query(value = """
+            SELECT ce0.id 
+            FROM chapter_info ce0 
+            WHERE ce0.book_id = :bookId 
+            AND (
+                jsonb_array_length(ce0.warnings) > 0
+             OR length(title) < 2
+             OR length(translated_title) < 2
+             OR length(text) < 2
+             OR length(translated_text) < 2
+             OR length(summary) < 2
+             OR json_array_length(names) < 1
+            )
+            """, nativeQuery = true)
+    Page<String> findChaptersWithWarningsByBookId_Native(@Param("bookId") String bookId, PageRequest pageRequest);
+    
+    default Page<ChapterEntity> findChaptersWithWarningsByBookId(String bookId, PageRequest pageRequest) {
+        var withSort = pageRequest.withSort(Sort.by("number"));
+        var ids = findChaptersWithWarningsByBookId_Native(bookId, withSort);
+        return page(findAllById(ids.getContent()), withSort, ids.getTotalElements());
+    }
+
+    private Page<ChapterEntity> page(List<ChapterEntity> entities, Pageable pageable, long total) {
+        entities.sort(Comparator.comparing(ChapterEntity::getNumber));
+        
+        return new PageImpl<>(entities, pageable, total);
     }
 
     interface GlossaryByQueryResult {

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import machinum.util.TraceUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.async.AsyncHelper;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
@@ -49,7 +50,13 @@ public class WiremockRequestInterceptor implements ClientHttpRequestInterceptor 
         // Request headers
         ObjectNode requestHeaders = requestNode.putObject("headers");
         for (Map.Entry<String, List<String>> entry : request.getHeaders().entrySet()) {
-            requestHeaders.putPOJO(entry.getKey(), entry.getValue());
+            if(!entry.getValue().isEmpty()) {
+                if(entry.getValue().size() == 1) {
+                    requestHeaders.putPOJO(entry.getKey(), entry.getValue().getFirst());
+                } else {
+                    requestHeaders.putPOJO(entry.getKey(), entry.getValue());
+                }
+            }
         }
 
         // Request body
@@ -82,12 +89,13 @@ public class WiremockRequestInterceptor implements ClientHttpRequestInterceptor 
 
         // Save to file
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String folder = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         var rayId = TraceUtil.currentRayId()
                 .map("_%s"::formatted)
                 .orElse("");
         String filename = String.format("request%s_%s.json", rayId, timestamp);
 
-        saveToFile(timestamp, filename, mapping);
+        saveToFile(folder, filename, mapping);
 
         return response;
     }
@@ -103,7 +111,7 @@ public class WiremockRequestInterceptor implements ClientHttpRequestInterceptor 
                 log.trace("Saved http exchange to {}", resultFile.getAbsolutePath());
             } catch (IOException e) {
                 log.error("An error occurred when saving http logs: %s".formatted(e.getMessage()), e);
-                throw new RuntimeException(e);
+                ExceptionUtils.rethrow(e);
             }
         });
     }

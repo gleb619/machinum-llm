@@ -3,6 +3,7 @@ package machinum.listener;
 import com.github.difflib.DiffUtils;
 import com.github.difflib.patch.Patch;
 import machinum.entity.ChapterEntity;
+import machinum.exception.AppIllegalStateException;
 import machinum.model.Chapter;
 import machinum.model.ChapterHistory;
 import machinum.service.ChapterHistoryService;
@@ -118,7 +119,7 @@ public class ChapterEntityListener {
         } else if (TextUtil.isNotEmpty(entity.getSourceKey()) && TextUtil.isNotEmpty(entity.getBookId())) {
             jdbcTemplate.update(REMOVE_HISTORY_FOR_CHAPTER_BY_SOURCE_KEY_SQL, entity.getSourceKey(), entity.getBookId());
         } else {
-            throw new IllegalStateException("Can't remove history, unknown chapter: " + entity);
+            throw new AppIllegalStateException("Can't remove history, unknown chapter: " + entity);
         }
     }
 
@@ -202,7 +203,7 @@ public class ChapterEntityListener {
                 return jdbcTemplate.queryForObject(FETCH_CHAPTER_ID_SQL, String.class,
                         entity.getSourceKey(), entity.getBookId());
             } else {
-                throw new IllegalStateException("Unknown chapter: " + entity);
+                throw new AppIllegalStateException("Unknown chapter: " + entity);
             }
         } else {
             return entity.getId();
