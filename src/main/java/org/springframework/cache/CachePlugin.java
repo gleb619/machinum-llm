@@ -1,5 +1,7 @@
 package org.springframework.cache;
 
+import machinum.exception.AppIllegalStateException;
+
 import java.util.Optional;
 
 /**
@@ -34,7 +36,7 @@ public interface CachePlugin {
     <T> void save(String key, T value);
 
     default void remove(String key) {
-        throw new IllegalStateException("Not implemented!");
+        throw new AppIllegalStateException("Not implemented!");
     }
 
 }

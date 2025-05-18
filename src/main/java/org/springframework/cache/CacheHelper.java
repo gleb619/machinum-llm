@@ -1,5 +1,6 @@
 package org.springframework.cache;
 
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -22,18 +23,18 @@ public class CacheHelper {
     private final CacheManager cacheManager;
     private final List<CachePlugin> plugins;
 
-    @Cacheable(value = "store", key = "#key", unless = "#result == null")
+    @Cacheable(value = "store", key = "#p0", condition="#p0 != null", unless = "#result == null")
     public <T> Optional<T> getValue(String key) {
         T value = null;
         return Optional.ofNullable(value); // This will be overridden by the cached value
     }
 
-    @CachePut(value = "store", key = "#key", unless = "#result == null")
+    @CachePut(value = "store", key = "#p0", condition="#p0 != null", unless = "#result == null")
     public <T> Optional<T> setValue(String key, T value) {
         return Optional.ofNullable(value);
     }
 
-    @CacheEvict(value = "store", key = "#key")
+    @CacheEvict(value = "store", key = "#p0", condition="#p0 != null")
     public void evictValue(String key) {
         log.info("Cache evicted for key: {}", key);
 
@@ -42,7 +43,7 @@ public class CacheHelper {
         }
     }
 
-    public boolean cacheContainsKey(String key) {
+    public boolean cacheContainsKey(@NonNull String key) {
         return cacheManager.getCache("store").get(key) != null;
     }
 
@@ -54,7 +55,7 @@ public class CacheHelper {
      * @param supplier The supplier to create the value if not found
      * @return The retrieved or newly created value
      */
-    public <T> T getOrCreate(String key, Supplier<T> supplier) {
+    public <T> T getOrCreate(@NonNull String key, Supplier<T> supplier) {
         // First try to get from any plugin
         for (CachePlugin plugin : plugins) {
             if (plugin.hasKey(key)) {

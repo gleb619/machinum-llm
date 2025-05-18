@@ -2,6 +2,9 @@ package org.springframework.retry;
 
 import lombok.RequiredArgsConstructor;
 import machinum.exception.StopException;
+import machinum.flow.FlowException;
+import machinum.processor.core.GeminiClient;
+import machinum.processor.core.GeminiClient.BusinessGeminiException;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
@@ -49,9 +52,11 @@ public class RetryHelper {
         var retryTemplate = new RetryTemplate();
         retryTemplate.setBackOffPolicy(new FixedBackOffPolicy());
         var retryPolicy = new SimpleRetryPolicy(maxAttempts, Map.of(
-                Throwable.class, Boolean.TRUE
+                Throwable.class, Boolean.TRUE,
+                StopException.class, Boolean.FALSE,
+                BusinessGeminiException.class, Boolean.FALSE,
+                FlowException.class, Boolean.FALSE
         ));
-        retryPolicy.setNotRecoverable(StopException.class);
         retryTemplate.setRetryPolicy(retryPolicy);
 
         return retryTemplate;
