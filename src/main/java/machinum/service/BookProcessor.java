@@ -4,11 +4,11 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import machinum.config.Constants;
 import machinum.controller.BookOperationController.BookOperationRequest;
 import machinum.converter.ChapterConverter;
 import machinum.exception.AppIllegalStateException;
 import machinum.flow.*;
+import machinum.flow.OneStepRunner.Aggregation;
 import machinum.model.Chapter;
 import machinum.util.DurationUtil;
 import machinum.util.TextUtil;
@@ -30,6 +30,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static machinum.config.Constants.*;
+import static machinum.flow.OneStepRunner.Window.tumbling;
+import static machinum.flow.Pack.anArgument;
 
 @Slf4j
 @Service
@@ -129,7 +131,7 @@ public class BookProcessor {
                     .aroundEachState((ctx, action) -> DurationUtil.measure("stateFlow-%s-%s".formatted(ctx.iteration(), ctx.getState()), () -> {
                         Map<ProcessorState, Boolean> availableStates = ctx.metadata(AVAILABLE_STATES);
 
-                        if(Objects.nonNull(availableStates) && !availableStates.get(ctx.getState())) {
+                        if(Objects.nonNull(availableStates) && Boolean.FALSE.equals(availableStates.get(ctx.getState()))) {
                             log.info("|== Execution of state is forbidden by settings : {}) {}", ctx.iteration(), ctx.getCurrentItem());
                         } else {
                             log.info("|== Current item is : {}) {}", ctx.iteration(), ctx.getCurrentItem());
@@ -272,10 +274,9 @@ public class BookProcessor {
                         .onState(ProcessorState.TRANSLATE_TITLE)
                             .comment("On %s state we use t-pro"::formatted)
                             .pipe(templateAiFacade::bootstrapWith)
-                            .pipe(templateAiFacade::translateTitle)
-//                            .slidingWindow(batchSize, sub ->
-//                                sub -> sub.pipe(templateAiFacade::translateTitle)
-//                            )
+//                            .pipe(templateAiFacade::translateTitle)
+                            .window(tumbling(batchSize), Aggregation.<Chapter, String>pack(anArgument(ctx -> ctx.arg(TITLE)))
+                                .onResult(templateAiFacade::batchTranslateTitle))
                         .onState(ProcessorState.TRANSLATE)
                             .comment("On %s state we use t-pro"::formatted)
                             .pipe(templateAiFacade::bootstrapWith)

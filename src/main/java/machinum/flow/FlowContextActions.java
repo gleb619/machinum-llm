@@ -73,7 +73,7 @@ public class FlowContextActions {
     }
 
     public static FlowArgument<Object> result(Object value) {
-        return createArg(RESULT_PARAM, value);
+        return createArg(RESULT_PARAM, value).asEphemeral();
     }
 
     public static FlowArgument<ChapterWarning> warning(ChapterWarning chapterWarning) {

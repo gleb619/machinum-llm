@@ -1,15 +1,16 @@
 package machinum.extract;
 
-import machinum.flow.FlowContextActions;
-import machinum.model.Chapter;
-import machinum.flow.FlowContext;
-import machinum.flow.FlowSupport;
-import machinum.processor.core.Assistant;
-import machinum.processor.core.AssistantContext;
-import machinum.tool.RawInfoTool;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import machinum.flow.FlowContext;
+import machinum.flow.FlowContextActions;
+import machinum.flow.FlowSupport;
+import machinum.flow.Pack;
+import machinum.model.Chapter;
+import machinum.processor.core.Assistant;
+import machinum.processor.core.AssistantContext;
+import machinum.tool.RawInfoTool;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,7 +22,6 @@ import java.util.List;
 import static machinum.config.Constants.TITLE;
 import static machinum.config.Constants.TRANSLATED_TITLE;
 import static machinum.util.TextUtil.toShortDescription;
-import static machinum.util.TextUtil.valueOf;
 
 @Slf4j
 @Component
@@ -32,6 +32,7 @@ public class TranslaterHeader implements FlowSupport {
             Provide translation for previous web novel's chapter title:\s
             %s
             """;
+
     @Getter
     @Value("${app.translate.title.model}")
     protected final String chatModel;
@@ -47,6 +48,13 @@ public class TranslaterHeader implements FlowSupport {
 
     private final RawInfoTool rawInfoTool;
 
+
+    public FlowContext<Chapter> batchTranslate(FlowContext<Chapter> context) {
+        List<Pack<Chapter, String>> items = context.result();
+
+        //TODO add properties translater
+        return context;
+    }
 
     public FlowContext<Chapter> translate(FlowContext<Chapter> flowContext) {
         var titleArg = flowContext.arg(TITLE);
@@ -68,7 +76,6 @@ public class TranslaterHeader implements FlowSupport {
                 .text(text)
                 .actionResource(translateTemplate)
                 .history(history)
-                .tools(List.of(rawInfoTool))
                 .customizeChatOptions(options -> {
                     options.setModel(getChatModel());
                     options.setTemperature(temperature);

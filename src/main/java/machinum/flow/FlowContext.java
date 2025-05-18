@@ -1,12 +1,12 @@
 package machinum.flow;
 
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import machinum.model.Chunks;
 import machinum.model.Chunks.ChunkItem;
 import machinum.model.ObjectName;
 import machinum.processor.core.ArgumentException;
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
-import machinum.processor.core.ChapterWarning;
+import machinum.util.JavaUtil;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -396,6 +396,7 @@ public class FlowContext<T> implements FlowContextArgs {
                 .map(FlowArgument::copy)
                 .sorted(Comparator.comparing(FlowArgument::getName))
                 .sorted(Comparator.comparing(FlowArgument::getType))
+                .sorted(JavaUtil.comparingReverse(FlowArgument::getTimestamp))
                 .collect(Collectors.toList()));
 
         return result;
@@ -431,12 +432,7 @@ public class FlowContext<T> implements FlowContextArgs {
         var localMetadata = new HashMap<>(getMetadata());
         localMetadata.remove(key);
 
-        return copy(b -> {
-            b.clearMetadata();
-            b.metadata(localMetadata);
-
-            return b;
-        });
+        return copy(b -> b.clearMetadata().metadata(localMetadata));
     }
 
     public FlowContext<T> then(Function<FlowContext<T>, FlowContext<T>> fn) {
@@ -480,12 +476,7 @@ public class FlowContext<T> implements FlowContextArgs {
                 })
                 .collect(Collectors.toList());
 
-        return copy(b -> {
-            b.clearArguments();
-            b.arguments(localArgs);
-
-            return b;
-        });
+        return copy(b -> b.clearArguments().arguments(localArgs));
     }
 
     public <U> FlowContext<T> removeArgs(Function<FlowContext<? super T>, FlowArgument<? extends U>>... extractors) {
@@ -507,12 +498,15 @@ public class FlowContext<T> implements FlowContextArgs {
         var localArgs = new ArrayList<>(List.of(args));
         localArgs.addAll(getArguments());
 
-        return copy(b -> {
-            b.clearArguments();
-            b.arguments(localArgs);
+        return copy(b -> b.clearArguments().arguments(localArgs));
+    }
 
-            return b;
-        });
+    public FlowContext<T> withoutEphemeralArgs() {
+        var newArgs = getArguments().stream()
+                .filter(arg -> !arg.isEphemeral())
+                .collect(Collectors.toList());
+
+        return copy(b -> b.clearArguments().arguments(newArgs));
     }
 
     public <U> U parseArgument(Function<FlowContext<? super T>, FlowArgument<? extends U>> extractor,

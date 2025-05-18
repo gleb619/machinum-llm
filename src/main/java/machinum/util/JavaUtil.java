@@ -9,6 +9,7 @@ import lombok.SneakyThrows;
 import lombok.experimental.NonFinal;
 import org.springframework.core.io.ClassPathResource;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
@@ -289,6 +290,34 @@ public class JavaUtil {
         }
 
         return null;
+    }
+
+    /**
+     * Accepts a function that extracts a {@link java.lang.Comparable
+     * Comparable} sort key from a type {@code T}, and returns a {@code
+     * Comparator<T>} that compares by that sort key in reverse order.
+     *
+     * <p>The returned comparator is serializable if the specified function
+     * is also serializable.
+     *
+     * @param <T>          the type of element to be compared
+     * @param <U>          the type of the {@code Comparable} sort key
+     * @param keyExtractor the function used to extract the {@link
+     *                     Comparable} sort key
+     * @return a comparator that compares by an extracted key in reverse order
+     * @throws NullPointerException if the argument is null
+     * @apiNote For example, to obtain a {@code Comparator} that compares {@code
+     * Person} objects by their last name in reverse order,
+     *
+     * <pre>{@code
+     *     Comparator<Person> byLastNameReverse = ReverseComparator.comparingReverse(Person::getLastName);
+     * }</pre>
+     */
+    public static <T, U extends Comparable<? super U>> Comparator<T> comparingReverse(
+            Function<? super T, ? extends U> keyExtractor) {
+        Objects.requireNonNull(keyExtractor);
+        return (Comparator<T> & Serializable)
+                (c1, c2) -> keyExtractor.apply(c2).compareTo(keyExtractor.apply(c1));
     }
 
     @SneakyThrows

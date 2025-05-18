@@ -1,12 +1,13 @@
 package machinum.flow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import machinum.processor.core.StringSupport;
-import machinum.util.TextUtil;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import machinum.processor.core.StringSupport;
+import machinum.util.TextUtil;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -35,6 +36,18 @@ public class FlowArgument<U> implements StringSupport {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private U value;
+
+    @Builder.Default
+    @ToString.Exclude
+    private Instant timestamp = Instant.now();
+
+    @Builder.Default
+    @ToString.Exclude
+    private boolean ephemeral = Boolean.FALSE;
+
+    public FlowArgument<U> asEphemeral() {
+        return copy(b -> b.ephemeral(Boolean.TRUE));
+    }
 
     public FlowArgument<U> obsolete() {
         if (NEW_FLAG.equals(getType())) {

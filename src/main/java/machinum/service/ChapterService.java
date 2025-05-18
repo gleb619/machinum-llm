@@ -245,6 +245,9 @@ public class ChapterService {
                             var glossaryText = objectMapperHolder.execute(mapper -> toJsonString(mapper, glossary));
                             chapterRepository.updateGlossary(chapterInfo.getId(), glossaryText);
                         });
+            }
+            case TRANSLATE_TITLE -> {
+                //TODO add result handler for batch result
                 ctx.optionalValue(context -> context.arg(TRANSLATED_TITLE))
                         .map(TextUtil::valueOf)
                         .ifPresent(translatedTitle -> {

@@ -2,6 +2,8 @@ package machinum.flow;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import machinum.flow.OneStepRunner.Aggregation;
+import machinum.flow.OneStepRunner.Window;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.time.Duration;
@@ -16,6 +18,7 @@ import java.util.stream.IntStream;
 
 import static machinum.flow.Flow.ErrorStrategy.defaultStrategy;
 import static machinum.flow.InMemoryStateManager.inMemory;
+import static machinum.flow.OneStepRunner.FlowExtensions.aggregate;
 import static machinum.util.DurationUtil.DurationConfig.humanReadableDuration;
 import static machinum.util.JavaUtil.newId;
 
@@ -178,8 +181,16 @@ public class Flow<T> {
         return copy(b -> b.sinkAction(action));
     }
 
-    public Flow<T> copy(Function<Flow.FlowBuilder<T>, Flow.FlowBuilder<T>> fn) {
-        return fn.apply(this.toBuilder()).build();
+    public Flow<T> copy(Function<FlowBuilder<T>, FlowBuilder<T>> fn) {
+        var stateMap = new LinkedHashMap<>(getStatePipes());
+        var metadata = new HashMap<>(getMetadata());
+        var source = new ArrayList<>(getSource());
+        return fn.apply(this.toBuilder()
+                .clearMetadata()
+                .metadata(metadata)
+                .clearSource()
+                .source(source)
+                .statePipes(stateMap)).build();
     }
 
     public Flow.State nextState(Flow.State initState) {
@@ -228,23 +239,27 @@ public class Flow<T> {
         }
 
         public StateBuilder<T> pipe(Function<FlowContext<T>, FlowContext<T>> action) {
-            flow.statePipes.computeIfAbsent(state, k -> new ArrayList<>()).add(action);
+            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(action);
             return this;
+        }
+
+        public StateBuilder<T> window(Window window, Aggregation<T> action) {
+            return pipe(aggregate(window, action));
         }
 
         //TODO add metadata for pipe
         public StateBuilder<T> pipe(Map<String, Object> metadata, Function<FlowContext<T>, FlowContext<T>> action) {
-            flow.statePipes.computeIfAbsent(state, k -> new ArrayList<>()).add(action);
+            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(action);
             return this;
         }
 
         public StateBuilder<T> nothing() {
-            flow.statePipes.computeIfAbsent(state, k -> new ArrayList<>()).add(Function.identity());
+            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(Function.identity());
             return this;
         }
 
         public StateBuilder<T> waitFor(Duration duration) {
-            flow.statePipes.computeIfAbsent(state, k -> new ArrayList<>()).add(ctx -> {
+            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(ctx -> {
                 try {
                     log.debug("Waiting for {} to cool down GPU", humanReadableDuration(duration));
                     TimeUnit.MILLISECONDS.sleep(duration.toMillis());

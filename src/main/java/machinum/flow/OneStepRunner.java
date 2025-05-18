@@ -122,17 +122,21 @@ public class OneStepRunner<T> implements FlowRunner<T> {
 
     private void processPipes(RunnerContext<T> runnerContext, int itemIndex, int startPipeIndex,
                               List<Function<FlowContext<T>, FlowContext<T>>> pipes, Flow.State state) {
-        for (int j = startPipeIndex; j < pipes.size(); j++) {
-            try {
-                var pipe = pipes.get(j);
-                if (pipe instanceof WindowedPipe) {
-                    processWindowedPipe(runnerContext, itemIndex, j, (WindowedPipe<T>) pipe, state);
-                } else {
-                    processSinglePipe(runnerContext, itemIndex, j, pipe, state);
+        try {
+            for (int j = startPipeIndex; j < pipes.size(); j++) {
+                try {
+                    var pipe = pipes.get(j);
+                    if (pipe instanceof WindowedPipe) {
+                        processWindowedPipe(runnerContext, itemIndex, j, (WindowedPipe<T>) pipe, state);
+                    } else {
+                        processSinglePipe(runnerContext, itemIndex, j, pipe, state);
+                    }
+                } catch (Exception e) {
+                    handlePipeException(runnerContext, e);
                 }
-            } catch (Exception e) {
-                handlePipeException(runnerContext, e);
             }
+        } finally {
+            runnerContext.cleanEphemeralArgs();
         }
     }
 
@@ -142,17 +146,22 @@ public class OneStepRunner<T> implements FlowRunner<T> {
         var windowId = windowedPipe.getWindowId();
 
         runnerContext.getWindowBuffer().add(windowId, context);
+        var window = runnerContext.getWindowBuffer().getWindow(windowId);
+        int windowSize = window.size();
 
         // Check if window is ready for processing
-        if (windowedPipe.shouldTrigger(runnerContext.getWindowBuffer().getWindow(windowId))) {
-            var contexts = runnerContext.getWindowBuffer().getWindow(windowId);
+        if (windowedPipe.shouldTrigger(window)) {
+            var contexts = new ArrayList<>(window);
             var aggregatedContext = windowedPipe.aggregate(contexts);
 
             // Process the aggregated result
             processSinglePipe(runnerContext, itemIndex, pipeIndex, ctx -> aggregatedContext, state);
 
-            // Clear the window if it's a tumbling window or similar that needs clearing
-            if (windowedPipe.shouldClearAfterTrigger()) {
+            // Apply sliding window logic - remove elements based on slide
+            int slideSize = windowedPipe.getWindow().getSlide();
+            if (slideSize > 0 && slideSize <= windowSize) {
+                runnerContext.getWindowBuffer().slideWindow(windowId, slideSize);
+            } else if (windowedPipe.shouldClearAfterTrigger()) {
                 runnerContext.getWindowBuffer().clearWindow(windowId);
             }
         }
@@ -205,7 +214,7 @@ public class OneStepRunner<T> implements FlowRunner<T> {
     /**
      * Window definition to be used with aggregate operations
      */
-    public interface Window {
+    public sealed interface Window permits Window.SessionWindow, Window.SlidingWindow, Window.TumblingWindow {
 
         static Window tumbling(int size) {
             return new TumblingWindow(size);
@@ -268,6 +277,8 @@ public class OneStepRunner<T> implements FlowRunner<T> {
 
         String getWindowId();
 
+        Window getWindow();
+
         boolean shouldTrigger(List<FlowContext<T>> contexts);
 
         boolean shouldClearAfterTrigger();
@@ -285,6 +296,7 @@ public class OneStepRunner<T> implements FlowRunner<T> {
     /**
      * Aggregation function to be used with windows
      */
+    @FunctionalInterface
     public interface Aggregation<T> {
 
         static <T> Aggregation<T> sum(Function<FlowContext<T>, Number> extractor) {
@@ -316,7 +328,39 @@ public class OneStepRunner<T> implements FlowRunner<T> {
             };
         }
 
+        static <I, U> Aggregation<I> map(Function<FlowContext<I>, U> extractor) {
+            return contexts -> {
+                var result = contexts.stream()
+                        .map(extractor)
+                        .toList();
+
+                return contexts.getLast().rearrange(FlowContext::resultArg, result(result));
+            };
+        }
+
+        static <I, U> Aggregation<I> pack(Function<FlowContext<I>, Pack<I, U>> extractor) {
+            return map(extractor);
+        }
+
+        static <T> Aggregation<T> items() {
+            return map(FlowContext::getCurrentItem);
+        }
+
         FlowContext<T> apply(List<FlowContext<T>> contexts);
+
+        default Aggregation<T> andThen(Aggregation<T> after) {
+            return contexts -> after.apply(List.of(apply(contexts)));
+        }
+
+        default Aggregation<T> onResult(Function<FlowContext<T>, FlowContext<T>> function) {
+            return contexts -> {
+                var context = apply(contexts);
+                return context.optionalValue(FlowContext::resultArg)
+                        .map(o -> function.apply(context))
+                        .orElse(context);
+            };
+        }
+
     }
 
     @Value
@@ -342,6 +386,10 @@ public class OneStepRunner<T> implements FlowRunner<T> {
 
         public FlowContext<T> getFlowContext() {
             return flowContextRef.get();
+        }
+
+        public void cleanEphemeralArgs() {
+            updateFlowContext(getFlowContext().withoutEphemeralArgs());
         }
 
         public List<Function<FlowContext<T>, FlowContext<T>>> getStatePipe(Flow.State state) {
@@ -456,6 +504,13 @@ public class OneStepRunner<T> implements FlowRunner<T> {
 
         public void clearWindow(String windowId) {
             windows.remove(windowId);
+        }
+
+        public void slideWindow(String windowId, int slideSize) {
+            var window = windows.get(windowId);
+            if (window != null && slideSize > 0 && slideSize <= window.size()) {
+                windows.put(windowId, new ArrayList<>(window.subList(slideSize, window.size())));
+            }
         }
 
         public Map<String, List<FlowContext<T>>> getAllWindows() {

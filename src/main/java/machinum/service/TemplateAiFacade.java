@@ -74,6 +74,10 @@ public class TemplateAiFacade {
         return translater.scoreAndTranslateInChunks(context);
     }
 
+    public FlowContext<Chapter> batchTranslateTitle(FlowContext<Chapter> context) {
+        return translater.batchTranslateTitle(context);
+    }
+
     public FlowContext<Chapter> translateTitle(FlowContext<Chapter> context) {
         return translater.translateTitle(context);
     }
