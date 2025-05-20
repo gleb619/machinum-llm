@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Layout -->
+<div th:fragment="title-list" th:remove="tag">
+    <div class="h-full" x-show="bookActiveTab === 'titles'">
+
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <!-- Filter and Filters -->
+            <div class="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between">
+                <div class="flex items-center mb-2 md:mb-0">
+                    <input
+                            class="border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+                            placeholder="Filter titles..."
+                            type="text"
+                            x-model="titleFilterTerm">
+                </div>
+                <div class="flex space-x-2">
+                    <div class="flex items-center">
+                        <span class="mr-2 text-gray-700">Show</span>
+                        <select
+                                @change="changeTitlePage(0)"
+                                class="border border-gray-300 px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                x-model="titlePageSize">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <span class="ml-2 text-gray-700">entries</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full table-auto">
+                    <thead>
+                    <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+                        <th @click="sortTitleBy('number')" class="py-3 px-6 text-left cursor-pointer">
+                            <div class="flex items-center">
+                                Number
+                                <span class="ml-2" x-show="titleSortColumn === 'number'">
+                                <template x-if="titleSortDirection === 'asc'"><small>▲</small></template>
+                                <template x-if="titleSortDirection === 'desc'"><small>▼</small></template>
+                            </span>
+                            </div>
+                        </th>
+                        <th @click="sortTitleBy('title')" class="py-3 px-6 text-left cursor-pointer">
+                            <div class="flex items-center">
+                                Title
+                                <span class="ml-2" x-show="titleSortColumn === 'title'">
+                                <template x-if="titleSortDirection === 'asc'"><small>▲</small></template>
+                                <template x-if="titleSortDirection === 'desc'"><small>▼</small></template>
+                            </span>
+                            </div>
+                        </th>
+                        <th @click="sortTitleBy('translatedTitle')" class="py-3 px-6 text-left cursor-pointer">
+                            <div class="flex items-center">
+                                Translated Title
+                                <span class="ml-2" x-show="titleSortColumn === 'translatedTitle'">
+                                <template x-if="titleSortDirection === 'asc'"><small>▲</small></template>
+                                <template x-if="titleSortDirection === 'desc'"><small>▼</small></template>
+                            </span>
+                            </div>
+                        </th>
+                        <th class="py-3 px-6 text-center">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm">
+                    <template :key="title.id" x-for="(title, index) in titlesFiltered">
+                        <tr :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50'"
+                            class="border-b border-gray-200 hover:bg-gray-100">
+                            <td class="py-3 px-6 text-left">
+                                <template x-if="titleEditingIndex === index">
+                                    <input
+                                            class="w-full border border-gray-300 rounded-md px-2 py-1"
+                                            type="number"
+                                            x-model.number="title.number">
+                                </template>
+                                <template x-if="titleEditingIndex !== index">
+                                    <span x-text="title.number"></span>
+                                </template>
+                            </td>
+                            <td class="py-3 px-6 text-left">
+                                <template x-if="titleEditingIndex === index">
+                                    <input
+                                            class="w-full border border-gray-300 rounded-md px-2 py-1"
+                                            type="text"
+                                            x-model="title.title">
+                                </template>
+                                <template x-if="titleEditingIndex !== index">
+                                    <span x-text="title.title"></span>
+                                </template>
+                            </td>
+                            <td class="py-3 px-6 text-left">
+                                <template x-if="titleEditingIndex === index">
+                                    <input
+                                            class="w-full border border-gray-300 rounded-md px-2 py-1"
+                                            type="text"
+                                            x-model="title.translatedTitle">
+                                </template>
+                                <template x-if="titleEditingIndex !== index">
+                                    <span x-text="title.translatedTitle"></span>
+                                </template>
+                            </td>
+                            <td class="py-3 px-6 text-center">
+                                <div class="flex item-center justify-center">
+                                    <template x-if="titleEditingIndex === index">
+                                        <div class="flex space-x-2">
+                                            <button @click="saveEdit(title)"
+                                                    class="transform hover:text-green-600 hover:scale-110">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M5 13l4 4L19 7" stroke-linecap="round"
+                                                          stroke-linejoin="round" stroke-width="2"></path>
+                                                </svg>
+                                            </button>
+                                            <button @click="cancelEdit()"
+                                                    class="transform hover:text-red-600 hover:scale-110">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"
+                                                          stroke-linejoin="round" stroke-width="2"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <template x-if="titleEditingIndex !== index">
+                                        <div class="flex space-x-2">
+                                            <button @click="editChapter(index)"
+                                                    class="transform hover:text-blue-600 hover:scale-110">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke-linecap="round"
+                                                          stroke-linejoin="round"
+                                                          stroke-width="2"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                    <template x-if="titlesFiltered.length === 0">
+                        <tr class="bg-white">
+                            <td class="py-6 text-center text-gray-500" colspan="4">
+                                No titles found
+                            </td>
+                        </tr>
+                    </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="px-6 py-2 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+
+                <span x-text="`Page ${(titleCurrentPage + 1)} of ${titleTotalPages} (${titleTotalElements} total items)`"></span>
+
+                <div class="flex justify-center space-x-2">
+                    <nav aria-label="Pagination" class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                        <!-- Previous button -->
+                        <button
+                                :class="{'opacity-50 cursor-not-allowed': titleCurrentPage === 0}"
+                                :disabled="titleCurrentPage === 0"
+                                @click="changeTitlePage(titleCurrentPage - 1)"
+                                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <span class="sr-only">Previous</span>
+                            &laquo;
+                        </button>
+
+                        <!-- First page button (always visible) -->
+                        <button
+                                :class="{'bg-blue-50 border-blue-500 text-blue-600': titleCurrentPage === 0, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': titleCurrentPage !== 0}"
+                                @click="changeTitlePage(0)"
+                                class="relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                            1
+                        </button>
+
+                        <!-- Ellipsis for gap at start (if needed) -->
+                        <button
+                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
+                                disabled
+                                x-show="titleCurrentPage > 4">
+                            &hellip;
+                        </button>
+
+                        <!-- Dynamic pages around current page -->
+                        <template
+                                :key="page"
+                                x-for="page in [...Array(titleTotalPages).keys()].map(i => i + 1).filter(p => p !== 1 && p !== titleTotalPages && p >= titleCurrentPage - 2 && p <= titleCurrentPage + 2)">
+                            <button
+                                    :class="{'bg-blue-50 border-blue-500 text-blue-600': titleCurrentPage + 1 === page, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': titleCurrentPage + 1 !== page}"
+                                    @click="changeTitlePage(page - 1)"
+                                    class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
+                                    x-text="page">
+                            </button>
+                        </template>
+
+                        <!-- Ellipsis for gap at end (if needed) -->
+                        <button
+                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
+                                disabled
+                                x-show="titleCurrentPage < titleTotalPages - 3">
+                            &hellip;
+                        </button>
+
+                        <!-- Last page button (always visible if titleTotalPages > 1) -->
+                        <button
+                                :class="{'bg-blue-50 border-blue-500 text-blue-600': titleCurrentPage + 1 === titleTotalPages, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': titleCurrentPage + 1 !== titleTotalPages}"
+                                @click="changeTitlePage(titleTotalPages - 1)"
+                                class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
+                                x-show="titleTotalPages > 1"
+                                x-text="titleTotalPages">
+                        </button>
+
+                        <!-- Next button -->
+                        <button
+                                :class="{'opacity-50 cursor-not-allowed': titleCurrentPage + 1 === titleTotalPages}"
+                                :disabled="titleCurrentPage + 1 === titleTotalPages"
+                                @click="changeTitlePage(titleCurrentPage + 1)"
+                                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <span class="sr-only">Next</span>
+                            &raquo;
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</body>
+</html>
