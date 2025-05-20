@@ -4,23 +4,75 @@
 <!-- Layout -->
 <div th:fragment="title-list" th:remove="tag">
     <div class="h-full" x-show="bookActiveTab === 'titles'">
+        <div class="bg-white overflow-hidden">
+            <div class="bg-white mx-auto p-4">
+                <h2 class="text-lg font-semibold mb-4 text-gray-900">Search</h2>
 
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-            <!-- Filter and Filters -->
-            <div class="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between">
-                <div class="flex items-center mb-2 md:mb-0">
-                    <input
-                            class="border border-gray-300 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-                            placeholder="Filter titles..."
-                            type="text"
-                            x-model="titleFilterTerm">
+                <!-- Search Radio Group -->
+                <div class="mb-6">
+                    <div class="mb-4 flex flex-wrap gap-2">
+                        <span class="block text-sm font-medium text-gray-700">Search in:</span>
+                        <label class="inline-flex items-center mr-3">
+                            <input @change="changeTitlePage(0)" class="form-radio text-blue-500" name="translation-filter"
+                                   type="radio"
+                                   value="all"
+                                   x-model="translationFilter">
+                            <span class="ml-2">All titles</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input @change="changeTitlePage(0)" class="form-radio text-blue-500" name="translation-filter"
+                                   type="radio"
+                                   value="missing"
+                                   x-model="translationFilter">
+                            <span class="ml-2">No translation</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input @change="changeTitlePage(0)" class="form-radio text-blue-500" name="translation-filter"
+                                   type="radio"
+                                   value="aberration"
+                                   x-model="translationFilter">
+                            <span class="ml-2">Aberration translation</span>
+                        </label>
+                    </div>
                 </div>
+
+                <!-- Global Actions -->
+                <div class="mt-4 bg-white shadow rounded-lg p-4">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-900">Batch Operations</h2>
+                    <div class="flex flex-wrap gap-2">
+                        <button @click="translateAllTiles()"
+                                class="bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg py-2 px-4 transition duration-200">
+                            Translate All
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter -->
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mx-auto p-4">
+                <h2 class="text-lg font-semibold text-gray-900">Titles</h2>
+
+                <!-- Filter and Count -->
+                <div class="relative w-full md:w-1/2">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                             xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                                  stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                        </svg>
+                    </div>
+                    <input class="pl-10 p-2 w-full border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Filter titles locally..." type="text" x-model="titleFilterTerm">
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between">
                 <div class="flex space-x-2">
                     <div class="flex items-center">
                         <span class="mr-2 text-gray-700">Show</span>
                         <select
-                                @change="changeTitlePage(0)"
                                 class="border border-gray-300 px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                @change="changeTitlePage(0)"
                                 x-model="titlePageSize">
                             <option value="10">10</option>
                             <option value="20">20</option>
@@ -41,30 +93,29 @@
                             <div class="flex items-center">
                                 Number
                                 <span class="ml-2" x-show="titleSortColumn === 'number'">
-                                <template x-if="titleSortDirection === 'asc'"><small>▲</small></template>
-                                <template x-if="titleSortDirection === 'desc'"><small>▼</small></template>
-                            </span>
+                            <template x-if="titleSortDirection === 'asc'"><small>▲</small></template>
+                            <template x-if="titleSortDirection === 'desc'"><small>▼</small></template>
+                        </span>
                             </div>
                         </th>
                         <th @click="sortTitleBy('title')" class="py-3 px-6 text-left cursor-pointer">
                             <div class="flex items-center">
                                 Title
                                 <span class="ml-2" x-show="titleSortColumn === 'title'">
-                                <template x-if="titleSortDirection === 'asc'"><small>▲</small></template>
-                                <template x-if="titleSortDirection === 'desc'"><small>▼</small></template>
-                            </span>
+                            <template x-if="titleSortDirection === 'asc'"><small>▲</small></template>
+                            <template x-if="titleSortDirection === 'desc'"><small>▼</small></template>
+                        </span>
                             </div>
                         </th>
                         <th @click="sortTitleBy('translatedTitle')" class="py-3 px-6 text-left cursor-pointer">
                             <div class="flex items-center">
                                 Translated Title
                                 <span class="ml-2" x-show="titleSortColumn === 'translatedTitle'">
-                                <template x-if="titleSortDirection === 'asc'"><small>▲</small></template>
-                                <template x-if="titleSortDirection === 'desc'"><small>▼</small></template>
-                            </span>
+                            <template x-if="titleSortDirection === 'asc'"><small>▲</small></template>
+                            <template x-if="titleSortDirection === 'desc'"><small>▼</small></template>
+                        </span>
                             </div>
                         </th>
-                        <th class="py-3 px-6 text-center">Actions</th>
                     </tr>
                     </thead>
                     <tbody class="text-gray-600 text-sm">
@@ -72,80 +123,43 @@
                         <tr :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50'"
                             class="border-b border-gray-200 hover:bg-gray-100">
                             <td class="py-3 px-6 text-left">
-                                <template x-if="titleEditingIndex === index">
-                                    <input
-                                            class="w-full border border-gray-300 rounded-md px-2 py-1"
-                                            type="number"
-                                            x-model.number="title.number">
-                                </template>
-                                <template x-if="titleEditingIndex !== index">
-                                    <span x-text="title.number"></span>
-                                </template>
+                                <span x-text="title.number"></span>
                             </td>
                             <td class="py-3 px-6 text-left">
-                                <template x-if="titleEditingIndex === index">
+                                <div class="excel-cell">
                                     <input
-                                            class="w-full border border-gray-300 rounded-md px-2 py-1"
                                             type="text"
+                                            @blur="saveChanges(title)"
+                                            @keydown.enter="$event.target.blur()"
+                                            class="w-full px-2 py-2 bg-transparent border-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:bg-white"
                                             x-model="title.title">
-                                </template>
-                                <template x-if="titleEditingIndex !== index">
-                                    <span x-text="title.title"></span>
-                                </template>
+                                </div>
                             </td>
                             <td class="py-3 px-6 text-left">
-                                <template x-if="titleEditingIndex === index">
+                                <div class="flex excel-cell hover:bg-white">
                                     <input
-                                            class="w-full border border-gray-300 rounded-md px-2 py-1"
                                             type="text"
+                                            @blur="saveChanges(title)"
+                                            @keydown.enter="$event.target.blur()"
+                                            class="w-full px-2 py-2 bg-transparent border-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                             x-model="title.translatedTitle">
-                                </template>
-                                <template x-if="titleEditingIndex !== index">
-                                    <span x-text="title.translatedTitle"></span>
-                                </template>
-                            </td>
-                            <td class="py-3 px-6 text-center">
-                                <div class="flex item-center justify-center">
-                                    <template x-if="titleEditingIndex === index">
-                                        <div class="flex space-x-2">
-                                            <button @click="saveEdit(title)"
-                                                    class="transform hover:text-green-600 hover:scale-110">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M5 13l4 4L19 7" stroke-linecap="round"
-                                                          stroke-linejoin="round" stroke-width="2"></path>
-                                                </svg>
-                                            </button>
-                                            <button @click="cancelEdit()"
-                                                    class="transform hover:text-red-600 hover:scale-110">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round"
-                                                          stroke-linejoin="round" stroke-width="2"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </template>
-                                    <template x-if="titleEditingIndex !== index">
-                                        <div class="flex space-x-2">
-                                            <button @click="editChapter(index)"
-                                                    class="transform hover:text-blue-600 hover:scale-110">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke-linecap="round"
-                                                          stroke-linejoin="round"
-                                                          stroke-width="2"></path>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </template>
+                                    <button
+                                            @click="handleTranslateTitle(title)"
+                                            class="pl-2 mr-2 text-gray-600 hover:text-blue-600 focus:outline-none"
+                                            title="Translate title">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                             xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" stroke-linecap="round" stroke-linejoin="round"
+                                                  stroke-width="2"></path>
+                                        </svg>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
                     </template>
                     <template x-if="titlesFiltered.length === 0">
                         <tr class="bg-white">
-                            <td class="py-6 text-center text-gray-500" colspan="4">
+                            <td class="py-6 text-center text-gray-500" colspan="3">
                                 No titles found
                             </td>
                         </tr>
@@ -181,8 +195,8 @@
 
                         <!-- Ellipsis for gap at start (if needed) -->
                         <button
-                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
                                 disabled
+                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
                                 x-show="titleCurrentPage > 4">
                             &hellip;
                         </button>
@@ -201,18 +215,18 @@
 
                         <!-- Ellipsis for gap at end (if needed) -->
                         <button
-                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
                                 disabled
+                                class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
                                 x-show="titleCurrentPage < titleTotalPages - 3">
                             &hellip;
                         </button>
 
                         <!-- Last page button (always visible if titleTotalPages > 1) -->
                         <button
+                                x-show="titleTotalPages > 1"
                                 :class="{'bg-blue-50 border-blue-500 text-blue-600': titleCurrentPage + 1 === titleTotalPages, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': titleCurrentPage + 1 !== titleTotalPages}"
                                 @click="changeTitlePage(titleTotalPages - 1)"
                                 class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
-                                x-show="titleTotalPages > 1"
                                 x-text="titleTotalPages">
                         </button>
 
@@ -229,7 +243,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 </body>

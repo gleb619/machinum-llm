@@ -5,7 +5,7 @@ export function titleListApp() {
     return {
         titles: [],
         titlesBackup: [],
-        //titlesFiltered: [],
+        translationFilter: 'all',
         titleFilterTerm: '',
         titleCurrentPage: 0,
         titlePageSize: 20,
@@ -13,15 +13,25 @@ export function titleListApp() {
         titleTotalElements: 0,
         titleSortColumn: 'number',
         titleSortDirection: 'asc',
-        titleEditingIndex: null,
-        titleEditBackup: null,
+        debounceTimers: {},
 
         initTitleList() {
             this.fetchTitles();
         },
 
         fetchTitles() {
-            fetch(`/api/books/${this.activeId}/chapters-titles?page=${this.titleCurrentPage}&size=${this.titlePageSize}`)
+            const params = new URLSearchParams({
+                page: this.titleCurrentPage,
+                size: this.titlePageSize,
+                missingTranslation: (this.translationFilter === 'missing'),
+                aberrationTranslation: (this.translationFilter === 'aberration'),
+            });
+
+            if (this.translationFilter !== 'missing' && this.translationFilter !== 'aberration') {
+                params.append('allTitles', 'true');
+            }
+
+            fetch(`/api/books/${this.activeId}/chapters-titles?${params.toString()}`)
                 .then(response => response.json()
                    .then(rsp => {
                       if (!response.ok) {
@@ -110,23 +120,33 @@ export function titleListApp() {
             return pages;
         },
 
-        editTitle(index) {
-            this.titleEditingIndex = index;
-            this.titleEditBackup = JSON.parse(JSON.stringify(this.titlesFiltered[index]));
-        },
+        saveChanges(title) {
+            // Check if title has actually changed by comparing with backup
+            const originalTitle = this.titlesBackup.find(t => t.id === title.id);
+            if (!originalTitle) return;
 
-        saveEdit(title) {
-            this.titleEditingIndex = null;
-            this.titleEditBackup = null;
-            this.saveTitleChanges(title);
-        },
+            const hasChanges = originalTitle.number !== title.number ||
+                               originalTitle.title !== title.title ||
+                               originalTitle.translatedTitle !== title.translatedTitle;
 
-        cancelEdit() {
-            if (this.titleEditBackup && this.titleEditingIndex !== null) {
-                this.titlesFiltered[this.titleEditingIndex] = this.titleEditBackup;
+            if (!hasChanges) return;
+
+            // Update backup with current values
+            const index = this.titlesBackup.findIndex(t => t.id === title.id);
+            if (index !== -1) {
+                this.titlesBackup[index] = JSON.parse(JSON.stringify(title));
             }
-            this.titleEditingIndex = null;
-            this.titleEditBackup = null;
+
+            // Clear any existing timer for this title
+            if (this.debounceTimers[title.id]) {
+                clearTimeout(this.debounceTimers[title.id]);
+            }
+
+            // Set new timer (debounce to avoid too many requests)
+            this.debounceTimers[title.id] = setTimeout(() => {
+                this.saveTitleChanges(title);
+                delete this.debounceTimers[title.id];
+            }, 500);
         },
 
         saveTitleChanges(title) {
@@ -137,17 +157,41 @@ export function titleListApp() {
                 },
                 body: JSON.stringify(title)
             })
-            .then(response => response.json()
-                .then(rsp => {
-                    if (response.status != 204) {
-                        console.error('Error fetching chapters:', rsp);
+            .then(response => {
+                if (response.status !== 204) {
+                    response.json()
+                      .then(rsp => {
+                        console.error('Error saving title:', rsp);
                         this.showToast(`Error: ${rsp.message || rsp.detail}`, true);
-                    }
-                }))
+                      });
+                }
+            })
             .catch(error => {
                 console.error('Error:', error);
                 this.showToast(`Failed to save changes: ${error.message || error.detail || error}`, true);
             });
-        }
+        },
+
+        async handleTranslateTitle(title) {
+            if (!title.title || title.title.trim() === '') {
+                return;
+            }
+
+            try {
+                // Call your translation API
+                const data = await this.translateToRussian(title.title);
+
+                // Update the translated title
+                title.translatedTitle = data;
+
+                // Save the changes
+                this.saveChanges(title);
+
+                this.showToast('Translation completed', false);
+            } catch (error) {
+                console.error('Translation error:', error);
+                this.showToast(`Translation failed: ${error.message}`, true);
+            }
+        },
     };
 }
