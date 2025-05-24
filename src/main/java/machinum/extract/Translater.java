@@ -27,7 +27,8 @@ import static machinum.flow.FlowContextActions.translatedChunks;
 public class Translater implements FlowSupport {
 
     private final TranslaterBody translaterBody;
-    private final TranslaterHeader translaterHeader;
+    private final TranslaterPlainHeader plainTranslaterHeader;
+    private final TranslaterPropertiesHeader propertiesTranslaterHeader;
     private final TranslationScoring translationScoring;
     private final GrammarEditorScoring grammarEditorScoring;
     private final GrammarEditor grammarEditor;
@@ -64,11 +65,11 @@ public class Translater implements FlowSupport {
     }
 
     public FlowContext<Chapter> translateTitle(FlowContext<Chapter> context) {
-        return translaterHeader.translate(context);
+        return plainTranslaterHeader.translate(context);
     }
 
     public FlowContext<Chapter> batchTranslateTitle(FlowContext<Chapter> context) {
-        return translaterHeader.batchTranslate(context);
+        return propertiesTranslaterHeader.batchTranslate(context);
     }
 
     public FlowContext<Chapter> translateWithScoring(FlowContext<Chapter> context) {

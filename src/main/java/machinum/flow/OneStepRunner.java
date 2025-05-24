@@ -6,8 +6,10 @@ import machinum.exception.AppIllegalStateException;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static machinum.config.Constants.*;
 import static machinum.flow.FlowContextActions.iteration;
@@ -115,21 +117,26 @@ public class OneStepRunner<T> implements FlowRunner<T> {
         var pipes = Objects.requireNonNull(runnerContext.getStatePipe(state),
                 "At least one pipe must be present for handling: " + state);
 
-        runnerContext.executeAroundEachStateAction(() -> processPipes(runnerContext, itemIndex, startPipeIndex, pipes, state));
+        var canUpdateState = runnerContext.executeAroundEachStateAction(() -> processPipes(runnerContext, itemIndex, startPipeIndex, pipes, state));
 
-        runnerContext.saveCurrentState(itemIndex + 1, 0, state);
+        if (canUpdateState) {
+            runnerContext.saveCurrentState(itemIndex + 1, 0, state);
+        }
     }
 
-    private void processPipes(RunnerContext<T> runnerContext, int itemIndex, int startPipeIndex,
-                              List<Function<FlowContext<T>, FlowContext<T>>> pipes, Flow.State state) {
+    private boolean processPipes(RunnerContext<T> runnerContext, int itemIndex, int startPipeIndex,
+                                 List<Function<FlowContext<T>, FlowContext<T>>> pipes, Flow.State state) {
+        var results = new ArrayList<Boolean>();
         try {
             for (int j = startPipeIndex; j < pipes.size(); j++) {
                 try {
                     var pipe = pipes.get(j);
                     if (pipe instanceof WindowedPipe) {
-                        processWindowedPipe(runnerContext, itemIndex, j, (WindowedPipe<T>) pipe, state);
+                        var windowedResult = processWindowedPipe(runnerContext, itemIndex, j, (WindowedPipe<T>) pipe, state);
+                        results.add(windowedResult);
                     } else {
                         processSinglePipe(runnerContext, itemIndex, j, pipe, state);
+                        results.add(Boolean.TRUE);
                     }
                 } catch (Exception e) {
                     handlePipeException(runnerContext, e);
@@ -138,10 +145,12 @@ public class OneStepRunner<T> implements FlowRunner<T> {
         } finally {
             runnerContext.cleanEphemeralArgs();
         }
+
+        return results.getLast();
     }
 
-    private void processWindowedPipe(RunnerContext<T> runnerContext, int itemIndex, int pipeIndex,
-                                     WindowedPipe<T> windowedPipe, Flow.State state) {
+    private boolean processWindowedPipe(RunnerContext<T> runnerContext, int itemIndex, int pipeIndex,
+                                        WindowedPipe<T> windowedPipe, Flow.State state) {
         var context = runnerContext.getFlowContext();
         var windowId = windowedPipe.getWindowId();
 
@@ -164,10 +173,16 @@ public class OneStepRunner<T> implements FlowRunner<T> {
             } else if (windowedPipe.shouldClearAfterTrigger()) {
                 runnerContext.getWindowBuffer().clearWindow(windowId);
             }
+
+            return true;
         }
 
         // Update state even if we don't process anything yet
-        runnerContext.saveCurrentState(itemIndex, pipeIndex + 1, state);
+        if (windowedPipe.shouldUpdateState(window)) {
+            runnerContext.saveCurrentState(itemIndex, pipeIndex + 1, state);
+        }
+
+        return false;
     }
 
     private void processSinglePipe(RunnerContext<T> runnerContext, int itemIndex, int pipeIndex,
@@ -289,6 +304,10 @@ public class OneStepRunner<T> implements FlowRunner<T> {
         default FlowContext<T> apply(FlowContext<T> context) {
             // This is a placeholder - actual processing happens in OneStepRunner
             return context;
+        }
+
+        default boolean shouldUpdateState(List<FlowContext<T>> contexts) {
+            return false;
         }
 
     }
@@ -445,8 +464,13 @@ public class OneStepRunner<T> implements FlowRunner<T> {
             return Objects.requireNonNull(getFlow().getAroundEachAction().apply(context, action), "Context can't be null");
         }
 
-        public void executeAroundEachStateAction(Runnable action) {
-            getFlow().getAroundEachStateAction().accept(getFlowContext(), action);
+        public boolean executeAroundEachStateAction(Supplier<Boolean> action) {
+            var result = new AtomicBoolean();
+            getFlow().getAroundEachStateAction().accept(getFlowContext(), () -> {
+                result.set(action.get());
+            });
+
+            return result.get();
         }
 
         public void executeSinkAction(FlowContext<T> context) {

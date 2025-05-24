@@ -1,20 +1,19 @@
 package machinum.converter;
 
 import machinum.entity.ChapterEntity;
-import machinum.entity.ChapterHistoryEntity;
 import machinum.model.Chapter;
-import machinum.model.ChapterHistory;
+import machinum.model.ChapterDataSummary.ChapterReadinessItem;
 import machinum.processor.core.ChapterWarning;
+import machinum.repository.ChapterReportRepository.ChapterReadinessItemProjection;
+import machinum.repository.ChapterRepository.ChapterTitleDto;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 
 import static machinum.processor.core.ChapterWarning.WarningType.EMPTY_FIELD;
 import static machinum.util.JavaUtil.firstNotNull;
@@ -70,6 +69,57 @@ public interface ChapterMapper extends BaseMapper<ChapterEntity, Chapter> {
         }
 
         target.setWarnings(new ArrayList<>(list));
+    }
+
+    Chapter toDto(ChapterTitleDto chapterTitleDto);
+
+    default ChapterReadinessItem toDto(ChapterReadinessItemProjection projection) {
+        var builder = ChapterReadinessItem.builder()
+                .chapterNumber(projection.getNumber());
+
+        // Field completion tracking
+        boolean hasTitle = projection.getTitle() != null && !projection.getTitle().trim().isEmpty();
+        boolean hasTranslatedTitle = projection.getTranslatedTitle() != null && !projection.getTranslatedTitle().trim().isEmpty();
+        boolean hasText = projection.getText() != null && !projection.getText().trim().isEmpty();
+        boolean hasTranslatedText = projection.getTranslatedText() != null && !projection.getTranslatedText().trim().isEmpty();
+        boolean hasSummary = projection.getSummary() != null && !projection.getSummary().trim().isEmpty();
+        boolean hasNames = projection.getNameCount() != null && projection.getNameCount() > 0;
+        boolean hasWarnings = projection.getWarningCount() != null && projection.getWarningCount() > 0;
+
+        builder.title(hasTitle)
+                .translatedTitle(hasTranslatedTitle)
+                .text(hasText)
+                .translatedText(hasTranslatedText)
+                .summary(hasSummary)
+                .names(hasNames)
+                .warnings(hasWarnings);
+
+        // Calculate readiness index (0-100)
+        double score = 0;
+
+        // Core content (60% weight)
+        if (hasTitle) score += 15;
+        if (hasText) score += 25;
+        if (hasSummary) score += 20;
+
+        // Translation (25% weight)
+        if (hasTranslatedTitle) score += 10;
+        if (hasTranslatedText) score += 15;
+
+        // Metadata (15% weight)
+        if (hasNames) score += 10;
+        if (hasWarnings) score += 5;
+
+        builder.readinessIndex(score);
+
+        // Determine status
+        if (score >= 90) builder.status("excellent");
+        else if (score >= 70) builder.status("good");
+        else if (score >= 50) builder.status("fair");
+        else if (score >= 30) builder.status("poor");
+        else builder.status("critical");
+
+        return builder.build();
     }
 
 }

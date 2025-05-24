@@ -4,6 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.victools.jsonschema.generator.MemberScope;
 import com.github.victools.jsonschema.generator.TypeScope;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
 import machinum.exception.AppIllegalStateException;
 import machinum.flow.FlowContext;
@@ -16,11 +20,6 @@ import machinum.processor.core.AssistantContext.OutputType;
 import machinum.tool.RawInfoTool;
 import machinum.util.CustomTypeReference;
 import machinum.util.JavaUtil;
-import machinum.util.TextSearchHelperUtil;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,12 +28,12 @@ import org.springframework.core.io.Resource;
 import org.springframework.retry.RetryHelper;
 import org.springframework.stereotype.Component;
 
-import java.io.StringReader;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static machinum.util.JavaUtil.createSuitableMap;
 import static machinum.util.TextUtil.countTokens;
 import static machinum.util.TextUtil.detectLost;
 
@@ -259,24 +258,6 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
         }
 
         return List.of();
-    }
-
-    private Map<String, String> createSuitableMap(List<String> originList, List<String> translatedList) {
-        var lostNames = detectLost(originList, translatedList);
-        var unsuitableNames = new ArrayList<>(detectLost(translatedList, originList));
-        var resultMap = new HashMap<String, String>();
-
-        for (var lostName : lostNames) {
-            var possibleObjects = TextSearchHelperUtil.search(unsuitableNames, lostName);
-
-            if (!possibleObjects.isEmpty()) {
-                var bestMatch = possibleObjects.getFirst();
-                resultMap.put(lostName, bestMatch);
-                unsuitableNames.remove(bestMatch);
-            }
-        }
-
-        return resultMap;
     }
 
     private ParameterizedTypeReference<List<TranslatedName>> outputClass() {

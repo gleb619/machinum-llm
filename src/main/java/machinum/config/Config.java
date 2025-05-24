@@ -6,36 +6,39 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.difflib.patch.Patch;
 import com.github.difflib.text.DiffRowGenerator;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import machinum.converter.ChapterHistoryMapper.ChapterInfoHistoryConverter;
 import machinum.converter.JsonlConverter;
 import machinum.extract.util.PatchDeserializer;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.async.AsyncHelper;
-import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.cache.CacheHelper;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.CachePlugin;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.cache.plugin.PluginConfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.db.DbHelper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.retry.RetryHelper;
 import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.filter.CommonsRequestLoggingFilter;
 import org.springframework.web.filter.CustomRequestLoggingFilter;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import static machinum.config.Config.CacheConstants.*;
 //import org.springframework.jdbc.core.JdbcTemplate;
 
 @Slf4j
@@ -77,7 +80,7 @@ public class Config {
     public CacheManager cacheManager(Caffeine caffeine) {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCaffeine(caffeine);
-        caffeineCacheManager.setCacheNames(List.of("store", "bookTitles"));
+        caffeineCacheManager.setCacheNames(List.of(STORE, BOOK_TITLES, CHAPTER_DATA_SUMMARY, CHAPTER_HEATMAP_DATA));
 //        return SnapshottingCacheManager.withSnapshot(caffeineCacheManager);
         return caffeineCacheManager;
     }
@@ -159,6 +162,33 @@ public class Config {
                     }
                 })
                 .build();
+    }
+
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class CacheConstants {
+
+        public static final String STORE = "store";
+
+        public static final String BOOK_TITLES = "bookTitles";
+
+        public static final String CHAPTER_DATA_SUMMARY = "chapterDataSummary";
+
+        public static final String CHAPTER_HEATMAP_DATA = "chapterHeatmapData";
+
+    }
+
+    @Configuration
+    public static class CacheExpiry {
+
+        @Scheduled(fixedRateString = "PT60S")
+        @CacheEvict(value = {
+                CHAPTER_DATA_SUMMARY,
+                CHAPTER_HEATMAP_DATA
+        }, allEntries = true)
+        public void emptyCaches() {
+            log.trace("Emptying cache...");
+        }
+
     }
 
 }

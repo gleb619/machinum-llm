@@ -5,6 +5,8 @@ import { listApp } from './book-list.js';
 import { statisticApp } from './book-statistic.js';
 import { processorSettingsApp } from './components/book-statistic-sidebar.js';
 import { bookStateApp } from './components/book-state.js';
+import { bookReportApp } from './components/book-report.js';
+import { titleListApp } from './components/book-title-list.js';
 
 const startTime = new Date().getTime();
 
@@ -26,6 +28,8 @@ export function app() {
             ...Object.getOwnPropertyDescriptors(statisticApp()),
             ...Object.getOwnPropertyDescriptors(processorSettingsApp()),
             ...Object.getOwnPropertyDescriptors(bookStateApp()),
+            ...Object.getOwnPropertyDescriptors(bookReportApp()),
+            ...Object.getOwnPropertyDescriptors(titleListApp()),
         });
     } catch(e) {
         debugger;

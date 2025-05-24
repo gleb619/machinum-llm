@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static machinum.config.Config.CacheConstants.STORE;
+
 /**
  * Helper class that provides a flexible key-value store abstraction.
  * Values can be retrieved by key from configured plugins, or generated
@@ -23,18 +25,18 @@ public class CacheHelper {
     private final CacheManager cacheManager;
     private final List<CachePlugin> plugins;
 
-    @Cacheable(value = "store", key = "#p0", condition="#p0 != null", unless = "#result == null")
+    @Cacheable(value = STORE, key = "#p0", condition = "#p0 != null", unless = "#result == null")
     public <T> Optional<T> getValue(String key) {
         T value = null;
         return Optional.ofNullable(value); // This will be overridden by the cached value
     }
 
-    @CachePut(value = "store", key = "#p0", condition="#p0 != null", unless = "#result == null")
+    @CachePut(value = STORE, key = "#p0", condition = "#p0 != null", unless = "#result == null")
     public <T> Optional<T> setValue(String key, T value) {
         return Optional.ofNullable(value);
     }
 
-    @CacheEvict(value = "store", key = "#p0", condition="#p0 != null")
+    @CacheEvict(value = STORE, key = "#p0", condition = "#p0 != null")
     public void evictValue(String key) {
         log.info("Cache evicted for key: {}", key);
 
@@ -44,7 +46,7 @@ public class CacheHelper {
     }
 
     public boolean cacheContainsKey(@NonNull String key) {
-        return cacheManager.getCache("store").get(key) != null;
+        return cacheManager.getCache(STORE).get(key) != null;
     }
 
     /**

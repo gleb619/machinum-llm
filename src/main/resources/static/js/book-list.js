@@ -89,6 +89,8 @@ export function listApp() {
         },
 
         changeActiveItem(bookId) {
+            const isNewBook = bookId === this.activeId;
+
             if(this.books && this.books.length > 0) {
                 const item = this.getById(this.books, bookId);
                 if(item) {
@@ -103,6 +105,12 @@ export function listApp() {
 
             if(this.activeId) {
                 this.currentBook = this.getById(this.books, this.activeId);
+            }
+
+            if(isNewBook) {
+                this.fetchTitles();
+                this.bookReportLoadData();
+                this.bookReportLoadHeatmapData();
             }
         },
 

@@ -59,9 +59,10 @@
 
             <div class="h-full overflow-hidden">
                 <!-- Report Tab -->
-                <div th:remove="tag" th:replace="~{book-report::report}">
+                <div th:remove="tag" th:replace="~{components/book/book-tab-book-report::report}">
                     <p>
-                        Here placed content of templates/book-report.html page, tag `th:fragment="report"`
+                        Here placed content of components/book/templates/book-tab-book-report.html page,
+                        tag `th:fragment="report"`
                     </p>
                 </div>
 
@@ -73,7 +74,11 @@
                 </div>
 
                 <!-- Titles Tab -->
-                <div class="h-full" x-show="bookActiveTab === 'titles'">
+                <div th:remove="tag" th:replace="~{components/book/book-tab-title-list::title-list}">
+                    <p>
+                        Here placed content of templates/components/book/book-tab-title-list.html page,
+                        tag `th:fragment="title-list"`
+                    </p>
                 </div>
 
                 <!-- Lines Tab -->

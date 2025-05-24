@@ -18,6 +18,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static machinum.util.TextUtil.detectLost;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class JavaUtil {
 
@@ -318,6 +320,24 @@ public class JavaUtil {
         Objects.requireNonNull(keyExtractor);
         return (Comparator<T> & Serializable)
                 (c1, c2) -> keyExtractor.apply(c2).compareTo(keyExtractor.apply(c1));
+    }
+
+    public static Map<String, String> createSuitableMap(List<String> originList, List<String> translatedList) {
+        var lostNames = detectLost(originList, translatedList);
+        var unsuitableNames = new ArrayList<>(detectLost(translatedList, originList));
+        var resultMap = new HashMap<String, String>();
+
+        for (var lostName : lostNames) {
+            var possibleObjects = TextSearchHelperUtil.search(unsuitableNames, lostName);
+
+            if (!possibleObjects.isEmpty()) {
+                var bestMatch = possibleObjects.getFirst();
+                resultMap.put(lostName, bestMatch);
+                unsuitableNames.remove(bestMatch);
+            }
+        }
+
+        return resultMap;
     }
 
     @SneakyThrows

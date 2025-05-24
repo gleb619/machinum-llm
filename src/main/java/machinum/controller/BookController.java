@@ -1,6 +1,12 @@
 package machinum.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
+import io.micrometer.core.instrument.util.IOUtils;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import machinum.converter.JsonlConverter;
 import machinum.model.Book;
 import machinum.model.Book.BookState;
@@ -9,19 +15,10 @@ import machinum.model.ObjectName;
 import machinum.service.BookFacade;
 import machinum.service.BookService;
 import machinum.util.TextUtil;
-import com.opencsv.CSVReader;
-import com.opencsv.CSVWriter;
-import io.micrometer.core.instrument.util.IOUtils;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -278,7 +276,10 @@ public class BookController {
     public ResponseEntity<Map<String, String>> getBookTitles(@RequestParam(name = "page", defaultValue = "0") int page,
                                                              @RequestParam(name = "size", defaultValue = "10") int size) {
         var result = bookService.getBookTitles(page, size);
-        return result.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(result);
+
+        return result.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
+                .body(result);
     }
 
     @GetMapping("/{id}/state")

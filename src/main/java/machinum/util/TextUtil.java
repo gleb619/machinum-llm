@@ -18,6 +18,7 @@ import org.springframework.util.StreamUtils;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -67,7 +68,7 @@ public class TextUtil {
                 .substring(0, Math.min(text.length(), length));
     }
 
-    public static String toShortDescription(List<String> list) {
+    public static String toShortDescription(Collection<String> list) {
         return list.stream()
                 .map(input -> "%s...; [%5d tokens|%5d words]".formatted(toShortDescription(input), countTokens(input), countWords(input)))
                 .collect(Collectors.joining("\n"));
@@ -311,7 +312,7 @@ public class TextUtil {
         return result;
     }
 
-    public static List<String> detectLost(List<String> oldList, List<String> newList) {
+    public static List<String> detectLost(Collection<String> oldList, Collection<String> newList) {
         var uniques = new ArrayList<>(oldList);
         uniques.removeAll(newList);
 

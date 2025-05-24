@@ -4,85 +4,100 @@
 <!-- Layout -->
 <div th:fragment="title-list" th:remove="tag">
     <div class="h-full" x-show="bookActiveTab === 'titles'">
-        <div class="bg-white overflow-hidden">
-            <div class="bg-white mx-auto p-4">
-                <h2 class="text-lg font-semibold mb-4 text-gray-900">Search</h2>
+        <div class="bg-white p-5 border-b border-gray-200">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900">Search & Operations</h2>
 
-                <!-- Search Radio Group -->
-                <div class="mb-6">
-                    <div class="mb-4 flex flex-wrap gap-2">
-                        <span class="block text-sm font-medium text-gray-700">Search in:</span>
-                        <label class="inline-flex items-center mr-3">
-                            <input @change="changeTitlePage(0)" class="form-radio text-blue-500" name="translation-filter"
-                                   type="radio"
-                                   value="all"
-                                   x-model="translationFilter">
-                            <span class="ml-2">All titles</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input @change="changeTitlePage(0)" class="form-radio text-blue-500" name="translation-filter"
-                                   type="radio"
-                                   value="missing"
-                                   x-model="translationFilter">
-                            <span class="ml-2">No translation</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input @change="changeTitlePage(0)" class="form-radio text-blue-500" name="translation-filter"
-                                   type="radio"
-                                   value="aberration"
-                                   x-model="translationFilter">
-                            <span class="ml-2">Aberration translation</span>
-                        </label>
+            <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                <!-- Search Options -->
+                <div class="w-full md:w-3/5">
+                    <!-- Search Radio Group -->
+                    <div class="mb-4">
+                        <div class="flex flex-wrap gap-3 items-center">
+                            <span class="text-sm font-medium text-gray-700">Search in:</span>
+                            <label class="inline-flex items-center">
+                                <input @change="changeValue('translationFilter', 'all'); changeTitlePage(0)" class="form-radio text-blue-500" name="translation-filter"
+                                       type="radio"
+                                       value="all"
+                                       x-model="translationFilter">
+                                <span class="ml-2">All titles</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input @change="changeValue('translationFilter', 'missing'); changeTitlePage(0)" class="form-radio text-blue-500" name="translation-filter"
+                                       type="radio"
+                                       value="missing"
+                                       x-model="translationFilter">
+                                <span class="ml-2">No translation</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input @change="changeValue('translationFilter', 'aberration'); changeTitlePage(0)" class="form-radio text-blue-500" name="translation-filter"
+                                       type="radio"
+                                       value="aberration"
+                                       x-model="translationFilter">
+                                <span class="ml-2">Aberration translation</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Filter Box -->
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"
+                                      stroke-width="2"></path>
+                            </svg>
+                        </div>
+                        <input class="pl-10 p-2 w-full border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Filter titles locally..."
+                               type="text"
+                               x-model="titleFilterTerm">
                     </div>
                 </div>
 
-                <!-- Global Actions -->
-                <div class="mt-4 bg-white shadow rounded-lg p-4">
-                    <h2 class="text-lg font-semibold mb-4 text-gray-900">Batch Operations</h2>
-                    <div class="flex flex-wrap gap-2">
-                        <button @click="translateAllTiles()"
-                                class="bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg py-2 px-4 transition duration-200">
-                            Translate All
-                        </button>
+                <!-- Batch Operations -->
+                <div class="w-full md:w-2/5">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-sm font-medium mb-3 text-gray-700">Batch Operations</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <button @click="translateAllTiles()" class="bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg py-2 px-4 transition duration-200 flex items-center disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+                                    disabled>
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                     xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" stroke-linecap="round" stroke-linejoin="round"
+                                          stroke-width="2"></path>
+                                </svg>
+                                Translate All
+                            </button>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <small class="italic text-xs mt-2">*disabled</small>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Filter -->
-            <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mx-auto p-4">
+        <!-- Titles List Section Header -->
+        <div class="px-5 py-4 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center justify-between">
+            <div class="flex items-center">
                 <h2 class="text-lg font-semibold text-gray-900">Titles</h2>
-
-                <!-- Filter and Count -->
-                <div class="relative w-full md:w-1/2">
-                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                             xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                                  stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-                        </svg>
-                    </div>
-                    <input class="pl-10 p-2 w-full border rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                           placeholder="Filter titles locally..." type="text" x-model="titleFilterTerm">
-                </div>
+                <span class="ml-3 text-sm text-gray-500" x-text="`(${titleTotalElements} items)`"></span>
             </div>
 
-            <div class="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between">
-                <div class="flex space-x-2">
-                    <div class="flex items-center">
-                        <span class="mr-2 text-gray-700">Show</span>
-                        <select
-                                class="border border-gray-300 px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                @change="changeTitlePage(0)"
-                                x-model="titlePageSize">
-                            <option value="10">10</option>
-                            <option value="20">20</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                        </select>
-                        <span class="ml-2 text-gray-700">entries</span>
-                    </div>
-                </div>
+            <div class="flex items-center mt-2 sm:mt-0">
+                <span class="text-sm text-gray-700 mr-2">Show</span>
+                <select
+                        @change="changeTitlePage(0)"
+                        class="border border-gray-300 px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        x-model="titlePageSize">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                <span class="text-sm text-gray-700 ml-2">per page</span>
             </div>
+        </div>
 
             <!-- Table -->
             <div class="overflow-x-auto">
@@ -170,8 +185,8 @@
 
             <!-- Pagination -->
             <div class="px-6 py-2 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-
-                <span x-text="`Page ${(titleCurrentPage + 1)} of ${titleTotalPages} (${titleTotalElements} total items)`"></span>
+                <span class="text-sm"
+                      x-text="`Page ${(titleCurrentPage + 1)} of ${titleTotalPages} (${titleTotalElements} total items)`"></span>
 
                 <div class="flex justify-center space-x-2">
                     <nav aria-label="Pagination" class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">

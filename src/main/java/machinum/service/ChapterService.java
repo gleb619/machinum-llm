@@ -12,11 +12,13 @@ import machinum.converter.ChapterMapper;
 import machinum.entity.ChapterEntity;
 import machinum.exception.AppIllegalStateException;
 import machinum.flow.FlowContext;
+import machinum.flow.Pack;
 import machinum.listener.ChapterEntityListener;
 import machinum.model.Book;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.repository.ChapterIndexRepository;
+import machinum.repository.ChapterReportRepository;
 import machinum.repository.ChapterRepository;
 import machinum.repository.ChapterRepository.GlossaryByQueryResult;
 import machinum.util.LanguageDetectorUtil;
@@ -47,6 +49,7 @@ public class ChapterService {
     private final ChapterMapper chapterMapper;
     private final Holder<ObjectMapper> objectMapperHolder;
     private final ChapterEntityListener chapterEntityListener;
+    private final ChapterReportRepository chapterReportRepository;
 
     @Value("${app.batch-size}")
     private final Integer batchSize;
@@ -253,6 +256,16 @@ public class ChapterService {
                         .ifPresent(translatedTitle -> {
                             ctx.getCurrentItem().setTranslatedTitle(translatedTitle);
                             chapterRepository.updateTranslatedTitle(chapterInfo.getId(), translatedTitle);
+                        });
+                ctx.optionalValue(FlowContext::resultArg)
+                        .filter(val -> val instanceof List<?> l && l.getFirst() instanceof Pack)
+                        .map(val -> (List<Pack<Chapter, String>>) val)
+                        .ifPresent(result -> {
+                            for (Pack<Chapter, String> pack : result) {
+                                var value = pack.getArgument().stringValue();
+                                chapterRepository.updateTranslatedTitle(pack.getItem().getId(), value);
+                                ctx.getCurrentItem().setTranslatedTitle(value);
+                            }
                         });
             }
             case TRANSLATE, COPYEDIT -> {
@@ -506,6 +519,40 @@ public class ChapterService {
                     var warningText = objectMapperHolder.execute(mapper -> toJsonString(mapper, warnings));
                     chapterRepository.updateWarning(chapterInfo.getId(), warningText);
                 });
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Chapter> findTitles(String bookId, PageRequest pageRequest) {
+        return chapterRepository.findTitles(bookId, pageRequest)
+                .map(chapterMapper::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Chapter> findMissingTitles(String bookId, PageRequest pageRequest) {
+        return chapterRepository.findMissingTitles(bookId, pageRequest)
+                .map(chapterMapper::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Chapter> findAberrationTitles(String bookId, PageRequest pageRequest) {
+        return chapterRepository.findAberrationTitles(bookId, pageRequest)
+                .map(chapterMapper::toDto);
+    }
+
+    @Transactional
+    public Chapter updateTitleFields(String id, String title, String translatedTitle) {
+        ChapterEntity entity = chapterRepository.findById(id)
+                .orElseThrow(() -> new AppIllegalStateException("Chapter not found for id: ", id));
+
+        if (title != null) {
+            entity.setTitle(title);
+        }
+
+        if (translatedTitle != null) {
+            entity.setTranslatedTitle(translatedTitle);
+        }
+
+        return chapterMapper.toDto(chapterRepository.save(entity));
     }
 
     /* ============= */

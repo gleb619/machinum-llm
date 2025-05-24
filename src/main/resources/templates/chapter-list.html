@@ -249,7 +249,7 @@
 
     <!-- Pagination -->
     <div class="flex justify-between items-center text-sm text-gray-700">
-        <span x-text="'Page ' + (currentPage + 1) + ' of ' + totalPages + ' (' + totalElements + ' total items)'"></span>
+        <span x-text="`Page ${(currentPage + 1)} of ${totalPages} (${totalElements} total items)`"></span>
         <small class="italic text-gray-400" x-show="!!filters.chapterNumber">Some of the data is hidden, please click on
             the <b>Chapters</b> button to display all chapters.</small>
 

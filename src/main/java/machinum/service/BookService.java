@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static machinum.config.Config.CacheConstants.BOOK_TITLES;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -130,7 +132,7 @@ public class BookService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "bookTitles", unless = "#result == null or #result.size() == 0")
+    @Cacheable(value = BOOK_TITLES, unless = "#result == null or #result.size() == 0")
     public Map<String, String> getBookTitles(int page, int size) {
         var result = bookRepository.findBy(PageRequest.of(page, size, Sort.by("createdAt")));
         return result.stream()

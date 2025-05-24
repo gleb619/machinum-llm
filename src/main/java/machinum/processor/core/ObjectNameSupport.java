@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Deprecated(forRemoval = true)
 public interface ObjectNameSupport {
 
     default String findReferences(List<ObjectName> names, String name) {

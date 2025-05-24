@@ -16,6 +16,7 @@ export function titleListApp() {
         debounceTimers: {},
 
         initTitleList() {
+            this.loadValue('translationFilter', 'all');
             this.fetchTitles();
         },
 
@@ -27,7 +28,7 @@ export function titleListApp() {
                 aberrationTranslation: (this.translationFilter === 'aberration'),
             });
 
-            if (this.translationFilter !== 'missing' && this.translationFilter !== 'aberration') {
+            if (!(this.translationFilter in ['missing', 'aberration'])) {
                 params.append('allTitles', 'true');
             }
 

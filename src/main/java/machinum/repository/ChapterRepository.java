@@ -1,7 +1,6 @@
 package machinum.repository;
 
 import machinum.entity.ChapterEntity;
-import machinum.model.Chapter;
 import machinum.util.TextUtil;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -406,6 +405,25 @@ public interface ChapterRepository extends JpaRepository<ChapterEntity, String> 
         return page(findAllById(ids.getContent()), withSort, ids.getTotalElements());
     }
 
+    @Query(value = "SELECT c FROM ChapterEntity c WHERE c.bookId = :bookId")
+    Page<ChapterTitleDto> findTitles(@Param("bookId") String bookId, PageRequest pageRequest);
+
+    @Query(value = "SELECT c FROM ChapterEntity c WHERE c.bookId = :bookId AND (LENGTH(TRIM(COALESCE(title, ''))) = 0 OR LENGTH(TRIM(COALESCE(translatedTitle, ''))) = 0)")
+    Page<ChapterTitleDto> findMissingTitles(@Param("bookId") String bookId, PageRequest pageRequest);
+
+    @Query(value =
+            Queries.ABERRATION_TITLES + """
+                    SELECT 
+                      id1 as id,
+                      number1 as number,
+                      title1 as title,
+                      translated_title1 as translatedTitle
+                    FROM translation_distances
+                    ORDER by number1, number2""",
+            countQuery = Queries.ABERRATION_TITLES + """
+                    SELECT count(id1) FROM translation_distances""", nativeQuery = true)
+    Page<ChapterTitleDto> findAberrationTitles(@Param("bookId") String bookId, PageRequest pageRequest);
+
     private Page<ChapterEntity> page(List<ChapterEntity> entities, Pageable pageable, long total) {
         entities.sort(Comparator.comparing(ChapterEntity::getNumber));
         
@@ -417,6 +435,64 @@ public interface ChapterRepository extends JpaRepository<ChapterEntity, String> 
         String getName();
 
         String getRawJson();
+
+    }
+
+    interface ChapterTitleDto {
+
+        String getId();
+
+        Integer getNumber();
+
+        String getTitle();
+
+        String getTranslatedTitle();
+
+    }
+
+    class Queries {
+
+        public static final String ABERRATION_TITLES = //language=sql
+                """
+                        WITH book_data AS (
+                            SELECT 
+                                *
+                            FROM chapter_info
+                            WHERE book_id = :bookId 
+                              AND title IS NOT NULL 
+                                AND translated_title IS NOT NULL 
+                            ORDER BY number
+                        ),
+                        similar_titles AS (
+                            SELECT 
+                                c1.id as id1,
+                                c2.id as id2,
+                                c1.title as title1,
+                                c2.title as title2,
+                                c1.translated_title as translated_title1,
+                                c2.translated_title as translated_title2,
+                                c1.number as number1,
+                                c2.number as number2,
+                                similarity(c1.title, c2.title) as title_similarity,
+                                similarity(c1.translated_title, c2.translated_title) as translation_similarity,
+                                row_number() OVER (PARTITION BY c1.id ORDER BY c1.number, c2.number) id1_num,
+                                row_number() OVER (PARTITION BY c2.id ORDER BY c1.number, c2.number) id2_num
+                            FROM book_data c1
+                            JOIN book_data c2 ON c1.book_id = c2.book_id 
+                                AND c1.id != c2.id
+                                AND similarity(c1.title, c2.title) > 0.7
+                        ),
+                        translation_distances AS (
+                            SELECT distinct on (id1)
+                              *
+                            FROM similar_titles
+                            WHERE title_similarity > 0.7
+                              AND translation_similarity < 0.5
+                              AND (title_similarity - translation_similarity) > 0.3
+                              AND (id1_num = 1 OR id2_num = 1)
+                        )
+                        """;
+
 
     }
 

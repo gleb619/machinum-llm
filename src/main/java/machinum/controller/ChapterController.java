@@ -1,13 +1,19 @@
 package machinum.controller;
 
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import machinum.model.Chapter;
+import machinum.model.ChapterDataSummary;
+import machinum.model.ChapterDataSummary.ChapterHeatmapData;
+import machinum.service.ChapterAnalysisService;
 import machinum.service.ChapterFacade;
 import machinum.service.ChapterService;
 import machinum.util.TextUtil;
-import lombok.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,16 +21,18 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @RestController
-@RequestMapping("/api/chapters")
 @RequiredArgsConstructor
 public class ChapterController {
 
     private final ChapterService chapterService;
+    private final ChapterAnalysisService chapterAnalysisService;
     private final ChapterFacade chapterFacade;
 
-    @GetMapping
+    @GetMapping("/api/chapters")
     public ResponseEntity<List<Chapter>> getAllChapters(ChapterSearchRequest request) {
         var result = doSearch(request);
 
@@ -44,19 +52,19 @@ public class ChapterController {
                 .body(result.getContent());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/api/chapters/{id}")
     public ResponseEntity<Chapter> getChapterById(@PathVariable("id") String id) {
         return chapterService.getChapterById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @PostMapping
+    @PostMapping("/api/chapters")
     public ResponseEntity<Chapter> createChapter(@RequestBody Chapter chapter) {
         return ResponseEntity.ok(chapterService.createChapter(chapter));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/api/chapters/{id}")
     public ResponseEntity<Chapter> updateChapter(@PathVariable("id") String id, @RequestBody Chapter updatedChapter) {
         if (!Objects.equals(id, updatedChapter.getId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -66,9 +74,62 @@ public class ChapterController {
         return ResponseEntity.ok(chapterFacade.updateChapter(updatedChapter));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/api/chapters/{id}")
     public ResponseEntity<Void> deleteChapter(@PathVariable("id") String id) {
         chapterService.deleteChapter(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/api/books/{bookId}/chapters-summary")
+    public ResponseEntity<ChapterDataSummary> getChapterSummary(@PathVariable("bookId") String bookId) {
+        log.info("Received request for chapter summary, bookId: {}", bookId);
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
+                .body(chapterAnalysisService.getChapterDataSummary(bookId));
+    }
+
+    @GetMapping("/api/books/{bookId}/chapters-heatmap")
+    public ResponseEntity<ChapterHeatmapData> getChapterHeatmap(@PathVariable("bookId") String bookId) {
+        log.info("Received request for chapter heatmap, bookId: {}", bookId);
+
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
+                .body(chapterAnalysisService.getChapterHeatmapData(bookId));
+    }
+
+    @GetMapping("/api/books/{bookId}/chapters-titles")
+    public ResponseEntity<List<Chapter>> getChaptersTitles(
+            @PathVariable("bookId") String bookId,
+            @RequestParam("page") int page,
+            @RequestParam("size") int size,
+            @RequestParam(value = "missingTranslation", defaultValue = "false") boolean missingTranslation,
+            @RequestParam(value = "aberrationTranslation", defaultValue = "false") boolean aberrationTranslation) {
+        log.debug("Fetching chapters titles for bookId: {}", bookId);
+        var result = doSearchChaptersTitles(bookId, page, size, missingTranslation, aberrationTranslation);
+
+        // Extract pagination metadata
+        int totalPages = result.getTotalPages();
+        long totalElements = result.getTotalElements();
+
+        // Build headers with pagination info
+        var headers = new HttpHeaders();
+        headers.add("X-Total-Pages", String.valueOf(totalPages));
+        headers.add("X-Total-Elements", String.valueOf(totalElements));
+        headers.add("X-Current-Page", String.valueOf(page));
+        headers.add("X-Page-Size", String.valueOf(size));
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(result.getContent());
+    }
+
+    @PatchMapping("/api/chapters/{id}/title")
+    public ResponseEntity<Chapter> updateTitleFields(
+            @PathVariable("id") String id,
+            @RequestBody Chapter updatedChapter) {
+
+        chapterService.updateTitleFields(id, updatedChapter.getTitle(), updatedChapter.getTranslatedTitle());
+
         return ResponseEntity.noContent().build();
     }
 
@@ -96,6 +157,20 @@ public class ChapterController {
             }
         } else {
             return chapterService.getAllChapters(request.getPageRequest());
+        }
+    }
+
+    private Page<Chapter> doSearchChaptersTitles(String bookId, int page, int size,
+                                                 boolean missingTranslation, boolean aberrationTranslation) {
+        PageRequest withSort = PageRequest.of(page, size).withSort(Sort.by("number"));
+        if (missingTranslation || aberrationTranslation) {
+            if (missingTranslation) {
+                return chapterService.findMissingTitles(bookId, withSort);
+            } else {
+                return chapterService.findAberrationTitles(bookId, PageRequest.of(page, size));
+            }
+        } else {
+            return chapterService.findTitles(bookId, withSort);
         }
     }
 
