@@ -136,6 +136,12 @@ public class ChapterController {
     /* ============= */
 
     private Page<Chapter> doSearch(ChapterSearchRequest request) {
+        if (Objects.nonNull(request.getChapterId())) {
+            return chapterService.findById(request.getChapterId())
+                    .map(chapter -> (Page) new PageImpl<>(List.of(chapter)))
+                    .orElseGet(() -> Page.empty());
+        }
+
         if (Objects.nonNull(request.getBookId())) {
             if (TextUtil.isNotEmpty(request.getQuery()) && TextUtil.isNotEmpty(request.getQueryNames())) {
                 return chapterService.findByCombinedCriteria(request.getBookId(), request.getQuery(),
@@ -183,6 +189,7 @@ public class ChapterController {
         private String query;
         private String queryNames;
         private String bookId;
+        private String chapterId;
         private Integer chapterNumber;
         private boolean englishText;
         private boolean suspiciousOriginalWords;

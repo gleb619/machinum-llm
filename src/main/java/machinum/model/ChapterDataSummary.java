@@ -1,6 +1,7 @@
 package machinum.model;
 
 import lombok.*;
+import machinum.processor.core.ChapterWarning;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,6 +64,8 @@ public class ChapterDataSummary {
         private Boolean summary;
         private Boolean names;
         private Boolean warnings;
+        @Builder.Default
+        private List<ChapterWarning> chapterWarnings = new ArrayList<>();
 
     }
 

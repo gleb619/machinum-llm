@@ -55,7 +55,8 @@ public interface ChapterReportRepository extends JpaRepository<ChapterEntity, St
              ci0.translated_text as translatedText, 
              ci0.summary, 
              json_array_length(ci0.names) as nameCount, 
-             jsonb_array_length(ci0.warnings) as warningCount 
+             jsonb_array_length(ci0.warnings) as warningCount,
+             ci0.warnings #>> '{}' as warningsRaw 
             FROM chapter_info ci0 
             WHERE ci0.book_id = :bookId 
             ORDER BY ci0.number""", nativeQuery = true)
@@ -82,6 +83,8 @@ public interface ChapterReportRepository extends JpaRepository<ChapterEntity, St
         Long getNameCount();
 
         Long getWarningCount();
+
+        String getWarningsRaw();
 
     }
 

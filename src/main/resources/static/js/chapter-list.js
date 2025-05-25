@@ -10,6 +10,7 @@ export function listApp() {
         totalElements: 10,
         searchQuery: '',
         searchNames: '',
+        chapterId: '',
         filters: {
             bookId: '',
             chapterNumber: '',
@@ -29,11 +30,16 @@ export function listApp() {
 
         initList() {
             this.loadFiltersFromLocalStorage();
-
-            const qBookId = this.fromSearchParams(window.location.search).get('bookId');
+            const params = this.fromSearchParams(window.location.search);
+            const qBookId = params.get('bookId');
+            const chapterId = params.get('chapterId');
             if(qBookId) {
                 this.filters.bookId = qBookId;
                 this.saveFiltersToLocalStorage(false);
+            }
+            if(chapterId) {
+                this.chapterId = chapterId;
+                this.activeId = chapterId;
             }
 
             this.loadValue('currentPage', 0);
@@ -116,7 +122,13 @@ export function listApp() {
                bookId: this.filters.bookId || undefined
             };
 
-            if(this.activeSearchTab === 'filters') {
+            if(this.chapterId) {
+                request = {
+                    ...request,
+                    chapterId: this.chapterId
+                };
+            }
+            else if(this.activeSearchTab === 'filters') {
                 request = {
                     ...request,
                     chapterNumber: this.filters.chapterNumber || -1

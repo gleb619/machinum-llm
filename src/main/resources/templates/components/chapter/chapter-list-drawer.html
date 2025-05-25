@@ -5,7 +5,8 @@
 <div th:fragment="drawer" th:remove="tag">
     <!-- Left Drawer for Summary Editor -->
     <div :class="showPanel ? 'translate-x-0' : '-translate-x-full'"
-         class="fixed top-0 left-0 h-screen w-2/3 bg-white shadow-lg z-10 transform transition-transform duration-300 z-20" x-show="showPanel">
+         class="fixed top-0 left-0 h-screen w-2/3 bg-white shadow-lg z-10 transform transition-transform duration-300 z-20 overflow-y-auto"
+         x-show="showPanel">
         <div class="p-4">
             <h2 class="text-xl font-bold mb-4">Chapter Summary</h2>
             <div class="relative">
@@ -93,6 +94,20 @@
                                 class="w-full rounded-md border border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 px-3 py-2 text-sm h-20 resize-none"
                                 placeholder="Describe the warning..."></textarea>
                     </div>
+
+                    <div class="flex-1 min-w-0">
+                        <div class="mt-2 text-xs text-gray-500"
+                             x-show="warning.metadata && Object.keys(warning.metadata).length > 0">
+                            <template
+                                    :key="key"
+                                    x-for="[key, value] in Object.entries(warning.metadata || {})">
+                                <span class="inline-block mr-3">
+                                    <span class="font-medium" x-text="key"></span>:
+                                    <span x-text="value"></span>
+                                </span>
+                            </template>
+                        </div>
+                    </div>
                 </div>
             </template>
             </template>
@@ -101,7 +116,8 @@
 
     <!-- Create/Edit Panel -->
     <div :class="showPanel ? 'translate-x-0' : 'translate-x-full'"
-         class="fixed top-0 right-0 h-screen w-1/3 bg-white shadow-lg z-10 transform transition-transform duration-300 z-20" x-show="showPanel">
+         class="fixed top-0 right-0 h-screen w-1/3 bg-white shadow-lg z-10 transform transition-transform duration-300 z-20"
+         x-show="showPanel">
         <div class="p-4">
             <h2 class="text-xl font-bold mb-4" x-text="editing ? 'Edit Chapter' : 'Add Chapter'"></h2>
             <form @submit.prevent="saveChapter">
@@ -144,7 +160,11 @@
                            type="text" x-model="currentChapter.sourceKey">
                 </div>
                 <div class="flex space-x-2 pt-4 mt-4">
-                    <button class="ml-auto bg-green-500 text-white px-4 py-2 rounded" type="submit">Save</button>
+                    <button :class="isSaving ? 'bg-yellow-500 scale-110' : 'bg-green-500'"
+                            class="ml-auto text-white px-4 py-2 rounded transition duration-300 ease-in-out"
+                            type="submit">
+                        Save
+                    </button>
                     <button @click="closePanel()" class="ml-2 bg-gray-300 text-gray-700 px-4 py-2 rounded" type="button">
                         Cancel
                     </button>

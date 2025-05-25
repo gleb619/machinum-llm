@@ -2,7 +2,7 @@ package machinum.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import machinum.converter.ChapterMapper;
+import machinum.converter.ChapterAnalysisMapper;
 import machinum.model.ChapterDataSummary;
 import machinum.model.ChapterDataSummary.ChapterHeatmapData;
 import machinum.model.ChapterDataSummary.ChapterReadinessItem;
@@ -22,7 +22,7 @@ import static machinum.config.Config.CacheConstants.CHAPTER_HEATMAP_DATA;
 public class ChapterAnalysisService {
 
     private final ChapterReportRepository chapterReportRepository;
-    private final ChapterMapper chapterMapper;
+    private final ChapterAnalysisMapper chapterAnalysisMapper;
 
 
     @Transactional(readOnly = true)
@@ -96,7 +96,7 @@ public class ChapterAnalysisService {
         log.info("Generating chapter heatmap data for bookId: {}", bookId);
 
         var chapters = chapterReportRepository.getChapterReadinessData(bookId).stream()
-                .map(chapterMapper::toDto)
+                .map(chapterAnalysisMapper::toDto)
                 .collect(Collectors.toList());
 
         // Calculate statistics

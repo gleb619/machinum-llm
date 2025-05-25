@@ -54,6 +54,13 @@
                             @click="changeValue('bookActiveTab', 'lines')"
                             class="font-bold border-b-2 pb-2">Lines
                     </button>
+                    <button :class="{
+                                'text-gray-500 border-transparent': bookActiveTab !== 'glossary',
+                                'text-blue-600 border-blue-600': bookActiveTab === 'glossary'
+                            }"
+                            @click="changeValue('bookActiveTab', 'glossary')"
+                            class="font-bold border-b-2 pb-2">Glossary
+                    </button>
                 </nav>
             </div>
 
@@ -83,6 +90,14 @@
 
                 <!-- Lines Tab -->
                 <div class="h-full" x-show="bookActiveTab === 'lines'">
+                </div>
+
+                <!-- Glossary Tab -->
+                <div th:remove="tag" th:replace="~{components/book/book-tab-glossary-list::glossary-list}">
+                    <p>
+                        Here placed content of templates/components/book/book-tab-glossary-list.html page,
+                        tag `th:fragment="glossary-list"`
+                    </p>
                 </div>
             </div>
 

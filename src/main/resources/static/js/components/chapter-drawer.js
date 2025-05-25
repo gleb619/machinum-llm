@@ -102,10 +102,27 @@ export function chapterDrawerApp() {
             this.targetName = JSON.parse(JSON.stringify(nameToCopy));
         },
 
+        addNewWarning() {
+            if(!this.currentChapter.warnings) {
+                this.currentChapter.warnings = [];
+            }
+            this.currentChapter.warnings.push({
+                type: 'EMPTY_FIELD',
+                text: '',
+                metadata: {}
+            });
+        },
+
+        removeWarning(index) {
+            if(index > -1) {
+                this.currentChapter.warnings.splice(index, 1)
+            }
+        },
+
         saveChanges() {
             if(this.showEditNamesPanel) {
                 this.saveNames();
-            } else if(this.showEditNamesPanel) {
+            } else if(this.showPanel) {
                 this.saveChapter();
             } else {
                 console.error("Panel doesn't opened");

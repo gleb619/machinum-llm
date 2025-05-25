@@ -99,7 +99,7 @@ export function bookReportApp() {
                             this.getPercentage('names'),
                             100 - this.getPercentage('warnings', 'warningsPercentage'),
                         ],
-                        backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#FCD34D', '#6366F1', '#EC4899', '#0EA5E9', '#EF4444'],
+                        backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#FCD34D', '#6366F1', '#EC4899', '#EC061D', '#EF4444'],
                         borderColor: ['#2563EB', '#059669', '#D97706', '#DC2626', '#4F46E5', '#DB2777', '#0284C7', '#F5A623'],
                         borderWidth: 1
                     }]
@@ -136,7 +136,7 @@ export function bookReportApp() {
                             this.summary.emptyNames,
                             this.summary.totalChapters - this.summary.emptyWarnings
                         ],
-                        backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#FCD34D', '#6366F1', '#EC4899', '#0EA5E9', '#EF4444'],
+                        backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#FCD34D', '#6366F1', '#EC4899', '#EC061D', '#EF4444'],
                         borderWidth: 2
                     }]
                 },
@@ -168,28 +168,26 @@ export function bookReportApp() {
             }
         },
 
-        getHeatmapCellClass(readinessIndex) {
-            if (readinessIndex >= 90) return 'bg-green-500 hover:bg-green-600';
-            if (readinessIndex >= 70) return 'bg-blue-500 hover:bg-blue-600';
-            if (readinessIndex >= 50) return 'bg-yellow-500 hover:bg-yellow-600';
-            if (readinessIndex >= 30) return 'bg-orange-500 hover:bg-orange-600';
-            return 'bg-red-500 hover:bg-red-600';
+        getHeatmapCellClass(percentage) {
+            if (percentage >= 99) return 'bg-green-600 hover:bg-green-700';
+            if (percentage >= 95) return 'bg-green-400 hover:bg-green-500';
+            if (percentage >= 85) return 'bg-blue-400 hover:bg-blue-500';
+            if (percentage >= 75) return 'bg-blue-600 hover:bg-blue-700';
+            if (percentage >= 50) return 'bg-yellow-400 hover:bg-yellow-500';
+            if (percentage >= 30) return 'bg-yellow-600 hover:bg-yellow-700';
+            if (percentage >= 10) return 'bg-red-400 hover:bg-red-500';
+            return 'bg-red-600 hover:bg-red-700';
         },
 
-        getReadinessColor(readinessIndex) {
-            if (readinessIndex >= 90) return 'text-green-600';
-            if (readinessIndex >= 70) return 'text-blue-600';
-            if (readinessIndex >= 50) return 'text-yellow-600';
-            if (readinessIndex >= 30) return 'text-orange-600';
-            return 'text-red-600';
-        },
-
-        getReadinessBarClass(readinessIndex) {
-            if (readinessIndex >= 90) return 'bg-green-500';
-            if (readinessIndex >= 70) return 'bg-blue-500';
-            if (readinessIndex >= 50) return 'bg-yellow-500';
-            if (readinessIndex >= 30) return 'bg-orange-500';
-            return 'bg-red-500';
+        getReadinessBarClass(percentage) {
+            if (percentage >= 99) return 'bg-green-600';
+            if (percentage >= 95) return 'bg-green-400';
+            if (percentage >= 85) return 'bg-blue-400';
+            if (percentage >= 75) return 'bg-blue-600';
+            if (percentage >= 50) return 'bg-yellow-400';
+            if (percentage >= 30) return 'bg-yellow-600';
+            if (percentage >= 10) return 'bg-red-400';
+            return 'bg-red-600';
         },
 
         getStatusTextClass(status) {
@@ -197,7 +195,7 @@ export function bookReportApp() {
                 'excellent': 'text-green-600',
                 'good': 'text-blue-600',
                 'fair': 'text-yellow-600',
-                'poor': 'text-orange-600',
+                'poor': 'text-yellow-400',
                 'critical': 'text-red-600'
             };
             return classes[status] || 'text-gray-600';
