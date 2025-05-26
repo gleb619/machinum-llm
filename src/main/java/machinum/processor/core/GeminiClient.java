@@ -16,7 +16,10 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-import swiss.ameri.gemini.api.*;
+import swiss.ameri.gemini.api.Content;
+import swiss.ameri.gemini.api.GenAi;
+import swiss.ameri.gemini.api.GenerativeModel;
+import swiss.ameri.gemini.api.ModelVariant;
 import swiss.ameri.gemini.spi.JsonParser;
 
 import java.time.Duration;
@@ -59,7 +62,7 @@ public class GeminiClient implements AiClient {
     public AssistantMessage call(AssistantContext assistantContext, Prompt prompt) {
         var model = parsePrompt(prompt);
 
-        log.info("Executing gemini request with context: {}", assistantContext);
+        log.info("|-->> Executing gemini request with context: {}", assistantContext);
         GenAi.GeneratedContent content = null;
         try {
             content = execute(model, assistantContext)

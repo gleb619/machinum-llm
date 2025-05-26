@@ -97,9 +97,30 @@ public interface BookRepository extends JpaRepository<BookEntity, String> {
             """, nativeQuery = true)
     List<String> getGlossaryForBookId(String bookId);
 
-    List<BookTitlesQueryResult> findBy(PageRequest pageRequest);
+    @Query(value = """
+            WITH data AS (
+            	SELECT 
+            	    id, 
+            	    title
+            	FROM books
+            	ORDER BY created_at
+            )
+            , chapters AS (
+            	SELECT
+            		ci0.book_id,
+            		COUNT(d0.id) chaptersCount 
+            	FROM data d0
+            	LEFT JOIN chapter_info ci0 ON ci0.book_id = d0.id
+            	GROUP BY ci0.book_id
+            )
+            SELECT 
+                d1.*,
+                c1.chaptersCount
+            FROM data d1
+            JOIN chapters c1 ON c1.book_id = d1.id""", nativeQuery = true)
+    List<BookExportResult> findBooksForExport(PageRequest pageRequest);
 
-    record BookTitlesQueryResult(String id, String title) {
+    record BookExportResult(String id, String title, Long chaptersCount) {
     }
 
 }

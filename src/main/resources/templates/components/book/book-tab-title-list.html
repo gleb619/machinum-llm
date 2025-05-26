@@ -15,24 +15,27 @@
                         <div class="flex flex-wrap gap-3 items-center">
                             <span class="text-sm font-medium text-gray-700">Search in:</span>
                             <label class="inline-flex items-center">
-                                <input @change="changeValue('translationFilter', 'all'); changeTitlePage(0)" class="form-radio text-blue-500" name="translation-filter"
+                                <input @change="changeValue('titlesTranslationFilter', 'all'); changeTitlePage(0)"
+                                       class="form-radio text-blue-500" name="translation-filter"
                                        type="radio"
                                        value="all"
-                                       x-model="translationFilter">
+                                       x-model="titlesTranslationFilter">
                                 <span class="ml-2">All titles</span>
                             </label>
                             <label class="inline-flex items-center">
-                                <input @change="changeValue('translationFilter', 'missing'); changeTitlePage(0)" class="form-radio text-blue-500" name="translation-filter"
+                                <input @change="changeValue('titlesTranslationFilter', 'missing'); changeTitlePage(0)"
+                                       class="form-radio text-blue-500" name="translation-filter"
                                        type="radio"
                                        value="missing"
-                                       x-model="translationFilter">
+                                       x-model="titlesTranslationFilter">
                                 <span class="ml-2">No translation</span>
                             </label>
                             <label class="inline-flex items-center">
-                                <input @change="changeValue('translationFilter', 'aberration'); changeTitlePage(0)" class="form-radio text-blue-500" name="translation-filter"
+                                <input @change="changeValue('titlesTranslationFilter', 'aberration'); changeTitlePage(0)"
+                                       class="form-radio text-blue-500" name="translation-filter"
                                        type="radio"
                                        value="aberration"
-                                       x-model="translationFilter">
+                                       x-model="titlesTranslationFilter">
                                 <span class="ml-2">Aberration translation</span>
                             </label>
                         </div>
@@ -144,7 +147,7 @@
                                 <div class="excel-cell">
                                     <input
                                             type="text"
-                                            @blur="saveChanges(title)"
+                                            @blur="saveTitleChanges(title)"
                                             @keydown.enter="$event.target.blur()"
                                             class="w-full px-2 py-2 bg-transparent border-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:bg-white"
                                             x-model="title.title">
@@ -154,7 +157,7 @@
                                 <div class="flex excel-cell hover:bg-white">
                                     <input
                                             type="text"
-                                            @blur="saveChanges(title)"
+                                            @blur="saveTitleChanges(title)"
                                             @keydown.enter="$event.target.blur()"
                                             class="w-full px-2 py-2 bg-transparent border-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                             x-model="title.translatedTitle">

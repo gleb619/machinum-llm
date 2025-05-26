@@ -14,19 +14,17 @@ import machinum.model.Book;
 import machinum.model.Book.BookState;
 import machinum.model.ObjectName;
 import machinum.repository.BookRepository;
-import machinum.repository.BookRepository.BookTitlesQueryResult;
+import machinum.repository.BookRepository.BookExportResult;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import static machinum.config.Config.CacheConstants.BOOK_TITLES;
+import static machinum.config.Config.CacheConstants.BOOKS_FOR_EXPORT;
 
 @Slf4j
 @Service
@@ -132,11 +130,11 @@ public class BookService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = BOOK_TITLES, unless = "#result == null or #result.size() == 0")
-    public Map<String, String> getBookTitles(int page, int size) {
-        var result = bookRepository.findBy(PageRequest.of(page, size, Sort.by("createdAt")));
-        return result.stream()
-                .collect(Collectors.toMap(BookTitlesQueryResult::id, BookTitlesQueryResult::title, (f, s) -> f));
+    @Cacheable(value = BOOKS_FOR_EXPORT, unless = "#result == null or #result.size() == 0")
+    public List<BookExportResult> getBooksForExport(int page, int size) {
+        return bookRepository.findBooksForExport(PageRequest.of(page, size)).stream()
+                .map(bookMapper::toExportDto)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)

@@ -17,10 +17,10 @@ import machinum.listener.ChapterEntityListener;
 import machinum.model.Book;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
+import machinum.repository.ChapterGlossaryRepository.GlossaryByQueryResult;
 import machinum.repository.ChapterIndexRepository;
 import machinum.repository.ChapterReportRepository;
 import machinum.repository.ChapterRepository;
-import machinum.repository.ChapterRepository.GlossaryByQueryResult;
 import machinum.util.LanguageDetectorUtil;
 import machinum.util.TextUtil;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,12 +30,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static machinum.config.Constants.TRANSLATED_TITLE;
 import static machinum.listener.ChapterEntityListener.ChapterInfoConstants.*;
-import static machinum.util.JavaUtil.uniqueBy;
 import static machinum.util.LanguageDetectorUtil.Lang.RUSSIAN;
 import static machinum.util.TextUtil.isNotEmpty;
 
@@ -335,57 +337,6 @@ public class ChapterService {
         log.debug("Prepare to load chapter from db: {}", id);
         return chapterRepository.findById(id)
                 .map(chapterMapper::toDto);
-    }
-
-    @Transactional(readOnly = true)
-    public List<ObjectName> findReferences(@NonNull Integer chapterNumber, @NonNull List<ObjectName> glossary, String bookId, int similarityRatio) {
-        if (glossary.isEmpty()) {
-            return glossary;
-        }
-
-        log.debug("Prepare to load references for glossary: {}", glossary.size());
-        var names = uniqueBy(glossary, ObjectName::getName).stream()
-                .map(ObjectName::getName)
-                .collect(Collectors.toList());
-
-        var pairs = chapterRepository.findGlossaryByQuery(names, chapterNumber, bookId);
-
-        if (pairs.size() == names.size()) {
-            return pairs.stream()
-                    .map(GlossaryByQueryResult::getRawJson)
-                    .map(rawJson -> objectMapperHolder.execute(mapper -> mapper.readValue(rawJson, ObjectName.class)))
-                    .collect(Collectors.toList());
-        } else {
-            var terms = findMissingNames(pairs, names);
-            var termsOr = terms.stream()
-                    .map(s -> String.join(" or ", s.split("\\s+")))
-                    .collect(Collectors.toList());
-
-            if (terms.isEmpty() || termsOr.isEmpty()) {
-                return Collections.emptyList();
-            }
-
-            return chapterRepository.findLatestGlossaryListByQuery(terms, termsOr, chapterNumber, bookId).stream()
-                    .map(rawJson -> objectMapperHolder.execute(mapper -> mapper.readValue(rawJson, ObjectName.class)))
-                    .collect(Collectors.toList());
-//            return chapterRepository.findLatestGlossaryByQuery(chapterNumber, missingNames, bookId, similarityRatio).stream()
-//                    .map(rawJson -> objectMapperHolder.execute(mapper -> mapper.readValue(rawJson, ObjectName.class)))
-//                    .collect(Collectors.toList());
-        }
-    }
-
-    @Transactional(readOnly = true)
-    public List<ObjectName> findTranslations(@NonNull String bookId, @NonNull List<ObjectName> glossary) {
-        if (glossary.isEmpty()) {
-            return glossary;
-        }
-
-        log.debug("Prepare to load translated names from old glossary terms: {}", glossary.size());
-        return chapterRepository.findTranslatedNames(bookId, uniqueBy(glossary, ObjectName::getName).stream()
-                        .map(ObjectName::getName)
-                        .collect(Collectors.toList())).stream()
-                .map(rawJson -> objectMapperHolder.execute(mapper -> mapper.readValue(rawJson, ObjectName.class)))
-                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)

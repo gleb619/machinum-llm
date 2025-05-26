@@ -7,18 +7,23 @@ import io.micrometer.core.instrument.util.IOUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import machinum.controller.core.ControllerTrait;
 import machinum.converter.JsonlConverter;
 import machinum.model.Book;
 import machinum.model.Book.BookState;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
+import machinum.repository.BookRepository.BookExportResult;
 import machinum.service.BookFacade;
 import machinum.service.BookService;
 import machinum.util.TextUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,7 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -41,7 +45,7 @@ import java.util.zip.ZipOutputStream;
 @RestController
 @RequestMapping("/api/books")
 @RequiredArgsConstructor
-public class BookController {
+public class BookController implements ControllerTrait {
 
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy_MM_dd_hh_mm");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy_MM_dd");
@@ -50,21 +54,6 @@ public class BookController {
     private final ObjectMapper mapper;
     private final BookService bookService;
     private final BookFacade bookFacade;
-
-    public static byte[] exportToCsv(List<ObjectName> objects) throws IOException {
-        var stringWriter = new StringWriter();
-        try (CSVWriter writer = new CSVWriter(stringWriter)) {
-            // Write header
-            writer.writeNext(new String[]{"name", "ruName", "category", "description"});
-
-            // Map objects to string arrays and write
-            objects.stream()
-                    .map(obj -> new String[]{obj.getName(), obj.optionalRuName().orElse(""), obj.getCategory(), obj.getDescription()})
-                    .forEach(writer::writeNext);
-        }
-
-        return stringWriter.toString().getBytes(StandardCharsets.UTF_8);
-    }
 
     @GetMapping
     public ResponseEntity<List<Book>> getAllChapters(@RequestParam(name = "query", required = false) String query,
@@ -83,20 +72,7 @@ public class BookController {
             result = bookService.getAllBooks(pageRequest);
         }
 
-        // Extract pagination metadata
-        int totalPages = result.getTotalPages();
-        long totalElements = result.getTotalElements();
-
-        // Build headers with pagination info
-        var headers = new HttpHeaders();
-        headers.add("X-Total-Pages", String.valueOf(totalPages));
-        headers.add("X-Total-Elements", String.valueOf(totalElements));
-        headers.add("X-Current-Page", String.valueOf(page));
-        headers.add("X-Page-Size", String.valueOf(size));
-
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(result.getContent());
+        return pageResponse(result);
     }
 
     @SneakyThrows
@@ -273,13 +249,11 @@ public class BookController {
     }
 
     @GetMapping("/titles")
-    public ResponseEntity<Map<String, String>> getBookTitles(@RequestParam(name = "page", defaultValue = "0") int page,
-                                                             @RequestParam(name = "size", defaultValue = "10") int size) {
-        var result = bookService.getBookTitles(page, size);
+    public ResponseEntity<List<BookExportResult>> getBooksForExport(@RequestParam(name = "page", defaultValue = "0") int page,
+                                                                    @RequestParam(name = "size", defaultValue = "10") int size) {
+        var result = bookService.getBooksForExport(page, size);
 
-        return result.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
-                .body(result);
+        return result.isEmpty() ? ResponseEntity.noContent().build() : withCacheControl(result);
     }
 
     @GetMapping("/{id}/state")
@@ -338,6 +312,21 @@ public class BookController {
                             .ruName(row[1]))
                     .collect(Collectors.toList());
         }
+    }
+
+    private byte[] exportToCsv(List<ObjectName> objects) throws IOException {
+        var stringWriter = new StringWriter();
+        try (CSVWriter writer = new CSVWriter(stringWriter)) {
+            // Write header
+            writer.writeNext(new String[]{"name", "ruName", "category", "description"});
+
+            // Map objects to string arrays and write
+            objects.stream()
+                    .map(obj -> new String[]{obj.getName(), obj.optionalRuName().orElse(""), obj.getCategory(), obj.getDescription()})
+                    .forEach(writer::writeNext);
+        }
+
+        return stringWriter.toString().getBytes(StandardCharsets.UTF_8);
     }
 
 }

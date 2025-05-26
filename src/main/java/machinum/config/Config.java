@@ -80,7 +80,7 @@ public class Config {
     public CacheManager cacheManager(Caffeine caffeine) {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCaffeine(caffeine);
-        caffeineCacheManager.setCacheNames(List.of(STORE, BOOK_TITLES, CHAPTER_DATA_SUMMARY, CHAPTER_HEATMAP_DATA));
+        caffeineCacheManager.setCacheNames(List.of(STORE, BOOKS_FOR_EXPORT, CHAPTER_DATA_SUMMARY, CHAPTER_HEATMAP_DATA));
 //        return SnapshottingCacheManager.withSnapshot(caffeineCacheManager);
         return caffeineCacheManager;
     }
@@ -169,7 +169,7 @@ public class Config {
 
         public static final String STORE = "store";
 
-        public static final String BOOK_TITLES = "bookTitles";
+        public static final String BOOKS_FOR_EXPORT = "booksForExport";
 
         public static final String CHAPTER_DATA_SUMMARY = "chapterDataSummary";
 

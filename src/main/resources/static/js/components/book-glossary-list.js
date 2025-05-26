@@ -5,18 +5,18 @@ export function glossaryListApp() {
     return {
         glossaryList: [],
         glossaryListBackup: [],
-        translationFilter: 'all',
+        glossaryTranslationFilter: 'all',
         glossaryFilterTerm: '',
         glossaryCurrentPage: 0,
-        glossaryPageSize: 20,
+        glossaryPageSize: 50,
         glossaryTotalPages: 0,
         glossaryTotalElements: 0,
-        glossarySortColumn: 'number',
+        glossarySortColumn: 'chapterNumber',
         glossarySortDirection: 'asc',
         debounceTimers: {},
 
         initGlossaryList() {
-            this.loadValue('translationFilter', 'all');
+            this.loadValue('glossaryTranslationFilter', 'all');
             this.fetchGlossary();
         },
 
@@ -24,15 +24,14 @@ export function glossaryListApp() {
             const params = new URLSearchParams({
                 page: this.glossaryCurrentPage,
                 size: this.glossaryPageSize,
-                missingTranslation: (this.translationFilter === 'missing'),
-                aberrationTranslation: (this.translationFilter === 'aberration'),
+                missingTranslation: (this.glossaryTranslationFilter === 'missing'),
             });
 
-            if (!(this.translationFilter in ['missing', 'aberration'])) {
+            if (!(this.glossaryTranslationFilter in ['missing'])) {
                 params.append('allGlossary', 'true');
             }
 
-            fetch(`/api/books/${this.activeId}/chapters-glossaryList?${params.toString()}`)
+            fetch(`/api/books/${this.activeId}/glossary?${params.toString()}`)
                 .then(response => response.json()
                    .then(rsp => {
                       if (!response.ok) {
@@ -58,17 +57,18 @@ export function glossaryListApp() {
             if (this.glossaryFilterTerm.trim() !== '') {
                 const term = this.glossaryFilterTerm.toLowerCase();
                 filtered = filtered.filter(glossary =>
-                    glossary.glossary.toLowerCase().includes(term) ||
-                    glossary.translatedGlossary.toLowerCase().includes(term) ||
-                    glossary.number.toString().includes(term)
+                    glossary.name.toLowerCase().includes(term) ||
+                    glossary.category.toLowerCase().includes(term) ||
+                    glossary.ruName.toLowerCase().includes(term) ||
+                    glossary.chapterNumber.toString().includes(term)
                 );
             }
 
             filtered.sort((a, b) => {
                 let comparison = 0;
 
-                if (this.glossarySortColumn === 'number') {
-                    comparison = a.number - b.number;
+                if (this.glossarySortColumn === 'chapterNumber') {
+                    comparison = a.chapterNumber - b.chapterNumber;
                 } else {
                     const aValue = a[this.glossarySortColumn].toLowerCase();
                     const bValue = b[this.glossarySortColumn].toLowerCase();
@@ -121,14 +121,14 @@ export function glossaryListApp() {
             return pages;
         },
 
-        saveChanges(glossary) {
+        saveGlossaryChanges(glossary) {
             // Check if glossary has actually changed by comparing with backup
             const originalGlossary = this.glossaryListBackup.find(t => t.id === glossary.id);
             if (!originalGlossary) return;
 
-            const hasChanges = originalGlossary.number !== glossary.number ||
+            const hasChanges = originalGlossary.chapterNumber !== glossary.chapterNumber ||
                                originalGlossary.glossary !== glossary.glossary ||
-                               originalGlossary.translatedGlossary !== glossary.translatedGlossary;
+                               originalGlossary.ruName !== glossary.ruName;
 
             if (!hasChanges) return;
 
@@ -145,12 +145,12 @@ export function glossaryListApp() {
 
             // Set new timer (debounce to avoid too many requests)
             this.debounceTimers[glossary.id] = setTimeout(() => {
-                this.saveGlossaryChanges(glossary);
+                this.updateGlossaryChanges(glossary);
                 delete this.debounceTimers[glossary.id];
             }, 500);
         },
 
-        saveGlossaryChanges(glossary) {
+        updateGlossaryChanges(glossary) {
             fetch(`/api/chapters/${glossary.id}/glossary`, {
                 method: 'PATCH',
                 headers: {
@@ -183,10 +183,10 @@ export function glossaryListApp() {
                 const data = await this.translateToRussian(glossary.glossary);
 
                 // Update the translated glossary
-                glossary.translatedGlossary = data;
+                glossary.ruName = data;
 
                 // Save the changes
-                this.saveChanges(glossary);
+                this.saveGlossaryChanges(glossary);
 
                 this.showToast('Translation completed', false);
             } catch (error) {

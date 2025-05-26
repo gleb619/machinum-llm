@@ -5,7 +5,7 @@ export function titleListApp() {
     return {
         titles: [],
         titlesBackup: [],
-        translationFilter: 'all',
+        titlesTranslationFilter: 'all',
         titleFilterTerm: '',
         titleCurrentPage: 0,
         titlePageSize: 20,
@@ -16,7 +16,7 @@ export function titleListApp() {
         debounceTimers: {},
 
         initTitleList() {
-            this.loadValue('translationFilter', 'all');
+            this.loadValue('titlesTranslationFilter', 'all');
             this.fetchTitles();
         },
 
@@ -24,11 +24,11 @@ export function titleListApp() {
             const params = new URLSearchParams({
                 page: this.titleCurrentPage,
                 size: this.titlePageSize,
-                missingTranslation: (this.translationFilter === 'missing'),
-                aberrationTranslation: (this.translationFilter === 'aberration'),
+                missingTranslation: (this.titlesTranslationFilter === 'missing'),
+                aberrationTranslation: (this.titlesTranslationFilter === 'aberration'),
             });
 
-            if (!(this.translationFilter in ['missing', 'aberration'])) {
+            if (!(this.titlesTranslationFilter in ['missing', 'aberration'])) {
                 params.append('allTitles', 'true');
             }
 
@@ -121,7 +121,7 @@ export function titleListApp() {
             return pages;
         },
 
-        saveChanges(title) {
+        saveTitleChanges(title) {
             // Check if title has actually changed by comparing with backup
             const originalTitle = this.titlesBackup.find(t => t.id === title.id);
             if (!originalTitle) return;
@@ -145,12 +145,12 @@ export function titleListApp() {
 
             // Set new timer (debounce to avoid too many requests)
             this.debounceTimers[title.id] = setTimeout(() => {
-                this.saveTitleChanges(title);
+                this.updateTitleChanges(title);
                 delete this.debounceTimers[title.id];
             }, 500);
         },
 
-        saveTitleChanges(title) {
+        updateTitleChanges(title) {
             fetch(`/api/chapters/${title.id}/title`, {
                 method: 'PATCH',
                 headers: {
@@ -186,7 +186,7 @@ export function titleListApp() {
                 title.translatedTitle = data;
 
                 // Save the changes
-                this.saveChanges(title);
+                this.saveTitleChanges(title);
 
                 this.showToast('Translation completed', false);
             } catch (error) {

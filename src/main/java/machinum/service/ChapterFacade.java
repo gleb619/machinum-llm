@@ -6,16 +6,15 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.exception.AppIllegalStateException;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
+import machinum.model.ChapterGlossary;
 import machinum.processor.core.GeminiClient;
 import machinum.repository.LineDao;
-import machinum.util.JavaUtil;
 import machinum.util.TextUtil;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.async.AsyncHelper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.db.DbHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -25,7 +24,6 @@ import java.util.List;
 import java.util.Objects;
 
 import static machinum.config.Constants.*;
-import static machinum.listener.ChapterEntityListener.ChapterInfoConstants.*;
 
 @Slf4j
 @Service
@@ -33,6 +31,7 @@ import static machinum.listener.ChapterEntityListener.ChapterInfoConstants.*;
 public class ChapterFacade {
 
     private final ChapterService chapterService;
+    private final ChapterGlossaryService chapterGlossaryService;
     private final LineService lineService;
     private final TemplateAiFacade templateAiFacade;
     private final LineDao lineDao;
@@ -171,6 +170,10 @@ public class ChapterFacade {
             }
             default -> throw new AppIllegalStateException("Unknown state: %s".formatted(state));
         }
+    }
+
+    public Page<ChapterGlossary> findBookGlossary(String bookId, PageRequest pageRequest) {
+        return chapterGlossaryService.findBookGlossary(bookId, pageRequest);
     }
 
 }

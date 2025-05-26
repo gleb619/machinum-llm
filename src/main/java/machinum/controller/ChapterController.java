@@ -2,9 +2,11 @@ package machinum.controller;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import machinum.controller.core.ControllerTrait;
 import machinum.model.Chapter;
 import machinum.model.ChapterDataSummary;
 import machinum.model.ChapterDataSummary.ChapterHeatmapData;
+import machinum.model.ChapterGlossary;
 import machinum.service.ChapterAnalysisService;
 import machinum.service.ChapterFacade;
 import machinum.service.ChapterService;
@@ -13,20 +15,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.CacheControl;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-public class ChapterController {
+public class ChapterController implements ControllerTrait {
 
     private final ChapterService chapterService;
     private final ChapterAnalysisService chapterAnalysisService;
@@ -36,20 +35,7 @@ public class ChapterController {
     public ResponseEntity<List<Chapter>> getAllChapters(ChapterSearchRequest request) {
         var result = doSearch(request);
 
-        // Extract pagination metadata
-        int totalPages = result.getTotalPages();
-        long totalElements = result.getTotalElements();
-
-        // Build headers with pagination info
-        var headers = new HttpHeaders();
-        headers.add("X-Total-Pages", String.valueOf(totalPages));
-        headers.add("X-Total-Elements", String.valueOf(totalElements));
-        headers.add("X-Current-Page", String.valueOf(request.getPage()));
-        headers.add("X-Page-Size", String.valueOf(request.getSize()));
-
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(result.getContent());
+        return pageResponse(result);
     }
 
     @GetMapping("/api/chapters/{id}")
@@ -83,18 +69,14 @@ public class ChapterController {
     @GetMapping("/api/books/{bookId}/chapters-summary")
     public ResponseEntity<ChapterDataSummary> getChapterSummary(@PathVariable("bookId") String bookId) {
         log.info("Received request for chapter summary, bookId: {}", bookId);
-        return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
-                .body(chapterAnalysisService.getChapterDataSummary(bookId));
+        return withCacheControl(chapterAnalysisService.getChapterDataSummary(bookId));
     }
 
     @GetMapping("/api/books/{bookId}/chapters-heatmap")
     public ResponseEntity<ChapterHeatmapData> getChapterHeatmap(@PathVariable("bookId") String bookId) {
         log.info("Received request for chapter heatmap, bookId: {}", bookId);
 
-        return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
-                .body(chapterAnalysisService.getChapterHeatmapData(bookId));
+        return withCacheControl(chapterAnalysisService.getChapterHeatmapData(bookId));
     }
 
     @GetMapping("/api/books/{bookId}/chapters-titles")
@@ -107,20 +89,7 @@ public class ChapterController {
         log.debug("Fetching chapters titles for bookId: {}", bookId);
         var result = doSearchChaptersTitles(bookId, page, size, missingTranslation, aberrationTranslation);
 
-        // Extract pagination metadata
-        int totalPages = result.getTotalPages();
-        long totalElements = result.getTotalElements();
-
-        // Build headers with pagination info
-        var headers = new HttpHeaders();
-        headers.add("X-Total-Pages", String.valueOf(totalPages));
-        headers.add("X-Total-Elements", String.valueOf(totalElements));
-        headers.add("X-Current-Page", String.valueOf(page));
-        headers.add("X-Page-Size", String.valueOf(size));
-
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(result.getContent());
+        return pageResponse(result);
     }
 
     @PatchMapping("/api/chapters/{id}/title")
@@ -131,6 +100,25 @@ public class ChapterController {
         chapterService.updateTitleFields(id, updatedChapter.getTitle(), updatedChapter.getTranslatedTitle());
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/api/books/{bookId}/glossary")
+    public ResponseEntity<List<ChapterGlossary>> getBookGlossary(
+            @PathVariable("bookId") String bookId,
+            @RequestParam("page") int page,
+            @RequestParam("size") int size,
+            @RequestParam(value = "missingTranslation", defaultValue = "false") boolean missingTranslation) {
+        log.debug("Fetching chapters names for bookId: {}", bookId);
+
+        Page<ChapterGlossary> result;
+        if (missingTranslation) {
+            //TODO add handler for missingTranslation param
+            result = chapterFacade.findBookGlossary(bookId, PageRequest.of(page, size));
+        } else {
+            result = chapterFacade.findBookGlossary(bookId, PageRequest.of(page, size));
+        }
+
+        return pageResponse(result);
     }
 
     /* ============= */

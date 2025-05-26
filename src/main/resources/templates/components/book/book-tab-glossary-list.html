@@ -15,28 +15,20 @@
                         <div class="flex flex-wrap gap-3 items-center">
                             <span class="text-sm font-medium text-gray-700">Search in:</span>
                             <label class="inline-flex items-center">
-                                <input @change="changeValue('translationFilter', 'all'); changeGlossaryPage(0)"
+                                <input @change="changeValue('glossaryTranslationFilter', 'all'); changeGlossaryPage(0)"
                                        class="form-radio text-blue-500" name="translation-filter"
                                        type="radio"
                                        value="all"
-                                       x-model="translationFilter">
+                                       x-model="glossaryTranslationFilter">
                                 <span class="ml-2">All glossary</span>
                             </label>
                             <label class="inline-flex items-center">
-                                <input @change="changeValue('translationFilter', 'missing'); changeGlossaryPage(0)"
+                                <input @change="changeValue('glossaryTranslationFilter', 'missing'); changeGlossaryPage(0)"
                                        class="form-radio text-blue-500" name="translation-filter"
                                        type="radio"
                                        value="missing"
-                                       x-model="translationFilter">
+                                       x-model="glossaryTranslationFilter">
                                 <span class="ml-2">No translation</span>
-                            </label>
-                            <label class="inline-flex items-center">
-                                <input @change="changeValue('translationFilter', 'aberration'); changeGlossaryPage(0)"
-                                       class="form-radio text-blue-500" name="translation-filter"
-                                       type="radio"
-                                       value="aberration"
-                                       x-model="translationFilter">
-                                <span class="ml-2">Aberration translation</span>
                             </label>
                         </div>
                     </div>
@@ -83,10 +75,10 @@
             </div>
         </div>
 
-        <!-- Glossarys List Section Header -->
+        <!-- Glossary List Section Header -->
         <div class="px-5 py-4 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center justify-between">
             <div class="flex items-center">
-                <h2 class="text-lg font-semibold text-gray-900">Glossarys</h2>
+                <h2 class="text-lg font-semibold text-gray-900">Glossary</h2>
                 <span class="ml-3 text-sm text-gray-500" x-text="`(${glossaryTotalElements} items)`"></span>
             </div>
 
@@ -110,28 +102,37 @@
             <table class="w-full table-auto">
                 <thead>
                 <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
-                    <th @click="sortGlossaryBy('number')" class="py-3 px-6 text-left cursor-pointer">
+                    <th @click="sortGlossaryBy('chapterNumber')" class="py-3 px-6 text-left cursor-pointer">
                         <div class="flex items-center">
                             Number
-                            <span class="ml-2" x-show="glossarySortColumn === 'number'">
+                            <span class="ml-2" x-show="glossarySortColumn === 'chapterNumber'">
                             <template x-if="glossarySortDirection === 'asc'"><small>▲</small></template>
                             <template x-if="glossarySortDirection === 'desc'"><small>▼</small></template>
                         </span>
                         </div>
                     </th>
-                    <th @click="sortGlossaryBy('glossary')" class="py-3 px-6 text-left cursor-pointer">
+                    <th @click="sortGlossaryBy('name')" class="py-3 px-6 text-left cursor-pointer max-w-md">
                         <div class="flex items-center">
-                            Glossary
-                            <span class="ml-2" x-show="glossarySortColumn === 'glossary'">
+                            Name
+                            <span class="ml-2" x-show="glossarySortColumn === 'name'">
                             <template x-if="glossarySortDirection === 'asc'"><small>▲</small></template>
                             <template x-if="glossarySortDirection === 'desc'"><small>▼</small></template>
                         </span>
                         </div>
                     </th>
-                    <th @click="sortGlossaryBy('translatedGlossary')" class="py-3 px-6 text-left cursor-pointer">
+                    <th @click="sortGlossaryBy('category')" class="py-3 px-6 text-left cursor-pointer">
                         <div class="flex items-center">
-                            Translated Glossary
-                            <span class="ml-2" x-show="glossarySortColumn === 'translatedGlossary'">
+                            Category
+                            <span class="ml-2" x-show="glossarySortColumn === 'category'">
+                            <template x-if="glossarySortDirection === 'asc'"><small>▲</small></template>
+                            <template x-if="glossarySortDirection === 'desc'"><small>▼</small></template>
+                        </span>
+                        </div>
+                    </th>
+                    <th @click="sortGlossaryBy('ruName')" class="py-3 px-6 text-left cursor-pointer min-w-md">
+                        <div class="flex items-center">
+                            Translated Name
+                            <span class="ml-2" x-show="glossarySortColumn === 'ruName'">
                             <template x-if="glossarySortDirection === 'asc'"><small>▲</small></template>
                             <template x-if="glossarySortDirection === 'desc'"><small>▼</small></template>
                         </span>
@@ -144,26 +145,27 @@
                     <tr :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50'"
                         class="border-b border-gray-200 hover:bg-gray-100">
                         <td class="py-3 px-6 text-left">
-                            <span x-text="glossary.number"></span>
+                            <span x-text="index + 1"></span>
+                            <small class="text-xs text-gray-300" x-text="`Chapter ${glossary.chapterNumber}`"></small>
                         </td>
                         <td class="py-3 px-6 text-left">
-                            <div class="excel-cell">
-                                <input
-                                        @blur="saveChanges(glossary)"
-                                        @keydown.enter="$event.target.blur()"
-                                        class="w-full px-2 py-2 bg-transparent border-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:bg-white"
-                                        type="text"
-                                        x-model="glossary.glossary">
+                            <div class="space-y-1 max-w-md" x-bind:title="glossary.description">
+                                <h4 class="font-semibold text-gray-900" x-text="glossary.name"></h4>
+                                <p class="text-gray-600 text-xs leading-relaxed truncate cursor-pointer"
+                                   x-text="glossary.description"></p>
                             </div>
+                        </td>
+                        <td class="py-3 px-6 text-left">
+                            <span x-text="glossary.category"></span>
                         </td>
                         <td class="py-3 px-6 text-left">
                             <div class="flex excel-cell hover:bg-white">
                                 <input
-                                        @blur="saveChanges(glossary)"
+                                        @blur="saveGlossaryChanges(glossary)"
                                         @keydown.enter="$event.target.blur()"
                                         class="w-full px-2 py-2 bg-transparent border-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         type="text"
-                                        x-model="glossary.translatedGlossary">
+                                        x-model="glossary.ruName">
                                 <button
                                         @click="handleTranslateGlossary(glossary)"
                                         class="pl-2 mr-2 text-gray-600 hover:text-blue-600 focus:outline-none"
@@ -182,7 +184,7 @@
                 <template x-if="glossaryListFiltered.length === 0">
                     <tr class="bg-white">
                         <td class="py-6 text-center text-gray-500" colspan="3">
-                            No glossaryList found
+                            No glossary found
                         </td>
                     </tr>
                 </template>
