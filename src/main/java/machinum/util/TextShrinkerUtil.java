@@ -1,8 +1,10 @@
 package machinum.util;
 
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -12,9 +14,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TextShrinkerUtil {
 
     private static final Pattern SENTENCE_PATTERN = Pattern.compile("([^.!?]+[.!?])");
+    public static final int DEFAULT_THRESHOLD = 2;
 
     public static String shrinkText(String text, int shrinkPercent) {
         if (text == null || text.isEmpty() || shrinkPercent <= 0 || shrinkPercent >= 100) {
@@ -74,7 +78,7 @@ public class TextShrinkerUtil {
         List<Sentence> remaining = sentences.stream()
                 .filter(s -> !toRemove.contains(s))
                 .sorted()
-                .collect(Collectors.toList());
+                .toList();
 
         int left = 0;
         int right = remaining.size() - 1;
@@ -82,14 +86,14 @@ public class TextShrinkerUtil {
         while (currentReduction < targetReduction && left < right) {
             if (left % 2 == 0) {
                 Sentence candidate = remaining.get(left);
-                if (!hasNearbyRemoved(candidate, toRemove, 2)) {
+                if (hasNotNearbyRemoved(candidate, toRemove, DEFAULT_THRESHOLD)) {
                     toRemove.add(candidate);
                     currentReduction += candidate.getLength();
                 }
                 left++;
             } else {
                 Sentence candidate = remaining.get(right);
-                if (!hasNearbyRemoved(candidate, toRemove, 2)) {
+                if (hasNotNearbyRemoved(candidate, toRemove, DEFAULT_THRESHOLD)) {
                     toRemove.add(candidate);
                     currentReduction += candidate.getLength();
                 }
@@ -100,9 +104,9 @@ public class TextShrinkerUtil {
         return toRemove;
     }
 
-    private static boolean hasNearbyRemoved(Sentence candidate, List<Sentence> removed, int threshold) {
+    private static boolean hasNotNearbyRemoved(Sentence candidate, List<Sentence> removed, int threshold) {
         return removed.stream()
-                .anyMatch(r -> Math.abs(r.getStartPosition() - candidate.getStartPosition()) <
+                .noneMatch(r -> Math.abs(r.getStartPosition() - candidate.getStartPosition()) <
                         threshold * candidate.getLength());
     }
 
@@ -116,7 +120,7 @@ public class TextShrinkerUtil {
 
         List<Sentence> sortedRemoved = toRemove.stream()
                 .sorted(Comparator.comparingInt(Sentence::getStartPosition))
-                .collect(Collectors.toList());
+                .toList();
 
         for (Sentence removed : sortedRemoved) {
             result.append(originalText, currentPos, removed.getStartPosition());
@@ -134,6 +138,7 @@ public class TextShrinkerUtil {
     @Data
     @AllArgsConstructor
     private static class Sentence implements Comparable<Sentence> {
+
         private String text;
         private int startPosition;
         private int endPosition;
@@ -143,6 +148,7 @@ public class TextShrinkerUtil {
         public int compareTo(Sentence other) {
             return Integer.compare(this.length, other.length);
         }
+
     }
 
 }

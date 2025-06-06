@@ -1,17 +1,17 @@
 package machinum.extract;
 
-import machinum.flow.FlowContextActions;
-import machinum.model.Chapter;
-import machinum.flow.FlowContext;
-import machinum.flow.FlowSupport;
-import machinum.processor.core.Assistant;
-import machinum.processor.core.AssistantContext;
-import machinum.processor.core.PreconditionSupport;
-import machinum.tool.RawInfoTool;
-import machinum.util.TextUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import machinum.flow.FlowContext;
+import machinum.flow.FlowContextActions;
+import machinum.model.Chapter;
+import machinum.processor.core.Assistant;
+import machinum.processor.core.AssistantContext;
+import machinum.processor.core.FlowSupport;
+import machinum.processor.core.PreconditionSupport;
+import machinum.tool.RawInfoTool;
+import machinum.util.TextUtil;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -29,12 +29,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static machinum.config.Constants.FLOW_TYPE;
 import static machinum.config.Constants.SCORE;
-import static machinum.flow.FlowSupport.HistoryItem.*;
-import static machinum.flow.FlowSupport.HistoryItem.CONSOLIDATED_GLOSSARY;
 import static machinum.processor.core.AiClient.Provider.parse;
+import static machinum.processor.core.FlowSupport.HistoryItem.*;
 import static machinum.util.JavaUtil.calculatePercent;
-import static machinum.util.JavaUtil.calculatePercentDifference;
-import static machinum.util.TextUtil.*;
+import static machinum.util.TextUtil.countTokens;
+import static machinum.util.TextUtil.toShortDescription;
 
 @Slf4j
 @Component

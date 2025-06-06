@@ -3,7 +3,8 @@
 <body>
 <!-- Layout -->
 <div th:fragment="title-list" th:remove="tag">
-    <div class="h-full" x-show="bookActiveTab === 'titles'">
+    <template x-if="bookActiveTab === 'titles'">
+        <div class="h-full">
         <div class="bg-white p-5 border-b border-gray-200">
             <h2 class="text-lg font-semibold mb-4 text-gray-900">Search & Operations</h2>
 
@@ -16,7 +17,7 @@
                             <span class="text-sm font-medium text-gray-700">Search in:</span>
                             <label class="inline-flex items-center">
                                 <input @change="changeValue('titlesTranslationFilter', 'all'); changeTitlePage(0)"
-                                       class="form-radio text-blue-500" name="translation-filter"
+                                       class="form-radio text-blue-500" name="titles-translation-filter"
                                        type="radio"
                                        value="all"
                                        x-model="titlesTranslationFilter">
@@ -24,7 +25,7 @@
                             </label>
                             <label class="inline-flex items-center">
                                 <input @change="changeValue('titlesTranslationFilter', 'missing'); changeTitlePage(0)"
-                                       class="form-radio text-blue-500" name="translation-filter"
+                                       class="form-radio text-blue-500" name="titles-translation-filter"
                                        type="radio"
                                        value="missing"
                                        x-model="titlesTranslationFilter">
@@ -32,7 +33,7 @@
                             </label>
                             <label class="inline-flex items-center">
                                 <input @change="changeValue('titlesTranslationFilter', 'aberration'); changeTitlePage(0)"
-                                       class="form-radio text-blue-500" name="translation-filter"
+                                       class="form-radio text-blue-500" name="titles-translation-filter"
                                        type="radio"
                                        value="aberration"
                                        x-model="titlesTranslationFilter">
@@ -261,7 +262,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </template>
 </div>
 </body>
 </html>

@@ -31,11 +31,11 @@ public class OneStepRunner<T> implements FlowRunner<T> {
         var flowContextRef = new AtomicReference<FlowContext<T>>(FlowContextActions.of(b -> b
                 .state(currentState)
                 .metadata(metadata)
-                .flow(flow)
+                .flow(flow.copy(Function.identity()))
         ));
 
         var runnerContext = RunnerContext.<T>of(b -> b
-                .flow(flow)
+                .flow(flow.copy(Function.identity()))
                 .currentState(currentState)
                 .sm(sm)
                 .metadata(metadata)
@@ -94,20 +94,17 @@ public class OneStepRunner<T> implements FlowRunner<T> {
 
     private void prepareContext(RunnerContext<T> runnerContext, T originItem) {
         if (runnerContext.isExtendEnabled()) {
-            var extendContext = runnerContext.getFlowContext()
-                    .copy(b -> b.flow(runnerContext.flowCopy(Function.identity())));
+            var extendContext = runnerContext.getFlowContext();
             runnerContext.updateFlowContext(runnerContext.executeExtendAction(extendContext));
         }
 
-        var bootstrapContext = runnerContext.executeBootstrapAction(runnerContext.copyFlowContext(b -> b.currentItem(originItem)
-                .flow(runnerContext.flowCopy(Function.identity()))));
+        var bootstrapContext = runnerContext.executeBootstrapAction(runnerContext.getFlowContext().withCurrentItem(originItem));
         runnerContext.updateFlowContext(bootstrapContext);
     }
 
     private void processItem(RunnerContext<T> runnerContext, int itemIndex, int startPipeIndex) {
         var itemFromSource = runnerContext.getItem(itemIndex);
-        var refreshContext = runnerContext.copyFlowContext(b -> b.currentItem(itemFromSource)
-                .flow(runnerContext.flowCopy(Function.identity())));
+        var refreshContext = runnerContext.getFlowContext().withCurrentItem(itemFromSource);
         var itemAfterRefresh = runnerContext.executeRefreshAction(refreshContext);
         var currentItemContext = refreshContext.withCurrentItem(itemAfterRefresh)
                 .rearrange(FlowContext::iterationArg, iteration(itemIndex + 1));
@@ -397,10 +394,6 @@ public class OneStepRunner<T> implements FlowRunner<T> {
 
         public void updateFlowContext(FlowContext<T> newContext) {
             flowContextRef.set(newContext);
-        }
-
-        public FlowContext<T> copyFlowContext(Function<FlowContext.FlowContextBuilder<T>, FlowContext.FlowContextBuilder<T>> fn) {
-            return getFlowContext().copy(fn);
         }
 
         public FlowContext<T> getFlowContext() {

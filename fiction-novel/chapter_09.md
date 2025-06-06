@@ -1,6 +1,4 @@
-**Chapter 9: The Duel**
-
----
+# Chapter 9: The Duel
 
 The training arena was buzzing with anticipation as apprentices and masters alike gathered to witness the highly
 anticipated duel between Kael and Vayne. The air was thick with tension, and all eyes were on the two young blacksmiths

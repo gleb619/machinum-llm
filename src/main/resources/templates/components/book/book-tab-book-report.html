@@ -3,8 +3,8 @@
 <body>
 <!-- Layout -->
 <div th:fragment="report" th:remove="tag">
-
-    <div class="h-full" x-show="bookActiveTab === 'report'">
+    <template x-if="bookActiveTab === 'report'">
+        <div class="h-full">
         <div class="container mx-auto">
             <template x-if="summary">
                 <div class="px-4 py-4">
@@ -16,45 +16,49 @@
                             <p class="text-3xl font-bold text-blue-600" x-text="summary?.totalChapters || 0"></p>
                         </div>
                         <div class="bg-white rounded-lg shadow-md p-6">
-                            <h3 class="text-lg font-semibold text-gray-700 mb-2">Complete Titles</h3>
+                            <h3 class="text-lg font-semibold text-gray-700 mb-2">Titles</h3>
                             <p :class="getColorClassForPercentage(getPercentage('title'))" class="text-3xl font-bold"
                                x-text="getCompleteCount('title')"></p>
-                            <p class="text-sm text-gray-500" x-text="getPercentage('title') + '% complete'"></p>
+                            <p class="text-sm text-gray-500"
+                               x-text="getPercentage('title') + '% of chapters has a title'"></p>
                         </div>
                         <div class="bg-white rounded-lg shadow-md p-6">
                             <h3 class="text-lg font-semibold text-gray-700 mb-2">Translated Titles</h3>
                             <p :class="getColorClassForPercentage(getPercentage('translatedTitle'))" class="text-3xl font-bold "
                                x-text="getCompleteCount('translatedTitle')"></p>
                             <p class="text-sm text-gray-500"
-                               x-text="getPercentage('translatedTitle') + '% complete'"></p>
+                               x-text="getPercentage('translatedTitle') + '% of titles is translated'"></p>
                         </div>
                         <div class="bg-white rounded-lg shadow-md p-6">
                             <h3 class="text-lg font-semibold text-gray-700 mb-2">Summaries</h3>
                             <p :class="getColorClassForPercentage(getPercentage('summary'))" class="text-3xl font-bold "
                                x-text="getCompleteCount('summary', 'emptySummaries')"></p>
-                            <p class="text-sm text-gray-500" x-text="getPercentage('summary') + '% complete'"></p>
+                            <p class="text-sm text-gray-500"
+                               x-text="getPercentage('summary') + '% of chapters has a summary'"></p>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                         <div class="bg-white rounded-lg shadow-md p-6">
-                            <h3 class="text-lg font-semibold text-gray-700 mb-2">Complete texts</h3>
+                            <h3 class="text-lg font-semibold text-gray-700 mb-2">Texts</h3>
                             <p :class="getColorClassForPercentage(getPercentage('text'))" class="text-3xl font-bold "
                                x-text="getCompleteCount('text')"></p>
-                            <p class="text-sm text-gray-500" x-text="getPercentage('text') + '% complete'"></p>
+                            <p class="text-sm text-gray-500"
+                               x-text="getPercentage('text') + '% of chapters has origin text'"></p>
                         </div>
                         <div class="bg-white rounded-lg shadow-md p-6">
                             <h3 class="text-lg font-semibold text-gray-700 mb-2">Translated Texts</h3>
                             <p :class="getColorClassForPercentage(getPercentage('translatedText'))" class="text-3xl font-bold "
                                x-text="getCompleteCount('translatedText')"></p>
                             <p class="text-sm text-gray-500"
-                               x-text="getPercentage('translatedText') + '% complete'"></p>
+                               x-text="getPercentage('translatedText') + '% of texts is translated'"></p>
                         </div>
                         <div class="bg-white rounded-lg shadow-md p-6">
                             <h3 class="text-lg font-semibold text-gray-700 mb-2">Names<small
-                                    class="text-xs text-gray-300">(glossary)</small></h3>
+                                    class="ml-1 text-xs text-gray-300">(glossary)</small></h3>
                             <p :class="getColorClassForPercentage(getPercentage('names'))" class="text-3xl font-bold "
                                x-text="getCompleteCount('names', 'emptyNames')"></p>
-                            <p class="text-sm text-gray-500" x-text="getPercentage('names') + '% complete'"></p>
+                            <p class="text-sm text-gray-500"
+                               x-text="getPercentage('names') + '% of names is extracted'"></p>
                         </div>
                         <div class="bg-white rounded-lg shadow-md p-6">
                             <h3 class="text-lg font-semibold text-gray-700 mb-2">Warnings</h3>
@@ -342,8 +346,7 @@
 
         </div>
     </div>
-
+    </template>
 </div>
-
 </body>
 </html>

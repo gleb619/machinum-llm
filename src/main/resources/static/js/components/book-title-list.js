@@ -21,6 +21,8 @@ export function titleListApp() {
         },
 
         fetchTitles() {
+            if(!this.activeId) return;
+
             const params = new URLSearchParams({
                 page: this.titleCurrentPage,
                 size: this.titlePageSize,

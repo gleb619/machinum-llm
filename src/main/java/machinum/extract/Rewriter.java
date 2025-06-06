@@ -1,16 +1,16 @@
 package machinum.extract;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.processor.core.Assistant;
 import machinum.processor.core.AssistantContext;
 import machinum.processor.core.ChunkSupport;
-import machinum.flow.FlowContext;
-import machinum.flow.FlowSupport;
+import machinum.processor.core.FlowSupport;
 import machinum.tool.RawInfoTool;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,10 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static machinum.config.Constants.FLOW_TYPE;
-import static machinum.flow.FlowSupport.HistoryItem.*;
-import static machinum.flow.FlowSupport.HistoryItem.CONSOLIDATED_GLOSSARY;
+import static machinum.processor.core.FlowSupport.HistoryItem.*;
 import static machinum.util.JavaUtil.calculatePercent;
-import static machinum.util.TextUtil.*;
+import static machinum.util.TextUtil.countTokens;
+import static machinum.util.TextUtil.toShortDescription;
 
 @Slf4j
 @Component

@@ -185,7 +185,11 @@ public class ChapterService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<Chapter> loadBookChaptersForNumber(String bookId, Integer chapterNumber) {
+    public Optional<Chapter> findByNumber(String bookId, Integer chapterNumber) {
+        if (chapterNumber <= 0) {
+            return Optional.empty();
+        }
+
         log.debug("Loading book chapter chapter from db: {}, number={}", bookId, chapterNumber);
         return chapterRepository.findOneByBookIdAndNumber(bookId, chapterNumber)
                 .map(chapterMapper::toDto);
@@ -357,23 +361,6 @@ public class ChapterService {
         if (Objects.nonNull(nextState) && !initState) {
             var currentItem = context.getCurrentItem();
             log.debug("Refreshing data from db for: {}", currentItem);
-
-            return getById(currentItem.getId());
-        }
-
-        return context.getCurrentItem();
-    }
-
-    @Transactional(readOnly = true)
-    public Chapter bootstrap(FlowContext<Chapter> context) {
-        var flow = context.getFlow();
-        var currentState = context.getState();
-        var initState = flow.isInitState(currentState);
-
-        //For second step and next, we try to refresh item from db
-        if (!initState) {
-            var currentItem = context.getCurrentItem();
-            log.debug("Bootstrap data from db for: {}", currentItem);
 
             return getById(currentItem.getId());
         }

@@ -1,16 +1,16 @@
 package machinum.extract;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
-import machinum.flow.FlowSupport;
 import machinum.model.Chapter;
 import machinum.processor.core.Assistant;
 import machinum.processor.core.AssistantContext;
 import machinum.processor.core.ChunkSupport;
+import machinum.processor.core.FlowSupport;
 import machinum.ssml.SSMLParser;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-import static machinum.flow.FlowSupport.HistoryItem.NONE;
+import static machinum.processor.core.FlowSupport.HistoryItem.NONE;
 import static machinum.util.TextUtil.countTokens;
 import static machinum.util.TextUtil.toShortDescription;
 

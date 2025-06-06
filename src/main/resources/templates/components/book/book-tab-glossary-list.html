@@ -3,7 +3,8 @@
 <body>
 <!-- Layout -->
 <div th:fragment="glossary-list" th:remove="tag">
-    <div class="h-full" x-show="bookActiveTab === 'glossary'">
+    <template x-if="bookActiveTab === 'glossary'">
+        <div class="h-full">
         <div class="bg-white p-5 border-b border-gray-200">
             <h2 class="text-lg font-semibold mb-4 text-gray-900">Search & Operations</h2>
 
@@ -16,7 +17,7 @@
                             <span class="text-sm font-medium text-gray-700">Search in:</span>
                             <label class="inline-flex items-center">
                                 <input @change="changeValue('glossaryTranslationFilter', 'all'); changeGlossaryPage(0)"
-                                       class="form-radio text-blue-500" name="translation-filter"
+                                       class="form-radio text-blue-500" name="glossary-translation-filter"
                                        type="radio"
                                        value="all"
                                        x-model="glossaryTranslationFilter">
@@ -24,7 +25,7 @@
                             </label>
                             <label class="inline-flex items-center">
                                 <input @change="changeValue('glossaryTranslationFilter', 'missing'); changeGlossaryPage(0)"
-                                       class="form-radio text-blue-500" name="translation-filter"
+                                       class="form-radio text-blue-500" name="glossary-translation-filter"
                                        type="radio"
                                        value="missing"
                                        x-model="glossaryTranslationFilter">
@@ -267,7 +268,7 @@
             </div>
         </div>
     </div>
-</div>
+    </template>
 </div>
 </body>
 </html>

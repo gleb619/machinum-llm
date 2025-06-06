@@ -1,4 +1,4 @@
-**Chapter 10: The Climactic Confrontation**
+# Chapter 10: The Climactic Confrontation
 
 The air was thick with tension as Kael stood in the heart of his workshop, the rare materials from the underground
 market shimmering faintly on his workbench. The duel with Vayne had left him victorious, but the scars of their rivalry

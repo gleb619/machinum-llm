@@ -1,6 +1,4 @@
-**Chapter 7: The Underground Market**
-
----
+# Chapter 7: The Underground Market
 
 The dim glow of torches flickered across the damp walls of the underground tunnels, casting long shadows that seemed to
 stretch endlessly. Kael tightened his grip on his hammer, his heart pounding with a mix of excitement and apprehension.

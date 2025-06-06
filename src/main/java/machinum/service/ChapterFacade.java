@@ -22,6 +22,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static machinum.config.Constants.*;
 
@@ -45,16 +46,27 @@ public class ChapterFacade {
     public FlowContext<Chapter> bootstrap(FlowContext<Chapter> context) {
         var bootstrap = Boolean.parseBoolean(context.metadata(BOOTSTRAP));
         if (!bootstrap) {
-            var chapterInfo = chapterService.bootstrap(context);
-
             if (context.isEmpty()) {
-                return templateAiFacade.bootstrapWith(
-                        context.copy(b -> b.currentItem(chapterInfo)
-                                .metadata(BOOTSTRAP, Boolean.TRUE)));
-            }
+                var flow = context.getFlow();
+                var currentChap = context.getCurrentItem();
+                var previousChap = chapterService.findByNumber(currentChap.getBookId(),
+                        currentChap.getNumber() - 1).orElse(context.getCurrentItem());
+                var initState = flow.isInitState(context.getState());
+                var actualChap = loadItemForBootstrap(initState, previousChap);
 
-            return context.copy(b -> b.currentItem(chapterInfo)
-                    .metadata(BOOTSTRAP, Boolean.TRUE));
+                var bootstrapContext = templateAiFacade.bootstrapWith(
+                                context.copy(b -> b.currentItem(actualChap)
+                                        .metadata(BOOTSTRAP, Boolean.TRUE)))
+                        .withoutOldAndEmpty();
+
+                var toRemove = bootstrapContext.getArguments().stream()
+                        .filter(arg -> arg.isEmpty() || arg.isOld())
+                        .collect(Collectors.toList());
+
+                return bootstrapContext.removeArgs(toRemove);
+            } else {
+                return context.copy(b -> b.metadata(BOOTSTRAP, Boolean.TRUE));
+            }
         }
 
         return context;
@@ -151,6 +163,9 @@ public class ChapterFacade {
         switch (state) {
             case CLEANING, PROCESSING -> {
                 //TODO: This will not work
+                if (1 < 2) {
+                    throw new AppIllegalStateException("Stop execution");
+                }
                 return TextUtil.isEmpty(ctx.getCurrentItem().getText());
             }
             case SUMMARY -> {
@@ -174,6 +189,19 @@ public class ChapterFacade {
 
     public Page<ChapterGlossary> findBookGlossary(String bookId, PageRequest pageRequest) {
         return chapterGlossaryService.findBookGlossary(bookId, pageRequest);
+    }
+
+    /* ============= */
+
+    public Chapter loadItemForBootstrap(boolean initState, Chapter currentItem) {
+        //For second step and next, we try to refresh item from db
+        if (!initState) {
+            log.debug("Bootstrap data from db for: {}", currentItem);
+
+            return chapterService.getById(currentItem.getId());
+        }
+
+        return currentItem;
     }
 
 }

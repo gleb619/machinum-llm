@@ -1,22 +1,18 @@
 package machinum.extract;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import machinum.flow.FlowArgument;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
-import machinum.flow.FlowSupport;
 import machinum.model.Chapter;
 import machinum.processor.core.ChunkSupport;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import machinum.processor.core.FlowSupport;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import static machinum.util.JavaUtil.calculatePercent;
-import static machinum.util.TextUtil.countTokens;
-import static machinum.util.TextUtil.toShortDescription;
 
 @Slf4j
 @Component

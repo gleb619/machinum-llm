@@ -89,7 +89,7 @@ export function listApp() {
         },
 
         changeActiveItem(bookId) {
-            const isNewBook = bookId === this.activeId;
+            const isNewBook = bookId !== this.activeId;
 
             if(this.books && this.books.length > 0) {
                 const item = this.getById(this.books, bookId);
@@ -109,6 +109,7 @@ export function listApp() {
 
             if(isNewBook) {
                 this.fetchTitles();
+                this.fetchGlossary();
                 this.bookReportLoadData();
                 this.bookReportLoadHeatmapData();
             }
@@ -170,18 +171,6 @@ export function listApp() {
             });
         },
 
-        showErrorToast(text) {
-            Toastify({
-              text: text,
-              duration: 3000,
-              gravity: "top",
-              position: "right",
-              backgroundColor: "linear-gradient(90deg, #bd1c1c 10%, #da0e0e 70%)",
-              stopOnFocus: true,
-              close: true
-            }).showToast();
-        },
-
         uploadBook(app, formData) {
             fetch('/api/books/upload?overwrite=' + (app.overwrite ? 'true' : 'false'), {
               method: 'POST',
@@ -193,7 +182,7 @@ export function listApp() {
                   console.info('File uploaded successfully');
                 } else {
                   console.error('Upload failed: ' + response.statusText);
-                  app.showErrorToast(`File upload failed!`);
+                  app.showToast(`File upload failed!`, true);
                 }
             });
         },
@@ -274,7 +263,7 @@ export function listApp() {
                 break;
               default:
                 console.error('Unknown action');
-                this.showErrorToast(`Unknown action`);
+                this.showToast(`Unknown action`, true);
             }
         },
 
@@ -287,7 +276,7 @@ export function listApp() {
                   console.info('Translation uploaded successfully');
                 } else {
                   console.error('Upload failed: ' + response.statusText);
-                  app.showErrorToast('Upload failed: ' + response.statusText);
+                  app.showToast('Upload failed: ' + response.statusText, true);
                 }
             });
         },
@@ -301,7 +290,7 @@ export function listApp() {
                   console.info('Glossary translation uploaded successfully');
                 } else {
                   console.error('Upload failed: ' + response.statusText);
-                  app.showErrorToast('Upload failed: ' + response.statusText);
+                  app.showToast('Upload failed: ' + response.statusText, true);
                 }
             });
         },
@@ -322,7 +311,7 @@ export function listApp() {
 
               } catch (error) {
                 console.error('Error during upload: ' + error.message);
-                app.showErrorToast(`${file.name} upload failed!`);
+                app.showToast(`${file.name} upload failed!`, true);
 
               } finally {
                 app.isUploading = false;

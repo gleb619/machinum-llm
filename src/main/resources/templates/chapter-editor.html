@@ -195,7 +195,8 @@
                 </div>
 
                 <!-- Report Tab -->
-                <div class="h-full" x-show="chapterActiveTab === 'report'">
+                <template x-if="chapterActiveTab === 'report'">
+                    <div class="h-full">
                     <h2 class="text-xl font-bold m-3">Analysis Results</h2>
                     <div class="relative overflow-x-auto">
                         <table class="w-full text-sm text-left rtl:text-right text-gray-500">
@@ -230,8 +231,10 @@
                         </table>
                     </div>
                 </div>
+                </template>
 
-                <div class="h-full" x-show="chapterActiveTab === 'lines'">
+                <template x-if="chapterActiveTab === 'lines'">
+                    <div class="h-full">
                     <div th:remove="tag" th:replace="~{components/chapter/chapter-editor-tab-line-list::tab-lines}">
                         <p>
                             Here placed content of templates/components/chapter/chapter-editor-tab-line-list.html page,
@@ -239,6 +242,7 @@
                         </p>
                     </div>
                 </div>
+                </template>
             </div>
         </div>
     </div>

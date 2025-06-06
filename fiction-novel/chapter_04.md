@@ -1,6 +1,4 @@
-**Chapter 4: The Hidden Manual**
-
----
+# Chapter 4: The Hidden Manual
 
 The sun cast a golden glow over the bustling blacksmith's guild as Kael returned from the morning market with fresh
 supplies. His mind buzzed with excitement from the recent Guild’s Test, where he had successfully restored an ancient

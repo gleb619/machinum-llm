@@ -10,6 +10,10 @@
   min-width: 30%;
 }
 
+.min-w-[50px] {
+  min-width: 50px;
+}
+
 .CodeMirror-container {
     height: calc(100% - 130px);
 }

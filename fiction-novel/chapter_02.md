@@ -1,6 +1,4 @@
-**Chapter 2: The Spark Within**
-
----
+# Chapter 2: The Spark Within
 
 The sun rose slowly over the horizon, casting a golden hue over the bustling blacksmith's guild. Kael stirred awake, his
 heart pounding with excitement and nervous energy. Last night's discovery had left him sleepless, his mind racing with

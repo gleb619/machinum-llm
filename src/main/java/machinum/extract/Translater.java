@@ -4,10 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
-import machinum.flow.FlowSupport;
 import machinum.model.Chapter;
 import machinum.model.Chunks;
 import machinum.model.ScoringResult;
+import machinum.processor.core.FlowSupport;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 

@@ -8,7 +8,7 @@
     <div class="mt-8 flex gap-4">
         <!-- Left Panel: Collapsible -->
         <div :class="collapsed ? 'w-12' : 'w-1/4'"
-             class="bg-white rounded-lg shadow-md p-2 transition-all duration-300 overflow-hidden">
+             class="bg-white rounded-lg shadow-md p-2 transition-all duration-300 overflow-hidden min-w-[50px]">
 
             <div th:remove="tag" th:replace="~{components/book/book-statistic-sidebar::processor-settings}">
                 <p>
@@ -48,13 +48,6 @@
                             class="font-bold border-b-2 pb-2">Titles
                     </button>
                     <button :class="{
-                                'text-gray-500 border-transparent': bookActiveTab !== 'lines',
-                                'text-blue-600 border-blue-600': bookActiveTab === 'lines'
-                            }"
-                            @click="changeValue('bookActiveTab', 'lines')"
-                            class="font-bold border-b-2 pb-2">Lines
-                    </button>
-                    <button :class="{
                                 'text-gray-500 border-transparent': bookActiveTab !== 'glossary',
                                 'text-blue-600 border-blue-600': bookActiveTab === 'glossary'
                             }"
@@ -86,10 +79,6 @@
                         Here placed content of templates/components/book/book-tab-title-list.html page,
                         tag `th:fragment="title-list"`
                     </p>
-                </div>
-
-                <!-- Lines Tab -->
-                <div class="h-full" x-show="bookActiveTab === 'lines'">
                 </div>
 
                 <!-- Glossary Tab -->

@@ -1,6 +1,4 @@
-**Chapter 5: The Rival’s Challenge**
-
----
+# Chapter 5: The Rival’s Challenge
 
 The guildhall buzzed with activity as apprentices and masters alike prepared for the day's work. Kael stood by the
 forge, carefully shaping a new blade, his mind focused on the delicate balance of heat and hammer. Griswold had warned

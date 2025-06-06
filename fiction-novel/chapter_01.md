@@ -1,6 +1,4 @@
-**Chapter 1: The Broken Anvil**
-
----
+# Chapter 1: The Broken Anvil
 
 The clang of hammer on anvil echoed through the bustling workshop as Kael bent over his workbench, sweat dripping down
 his brow. His arms ached from hours of crafting simple tools and weapons for the villagers, but he didn't complain. This

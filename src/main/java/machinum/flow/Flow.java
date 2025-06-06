@@ -238,6 +238,12 @@ public class Flow<T> {
             return this;
         }
 
+        //TODO combine with FlowContext.preventChanges()
+        public StateBuilder<T> pipeStateless(Function<FlowContext<T>, FlowContext<T>> action) {
+            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(action);
+            return this;
+        }
+
         public StateBuilder<T> pipe(Function<FlowContext<T>, FlowContext<T>> action) {
             getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(action);
             return this;
@@ -245,12 +251,6 @@ public class Flow<T> {
 
         public StateBuilder<T> window(Window window, Aggregation<T> action) {
             return pipe(aggregate(window, action));
-        }
-
-        //TODO add metadata for pipe
-        public StateBuilder<T> pipe(Map<String, Object> metadata, Function<FlowContext<T>, FlowContext<T>> action) {
-            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(action);
-            return this;
         }
 
         public StateBuilder<T> nothing() {

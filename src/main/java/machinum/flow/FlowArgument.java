@@ -77,6 +77,10 @@ public class FlowArgument<U> implements StringSupport {
         return isNull;
     }
 
+    public boolean isOld() {
+        return Objects.equals(getType(), OLD_FLAG);
+    }
+
     public <I> FlowArgument<I> map(Function<U, I> mapper) {
         var newValue = mapper.apply(value);
         FlowArgument arg = copy(Function.identity());

@@ -1,6 +1,4 @@
-**Chapter 6: The Failed Commission**
-
----
+# Chapter 6: The Failed Commission
 
 The sun rose high over the blacksmith's guild, casting a golden glow over the bustling workshop. Kael stood before the
 forge, his heart pounding with a mix of excitement and apprehension. Today was the day he would present his latest

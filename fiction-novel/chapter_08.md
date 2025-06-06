@@ -1,6 +1,4 @@
-**Chapter 8: The Master's Trial**
-
----
+# Chapter 8: The Master's Trial
 
 The air was thick with anticipation as Kael returned to the workshop, his hands tightly gripping the rare materials he
 had acquired from the underground market. The dim light of the forge cast long shadows across the room, creating an

@@ -9,6 +9,7 @@ import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.Chunks;
+import machinum.util.TextUtil;
 import org.springframework.stereotype.Service;
 
 import static machinum.config.Constants.TITLE;
@@ -117,22 +118,23 @@ public class TemplateAiFacade {
 
         var textValue = resolveTextValue(context, currentItem);
         var contextValue = currentItem.getSummary();
-        var consolidatedContextValue = currentItem.getConsolidatedSummary();
+        var consolidatedContextValue = resolveConsolidatedSummary(context);
         var glossaryValue = currentItem.getNames();
         var title = currentItem.getTitle();
         var translatedText = resolveTranslatedText(currentItem);
         var cleanChunks = currentItem.getCleanChunks();
         var translatedChunks = resolveTranslatedChunks(currentItem);
 
-        return context.rearrange(FlowContext::chapterNumberArg, chapterNumber(currentItem.getNumber()))
-                .rearrange(FlowContext::textArg, text(textValue))
-                .rearrange(FlowContext::contextArg, context(contextValue))
-                .rearrange(FlowContext::consolidatedContextArg, consolidatedContext(consolidatedContextValue))
-                .rearrange(FlowContext::glossaryArg, FlowContextActions.glossary(glossaryValue))
-                .rearrange(ctx -> ctx.arg(TITLE), FlowContextActions.createArg(TITLE, title))
-                .rearrange(FlowContext::translatedTextArg, FlowContextActions.translatedText(translatedText))
-                .rearrange(FlowContext::chunksArg, FlowContextActions.chunks(cleanChunks))
-                .rearrange(FlowContext::translatedChunksArg, FlowContextActions.translatedChunks(translatedChunks));
+        return context.push(FlowContext::chapterNumberArg, chapterNumber(currentItem.getNumber()))
+                .push(FlowContext::textArg, text(textValue))
+                .push(FlowContext::contextArg, context(contextValue))
+                .push(FlowContext::consolidatedContextArg, consolidatedContext(consolidatedContextValue))
+                .push(FlowContext::glossaryArg, FlowContextActions.glossary(glossaryValue))
+                .push(ctx -> ctx.arg(TITLE), FlowContextActions.createArg(TITLE, title))
+                .push(FlowContext::translatedTextArg, FlowContextActions.translatedText(translatedText))
+                .push(FlowContext::chunksArg, FlowContextActions.chunks(cleanChunks))
+                .push(FlowContext::translatedChunksArg, FlowContextActions.translatedChunks(translatedChunks))
+                .withoutEmpty();
     }
 
     /* ============= */
@@ -176,6 +178,37 @@ public class TemplateAiFacade {
 //        }
 
         return translatedText;
+    }
+
+    private String resolveConsolidatedSummary(FlowContext<Chapter> context) {
+        var currentItem = context.getCurrentItem();
+        var consolidatedSummary = currentItem.getConsolidatedSummary();
+
+        if (TextUtil.isNotEmpty(consolidatedSummary)) {
+            return consolidatedSummary;
+        }
+
+        try {
+            var oldContext = context.oldContext();
+            if (TextUtil.isNotEmpty(oldContext)) {
+                return oldContext;
+            }
+        } catch (Exception skip) {
+            //ignore
+        }
+
+        try {
+            var previousItem = context.getPreviousItem();
+            var previousSummary = previousItem.getSummary();
+
+            if (TextUtil.isNotEmpty(previousSummary)) {
+                return previousSummary;
+            }
+        } catch (Exception skip) {
+            //ignore
+        }
+
+        return "";
     }
 
 }

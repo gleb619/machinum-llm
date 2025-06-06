@@ -1,6 +1,4 @@
-**Chapter 3: The Guild’s Trial**
-
----
+# Chapter 3: The Guild’s Trial
 
 The sun hung low in the sky, casting long shadows across the bustling streets of the blacksmith's district. Kael stood
 outside the guildhall, his heart pounding with anticipation. Today was the day he would face the Guild’s Test—a rite of

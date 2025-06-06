@@ -3,21 +3,19 @@ package machinum.extract;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import machinum.flow.FlowContextActions;
-import machinum.model.Chapter;
-import machinum.model.ObjectName;
-import machinum.processor.core.*;
-import machinum.flow.FlowContext;
-import machinum.flow.FlowSupport;
-import machinum.tool.RawInfoTool;
-import machinum.util.CustomTypeReference;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
+import machinum.flow.FlowContext;
+import machinum.flow.FlowContextActions;
+import machinum.model.Chapter;
+import machinum.model.ObjectName;
+import machinum.processor.core.*;
+import machinum.tool.RawInfoTool;
+import machinum.util.CustomTypeReference;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
@@ -30,8 +28,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static machinum.config.Constants.FLOW_TYPE;
-import static machinum.flow.FlowSupport.HistoryItem.*;
-import static machinum.flow.FlowSupport.HistoryItem.CONSOLIDATED_GLOSSARY;
+import static machinum.processor.HistoryService.TokenBudget.from;
+import static machinum.processor.core.FlowSupport.HistoryItem.*;
 import static machinum.util.JavaUtil.calculatePercent;
 import static machinum.util.TextUtil.countTokens;
 import static machinum.util.TextUtil.toShortDescription;
@@ -40,6 +38,8 @@ import static machinum.util.TextUtil.toShortDescription;
 @Component
 @RequiredArgsConstructor
 public class GlossaryExtractor implements JsonSupport, ObjectNameSupport, ChunkSupport, FlowSupport {
+
+    public static final int POSSIBLE_RESPONSE_SIZE = 1_000;
 
     @Value("${app.split.overlap-size}")
     protected final Integer overlapSize;
@@ -78,7 +78,12 @@ public class GlossaryExtractor implements JsonSupport, ObjectNameSupport, ChunkS
         if(createHistory) {
             history = prepareHistory(flowContext, sysTemplate, textTokens);
         } else {
-            history = fulfillHistory(sysTemplate, flowContext, GLOSSARY);
+            history = fulfillHistory(HistoryContext.builder()
+                    .systemMessage(sysTemplate)
+                    .flowContext(flowContext)
+                    .budget(from(contextLength).allocate(POSSIBLE_RESPONSE_SIZE).allocate(textTokens))
+                    .allowedItems(List.of(CONSOLIDATED_GLOSSARY, GLOSSARY))
+                    .build());
         }
 
         log.debug("Preparing a extract names for given: text={}...", toShortDescription(text));

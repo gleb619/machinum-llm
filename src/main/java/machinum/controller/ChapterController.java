@@ -3,6 +3,7 @@ package machinum.controller;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import machinum.controller.core.ControllerTrait;
+import machinum.converter.ChapterMapper;
 import machinum.model.Chapter;
 import machinum.model.ChapterDataSummary;
 import machinum.model.ChapterDataSummary.ChapterHeatmapData;
@@ -30,10 +31,12 @@ public class ChapterController implements ControllerTrait {
     private final ChapterService chapterService;
     private final ChapterAnalysisService chapterAnalysisService;
     private final ChapterFacade chapterFacade;
+    private final ChapterMapper chapterMapper;
 
     @GetMapping("/api/chapters")
     public ResponseEntity<List<Chapter>> getAllChapters(ChapterSearchRequest request) {
-        var result = doSearch(request);
+        var result = doSearch(request)
+                .map(chapterMapper::checkForWarnings);
 
         return pageResponse(result);
     }
@@ -139,7 +142,7 @@ public class ChapterController implements ControllerTrait {
             } else if (TextUtil.isNotEmpty(request.getQueryNames())) {
                 return chapterService.findByChapterInfoNames(request.getBookId(), request.getQueryNames(), request.getPageRequest());
             } else if (Objects.nonNull(request.getChapterNumber())) {
-                return chapterService.loadBookChaptersForNumber(request.getBookId(), request.getChapterNumber())
+                return chapterService.findByNumber(request.getBookId(), request.getChapterNumber())
                         .map(chapter -> List.of(chapter))
                         .map(list -> (Page<Chapter>) new PageImpl(list))
                         .orElse(Page.empty());

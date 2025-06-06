@@ -21,6 +21,8 @@ export function glossaryListApp() {
         },
 
         fetchGlossary() {
+            if(!this.activeId) return;
+
             const params = new URLSearchParams({
                 page: this.glossaryCurrentPage,
                 size: this.glossaryPageSize,

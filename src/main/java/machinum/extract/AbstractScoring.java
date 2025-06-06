@@ -4,21 +4,21 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.victools.jsonschema.generator.MemberScope;
 import com.github.victools.jsonschema.generator.TypeScope;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
+import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.ScoringResult;
-import machinum.flow.FlowContext;
-import machinum.flow.FlowSupport;
 import machinum.processor.core.Assistant;
 import machinum.processor.core.AssistantContext;
+import machinum.processor.core.FlowSupport;
 import machinum.processor.core.JsonSupport;
 import machinum.tool.RawInfoTool;
 import machinum.util.CustomTypeReference;
 import machinum.util.JavaUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -34,7 +34,8 @@ import java.util.List;
 import java.util.function.Function;
 
 import static machinum.config.Constants.SCORE;
-import static machinum.util.TextUtil.*;
+import static machinum.util.TextUtil.countTokens;
+import static machinum.util.TextUtil.toShortDescription;
 
 @Slf4j
 @RequiredArgsConstructor

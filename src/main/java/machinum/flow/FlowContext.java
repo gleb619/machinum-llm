@@ -57,6 +57,10 @@ public class FlowContext<T> implements FlowContextArgs {
         return (U) metadata.getOrDefault(name, defaultValue);
     }
 
+    public T getPreviousItem() {
+        return flow.getSource().get(iteration() - 1);
+    }
+
     public String text() {
         return textArg()
                 .getValue();
@@ -368,6 +372,11 @@ public class FlowContext<T> implements FlowContextArgs {
         return rearrange(extractor, b -> b.argument(newArgument));
     }
 
+    public <U> FlowContext<T> push(Function<FlowContext<? super T>, FlowArgument<? extends U>> extractor,
+                                   FlowArgument<U> newArgument) {
+        return rearrange(extractor, b -> b.argument(newArgument));
+    }
+
     public <U> FlowContext<T> rearrange(Function<FlowContext<? super T>, FlowArgument<? extends U>> extractor,
                                         Function<FlowContextBuilder<T>, FlowContextBuilder<T>> fn) {
         var currentArg = acquireArgument(extractor);
@@ -460,7 +469,7 @@ public class FlowContext<T> implements FlowContextArgs {
         return this;
     }
 
-    public FlowContext<T> removeArgs(FlowArgument<?>... args) {
+    public FlowContext<T> removeArgs(List<FlowArgument<?>> args) {
         var localArgs = getArguments().stream()
                 .filter(localArg -> {
                     for (FlowArgument<?> arg : args) {
@@ -477,6 +486,10 @@ public class FlowContext<T> implements FlowContextArgs {
                 .collect(Collectors.toList());
 
         return copy(b -> b.clearArguments().arguments(localArgs));
+    }
+
+    public FlowContext<T> removeArgs(FlowArgument<?>... args) {
+        return removeArgs(List.of(args));
     }
 
     public <U> FlowContext<T> removeArgs(Function<FlowContext<? super T>, FlowArgument<? extends U>>... extractors) {
@@ -507,6 +520,22 @@ public class FlowContext<T> implements FlowContextArgs {
                 .collect(Collectors.toList());
 
         return copy(b -> b.clearArguments().arguments(newArgs));
+    }
+
+    public FlowContext<T> withoutOldAndEmpty() {
+        var toRemove = getArguments().stream()
+                .filter(arg -> arg.isEmpty() || arg.isOld())
+                .collect(Collectors.toList());
+
+        return removeArgs(toRemove);
+    }
+
+    public FlowContext<T> withoutEmpty() {
+        var toRemove = getArguments().stream()
+                .filter(FlowArgument::isEmpty)
+                .collect(Collectors.toList());
+
+        return removeArgs(toRemove);
     }
 
     public <U> U parseArgument(Function<FlowContext<? super T>, FlowArgument<? extends U>> extractor,
