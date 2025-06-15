@@ -9,8 +9,10 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Repository
+@Deprecated(forRemoval = true)
 public interface StatisticsRepository extends JpaRepository<StatisticsView, Long> {
 
+    @Deprecated(forRemoval = true)
     List<StatisticsView> findByDate(LocalDate date, Sort sort);
 
 }

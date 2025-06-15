@@ -1,8 +1,7 @@
 package machinum.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
-import lombok.experimental.Accessors;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.ollama.api.OllamaOptions;
 
 import java.time.LocalDate;
@@ -18,47 +17,87 @@ public class Statistic {
 
     private String id;
 
+    @Deprecated(forRemoval = true)
     private LocalDate date;
 
-    @Singular("item")
-    private List<StatisticItem> data = new ArrayList<>();
+    private Integer position = 0;
 
-    public Statistic addItem(StatisticItem item) {
-        return toBuilder()
-                .item(item.setPosition(data.size()))
-                .build();
-    }
+    private String mode = "production";
+
+    private String runId;
+
+    private String operationName;
+
+    private String operationType;
+
+    private Integer chapter = -1;
+
+    private String rayId;
+
+    @Builder.Default
+    private LocalDateTime operationDate = LocalDateTime.now();
+
+    @Builder.Default
+    private Long operationTimeSeconds = 0L;
+
+    @Builder.Default
+    private String operationTimeString = "0s";
+
+    @Builder.Default
+    private Integer inputHistoryTokens = 0;
+
+    @Builder.Default
+    private Integer inputHistoryWords = 0;
+
+    @Builder.Default
+    private Integer inputTokens = 0;
+
+    @Builder.Default
+    private Integer inputWords = 0;
+
+    @Builder.Default
+    private Integer outputHistoryTokens = 0;
+
+    @Builder.Default
+    private Integer outputHistoryWords = 0;
+
+    @Builder.Default
+    private Integer outputTokens = 0;
+
+    @Builder.Default
+    private Integer outputWords = 0;
+
+    @Builder.Default
+    private Double conversionPercent = 100d;
+
+    @Builder.Default
+    private Integer tokens = 0;
+
+    @Builder.Default
+    private Integer tokensLeft = 0;
+
+    private OllamaOptions aiOptions;
+
+    @Singular("message")
+    private List<StatisticMessage> messages = new ArrayList<>();
 
     @Data
     @AllArgsConstructor
-    @Accessors(chain = true)
     @Builder(toBuilder = true)
     @NoArgsConstructor(access = AccessLevel.PUBLIC)
-    public static class StatisticItem {
+    public static class StatisticMessage {
 
-        private Integer position;
-        private String mode;
-        private String runId;
-        private String operationName;
-        private String operationType;
-        private Integer chapter;
-        private String rayId;
-        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-        private LocalDateTime operationDate;
-        private Long operationTimeSeconds;
-        private String operationTimeString;
-        private Integer inputHistoryTokens;
-        private Integer inputHistoryWords;
-        private Integer inputTokens;
-        private Integer inputWords;
-        private Integer outputHistoryTokens;
-        private Integer outputHistoryWords;
-        private Integer outputTokens;
-        private Integer outputWords;
-        private Double conversionPercent;
-        private Integer tokens;
-        private Integer tokensLeft;
-        private OllamaOptions aiOptions;
+        @Builder.Default
+        private String type = "message";
+        @Builder.Default
+        private String text = "";
+
+        public static StatisticMessage of(Message message) {
+            return StatisticMessage.builder()
+                    .type(message.getMessageType().getValue())
+                    .text(message.getText())
+                    .build();
+        }
 
     }
 
