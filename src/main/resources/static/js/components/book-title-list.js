@@ -13,7 +13,7 @@ export function titleListApp() {
         titleTotalElements: 0,
         titleSortColumn: 'number',
         titleSortDirection: 'asc',
-        debounceTimers: {},
+        titleDebounceTimers: {},
 
         initTitleList() {
             this.loadValue('titlesTranslationFilter', 'all');
@@ -141,14 +141,14 @@ export function titleListApp() {
             }
 
             // Clear any existing timer for this title
-            if (this.debounceTimers[title.id]) {
-                clearTimeout(this.debounceTimers[title.id]);
+            if (this.titleDebounceTimers[title.id]) {
+                clearTimeout(this.titleDebounceTimers[title.id]);
             }
 
             // Set new timer (debounce to avoid too many requests)
-            this.debounceTimers[title.id] = setTimeout(() => {
+            this.titleDebounceTimers[title.id] = setTimeout(() => {
                 this.updateTitleChanges(title);
-                delete this.debounceTimers[title.id];
+                delete this.titleDebounceTimers[title.id];
             }, 500);
         },
 

@@ -31,6 +31,22 @@
                                        x-model="glossaryTranslationFilter">
                                 <span class="ml-2">No translation</span>
                             </label>
+                            <label class="inline-flex items-center">
+                                <input @change="changeValue('glossaryTranslationFilter', 'translated'); changeGlossaryPage(0)"
+                                       class="form-radio text-blue-500" name="glossary-translation-filter"
+                                       type="radio"
+                                       value="translated"
+                                       x-model="glossaryTranslationFilter">
+                                <span class="ml-2">With translation</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input @change="changeValue('glossaryTranslationFilter', 'aberration'); changeTitlePage(0)"
+                                       class="form-radio text-blue-500" name="glossary-translation-filter"
+                                       type="radio"
+                                       value="aberration"
+                                       x-model="glossaryTranslationFilter">
+                                <span class="ml-2">Aberration translation(TODO)</span>
+                            </label>
                         </div>
                     </div>
 
@@ -45,7 +61,7 @@
                             </svg>
                         </div>
                         <input class="pl-10 p-2 w-full border rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                               placeholder="Filter glossaryList locally..."
+                               placeholder="Filter glossary locally..."
                                type="text"
                                x-model="glossaryFilterTerm">
                     </div>
@@ -146,8 +162,13 @@
                     <tr :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50'"
                         class="border-b border-gray-200 hover:bg-gray-100">
                         <td class="py-3 px-6 text-left">
-                            <span x-text="index + 1"></span>
-                            <small class="text-xs text-gray-300" x-text="`Chapter ${glossary.chapterNumber}`"></small>
+                            <span x-text="(glossaryCurrentPage * glossaryPageSize) + index + 1"></span>
+                            <a class="text-xs text-gray-300 hover:text-blue-600"
+                               target="_blank"
+                               x-bind:href="`/chapters?chapterId=${glossary.chapterId}`"
+                               x-text="`Chapter ${glossary.chapterNumber}`">
+                                Chapter 1
+                            </a>
                         </td>
                         <td class="py-3 px-6 text-left">
                             <div class="space-y-1 max-w-md" x-bind:title="glossary.description">
@@ -161,12 +182,19 @@
                         </td>
                         <td class="py-3 px-6 text-left">
                             <div class="flex excel-cell hover:bg-white">
-                                <input
-                                        @blur="saveGlossaryChanges(glossary)"
-                                        @keydown.enter="$event.target.blur()"
-                                        class="w-full px-2 py-2 bg-transparent border-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        type="text"
-                                        x-model="glossary.ruName">
+                                <div class="relative w-full">
+                                    <input
+                                            :class="getSaveStateClass(glossary.id)"
+                                            @blur="saveGlossaryChanges(glossary)"
+                                            @keydown.enter="$event.target.blur()"
+                                            class="w-full px-2 py-2 bg-transparent border-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                                            type="text"
+                                            x-model="glossary.ruName">
+                                    <div
+                                            :class="getSaveBorderClass(glossary.id)"
+                                            class="absolute inset-0 pointer-events-none border-2 border-transparent transition-all duration-500 ease-in-out">
+                                    </div>
+                                </div>
                                 <button
                                         @click="handleTranslateGlossary(glossary)"
                                         class="pl-2 mr-2 text-gray-600 hover:text-blue-600 focus:outline-none"

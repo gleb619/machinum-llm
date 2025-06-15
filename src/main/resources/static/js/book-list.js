@@ -25,7 +25,9 @@ export function listApp() {
         file: undefined,
         importTranslationFile: undefined,
         importGlossaryTranslateFile: undefined,
+        importChapterFile: undefined,
         currentRequest: undefined,
+        bookLoading: true,
 
 
         initList() {
@@ -41,6 +43,7 @@ export function listApp() {
             this.registerChangeListener(this, "fileInput", this.uploadBook);
             this.registerChangeListener(this, "importTranslationInput", this.importTranslation);
             this.registerChangeListener(this, "importGlossaryTranslateInput", this.importGlossaryTranslate);
+            this.registerChangeListener(this, "importChapterInput", this.importChapter);
         },
 
         fetchBooksDebounce(page = 0, callback = () => {}) {
@@ -57,6 +60,7 @@ export function listApp() {
         },
 
         fetchBooks(page = 0, callback = () => {}) {
+            this.bookLoading = true;
             const params = {
                 page,
                 query: this.searchQuery || undefined,
@@ -81,6 +85,8 @@ export function listApp() {
                         callback();
                     }
                 }));
+
+            this.gracefulStop('bookLoading');
         },
 
         afterFetchBooks() {
@@ -115,10 +121,10 @@ export function listApp() {
             }
         },
 
-        editBook(chapter) {
-            if(chapter && chapter.id) {
+        editBook(book) {
+            if(book && book.id) {
                 showLoader(500);
-                window.location.href = "/chapters?bookId=" + chapter.id;
+                window.location.href = "/chapters?bookId=" + book.id;
             }
         },
 
@@ -206,39 +212,10 @@ export function listApp() {
             });
         },
 
-        translateGlossary(bookId) {
-            this.executeWithMeasure(callback => {
-                fetch(`/api/books/${bookId}/translate-glossary`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        operationName: 'translate-glossary',
-                        windowOperation: true
-                    })
-                })
-                .then(response => response.json()
-                    .then(rsp => {
-                        if (!response.ok) {
-                            console.error('Error glossary translating:', rsp);
-                            this.showToast(`Error glossary translating: ${rsp.message || rsp.detail}`, true);
-                        } else {
-                            callback();
-                            this.fetchBooks();
-                        }
-                    }));
-            })
-        },
-
         handleAction(action, bookId, ref = undefined) {
             this.activeId = bookId;
 
             switch (action) {
-              case 'translate-glossary':
-                console.info(`Import Glossary for book: ${book.title}`);
-                // Add API call logic here
-                break;
               case 'import-glossary':
                 console.info(`Import Glossary for book: ${book.title}`);
                 // Add API call logic here
@@ -288,6 +265,20 @@ export function listApp() {
             }).then(response => {
                 if (response.ok) {
                   console.info('Glossary translation uploaded successfully');
+                } else {
+                  console.error('Upload failed: ' + response.statusText);
+                  app.showToast('Upload failed: ' + response.statusText, true);
+                }
+            });
+        },
+
+        importChapter(app, formData) {
+            fetch(`/api/books/${app.activeId}/upload/chapters`, {
+              method: 'POST',
+              body: formData,
+            }).then(response => {
+                if (response.ok) {
+                  console.info('Chapter uploaded successfully');
                 } else {
                   console.error('Upload failed: ' + response.statusText);
                   app.showToast('Upload failed: ' + response.statusText, true);

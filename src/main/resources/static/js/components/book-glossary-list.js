@@ -13,10 +13,12 @@ export function glossaryListApp() {
         glossaryTotalElements: 0,
         glossarySortColumn: 'chapterNumber',
         glossarySortDirection: 'asc',
-        debounceTimers: {},
+        glossaryDebounceTimers: {},
+        glossarySaveStates: {},
 
         initGlossaryList() {
             this.loadValue('glossaryTranslationFilter', 'all');
+            this.loadValue('glossaryCurrentPage', 0);
             this.fetchGlossary();
         },
 
@@ -25,11 +27,14 @@ export function glossaryListApp() {
 
             const params = new URLSearchParams({
                 page: this.glossaryCurrentPage,
-                size: this.glossaryPageSize,
-                missingTranslation: (this.glossaryTranslationFilter === 'missing'),
+                size: this.glossaryPageSize
             });
 
-            if (!(this.glossaryTranslationFilter in ['missing'])) {
+            if (this.glossaryTranslationFilter == 'missing') {
+                params.append('translationMode', '0');
+            } else if (this.glossaryTranslationFilter == 'translated') {
+                params.append('translationMode', '1');
+            } else {
                 params.append('allGlossary', 'true');
             }
 
@@ -45,6 +50,7 @@ export function glossaryListApp() {
                           this.glossaryTotalElements = parseInt(response.headers.get('x-total-elements')) || 0;
                           this.glossaryList = rsp;
                           this.glossaryListBackup = JSON.parse(JSON.stringify(rsp));
+                          this.changeValue('glossaryCurrentPage', this.glossaryCurrentPage);
                       }
                 }))
                 .catch(error => {
@@ -122,6 +128,36 @@ export function glossaryListApp() {
 
             return pages;
         },
+        
+        getSaveStateClass(glossaryId) {
+            const state = this.glossarySaveStates[glossaryId];
+            switch(state) {
+                case 'saving': return 'bg-amber-50';
+                case 'success': return 'bg-green-50';
+                case 'error': return 'bg-red-50';
+                default: return '';
+            }
+        },
+    
+        getSaveBorderClass(glossaryId) {
+            const state = this.glossarySaveStates[glossaryId];
+            switch(state) {
+                case 'saving': return 'border-amber-400 animate-pulse';
+                case 'success': return 'border-green-500 animate-ping';
+                case 'error': return 'border-red-500 animate-pulse';
+                default: return '';
+            }
+        },
+    
+        setSaveState(glossaryId, state) {
+            this.glossarySaveStates[glossaryId] = state;
+
+            if (state === 'success' || state === 'error') {
+                setTimeout(() => {
+                    this.glossarySaveStates[glossaryId] = null;
+                }, 500);
+            }
+        },
 
         saveGlossaryChanges(glossary) {
             // Check if glossary has actually changed by comparing with backup
@@ -129,7 +165,7 @@ export function glossaryListApp() {
             if (!originalGlossary) return;
 
             const hasChanges = originalGlossary.chapterNumber !== glossary.chapterNumber ||
-                               originalGlossary.glossary !== glossary.glossary ||
+                               originalGlossary.name !== glossary.name ||
                                originalGlossary.ruName !== glossary.ruName;
 
             if (!hasChanges) return;
@@ -141,19 +177,21 @@ export function glossaryListApp() {
             }
 
             // Clear any existing timer for this glossary
-            if (this.debounceTimers[glossary.id]) {
-                clearTimeout(this.debounceTimers[glossary.id]);
+            if (this.glossaryDebounceTimers[glossary.id]) {
+                clearTimeout(this.glossaryDebounceTimers[glossary.id]);
             }
 
+            this.setSaveState(glossary.id, 'saving');
+
             // Set new timer (debounce to avoid too many requests)
-            this.debounceTimers[glossary.id] = setTimeout(() => {
+            this.glossaryDebounceTimers[glossary.id] = setTimeout(() => {
                 this.updateGlossaryChanges(glossary);
-                delete this.debounceTimers[glossary.id];
+                delete this.glossaryDebounceTimers[glossary.id];
             }, 500);
         },
 
         updateGlossaryChanges(glossary) {
-            fetch(`/api/chapters/${glossary.id}/glossary`, {
+            fetch(`/api/chapters/${glossary.chapterId}/glossary`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -161,7 +199,10 @@ export function glossaryListApp() {
                 body: JSON.stringify(glossary)
             })
             .then(response => {
-                if (response.status !== 204) {
+                if (response.status === 204) {
+                    this.setSaveState(glossary.id, 'success');
+                } else {
+                    this.setSaveState(glossary.id, 'error');
                     response.json()
                       .then(rsp => {
                         console.error('Error saving glossary:', rsp);
@@ -170,6 +211,7 @@ export function glossaryListApp() {
                 }
             })
             .catch(error => {
+                this.setSaveState(glossary.id, 'error');
                 console.error('Error:', error);
                 this.showToast(`Failed to save changes: ${error.message || error.detail || error}`, true);
             });

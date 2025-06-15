@@ -4,12 +4,6 @@
 <!-- Layout -->
 <div th:fragment="list" th:remove="tag">
 
-    <input @change="file = $event.target.files[0]" accept=".zip,.jsonl" class="hidden" type="file" x-ref="fileInput">
-    <input @change="importTranslationFile = $event.target.files[0]" accept=".zip,.jsonl" class="hidden" type="file"
-           x-ref="importTranslationInput">
-    <input @change="importGlossaryTranslateFile = $event.target.files[0]" accept=".csv,.json" class="hidden" type="file"
-           x-ref="importGlossaryTranslateInput">
-
     <!-- Breadcrumb -->
     <nav aria-label="Breadcrumb" class="flex mb-5">
         <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
@@ -51,8 +45,12 @@
 
     <!-- Search Bar -->
     <div class="mb-4 flex justify-between items-center">
-        <input @input.debounce.300ms="fetchBooks(0)" class="p-2 border rounded w-4/5" placeholder="Search books..." title="Search books by title"
-               type="text" x-model="searchQuery">
+        <div class="w-4/5">
+            <input @input.debounce.300ms="fetchBooks(0)"
+                   class="w-full px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="Search books..." title="Search books by title"
+                   type="text" x-model="searchQuery">
+        </div>
         <!-- Actions Dropdown -->
         <div class="relative inline-block text-left">
             <button :disabled="isUploading"
@@ -93,7 +91,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Book
                         State
                     </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions
                     </th>
                 </tr>
                 </thead>
@@ -102,7 +100,6 @@
                 <template :key="book.id" x-for="book in books">
                     <tr :class="{ 'bg-blue-50': activeId === book.id }"
                         @click="changeActiveItem(book.id)"
-                        @dblclick="editBook(book)"
                         class="even:bg-gray odd:bg-white hover:bg-gray-100 cursor-pointer">
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 align-text-top"
                             x-text="book.id"></td>
@@ -111,12 +108,27 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <div th:remove="tag" th:replace="~{components/book/book-list-table-book-state::table-book-state}">
                                 <p>
-
                                     Here placed content of templates/components/book/book-list-table-book-state.html page, tag
                                     `th:fragment="table-book-state"`
                                 </p>
                             </div>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium align-text-top text-center">
+                            <a class="text-indigo-600 hover:text-indigo-900 mr-2"
+                               target="_blank"
+                               x-bind:href="`/chapters?bookId=${book.id}`">
+                                Edit
+                            </a>
+                            <a class="text-green-600 hover:text-green-900 mr-2"
+                               target="_blank"
+                               x-bind:href="'/api/books/' + book.id + '/download'">
+                                Export
+                            </a>
+                            <button @click.stop="deleteBook(chapter.id)" class="text-red-600 hover:text-red-900">
+                                Delete
+                            </button>
+                        </td>
+                        <!--
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium align-text-top">
                             <div class="flex inline-block text-left">
                                 <button @click="actionDropDownOpen[book.id] = !actionDropDownOpen[book.id]"
@@ -135,7 +147,7 @@
                                      x-transition:leave="transition ease-in duration-75"
                                      x-transition:leave-start="opacity-100 transform scale-100"
                                      x-transition:leave-end="opacity-0 transform scale-95">
-                                    <!--class="right-0 mt-8 w-48 bg-white rounded-lg drop-down-fix z-10 shadow">-->
+                                    &lt;!&ndash;class="right-0 mt-8 w-48 bg-white rounded-lg drop-down-fix z-10 shadow">&ndash;&gt;
                                     <ul class="divide-y divide-gray-200">
                                         <li>
                                             <button @click="editBook(book)"
@@ -150,11 +162,11 @@
                                         <li>
                                             <hr/>
                                         </li>
-                                        <li>
+                                        &lt;!&ndash;<li>
                                             <button @click="translateGlossary(book.id)"
                                                     class="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100">Translate Glossary
                                             </button>
-                                        </li>
+                                        </li>&ndash;&gt;
                                         <li>
                                             <hr/>
                                         </li>
@@ -200,12 +212,25 @@
                                 </div>
                             </div>
                         </td>
+                        -->
                     </tr>
                 </template>
                 </template>
-                <template x-if="books.length === 0">
+                <template x-if="books.length === 0 && !bookLoading">
                     <tr>
-                        <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500 italic">No books found</td>
+                        <td class="px-6 py-4 text-center text-sm text-gray-500" colspan="4">
+                            <p class="h-40 py-5 content-center">No books found. Try adjusting your search criteria.</p>
+                        </td>
+                    </tr>
+                </template>
+                <template x-if="books.length === 0 && bookLoading">
+                    <tr>
+                        <td class="px-6 py-4 text-center" colspan="4">
+                            <!-- Loading indicator -->
+                            <div class="flex justify-center items-center h-40 py-5">
+                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                            </div>
+                        </td>
                     </tr>
                 </template>
                 </tbody>

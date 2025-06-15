@@ -15,7 +15,7 @@ export function bookReportApp() {
         tooltipContent: '',
 
         initBookReport() {
-            //this.bookReportLoadData();
+            this.bookReportLoadData();
             this.bookReportLoadHeatmapData();
         },
 
@@ -96,7 +96,7 @@ export function bookReportApp() {
                             this.getPercentage('summary'),
                             this.getPercentage('text'),
                             this.getPercentage('translatedText'),
-                            this.getPercentage('names'),
+                            this.getPercentage('translatedNames'),
                             100 - this.getPercentage('warnings', 'warningsPercentage'),
                         ],
                         backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#FCD34D', '#6366F1', '#EC4899', '#EC061D', '#EF4444'],
@@ -133,7 +133,7 @@ export function bookReportApp() {
                             this.summary.emptySummaries,
                             this.summary.emptyTexts,
                             this.summary.emptyTranslatedTexts,
-                            this.summary.emptyNames,
+                            this.summary.emptyTranslatedNames,
                             this.summary.totalChapters - this.summary.emptyWarnings
                         ],
                         backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#FCD34D', '#6366F1', '#EC4899', '#EC061D', '#EF4444'],
@@ -171,22 +171,38 @@ export function bookReportApp() {
         getHeatmapCellClass(percentage) {
             if (percentage >= 99) return 'bg-green-600 hover:bg-green-700';
             if (percentage >= 95) return 'bg-green-400 hover:bg-green-500';
-            if (percentage >= 85) return 'bg-blue-400 hover:bg-blue-500';
-            if (percentage >= 75) return 'bg-blue-600 hover:bg-blue-700';
-            if (percentage >= 50) return 'bg-yellow-400 hover:bg-yellow-500';
-            if (percentage >= 30) return 'bg-yellow-600 hover:bg-yellow-700';
-            if (percentage >= 10) return 'bg-red-400 hover:bg-red-500';
+            if (percentage >= 90) return 'bg-green-200 hover:bg-green-300';
+            if (percentage >= 85) return 'bg-blue-300 hover:bg-blue-400';
+            if (percentage >= 80) return 'bg-blue-400 hover:bg-blue-500';
+            if (percentage >= 75) return 'bg-blue-500 hover:bg-blue-600';
+            if (percentage >= 70) return 'bg-blue-600 hover:bg-blue-700';
+            if (percentage >= 65) return 'bg-indigo-200 hover:bg-indigo-300';
+            if (percentage >= 60) return 'bg-indigo-300 hover:bg-indigo-400';
+            if (percentage >= 55) return 'bg-indigo-400 hover:bg-indigo-500';
+            if (percentage >= 50) return 'bg-yellow-200 hover:bg-yellow-300';
+            if (percentage >= 45) return 'bg-yellow-300 hover:bg-yellow-400';
+            if (percentage >= 40) return 'bg-yellow-400 hover:bg-yellow-500';
+            if (percentage >= 35) return 'bg-yellow-600 hover:bg-yellow-700';
+            if (percentage >= 12.5) return 'bg-red-400 hover:bg-red-500';
             return 'bg-red-600 hover:bg-red-700';
         },
 
         getReadinessBarClass(percentage) {
             if (percentage >= 99) return 'bg-green-600';
             if (percentage >= 95) return 'bg-green-400';
-            if (percentage >= 85) return 'bg-blue-400';
-            if (percentage >= 75) return 'bg-blue-600';
-            if (percentage >= 50) return 'bg-yellow-400';
-            if (percentage >= 30) return 'bg-yellow-600';
-            if (percentage >= 10) return 'bg-red-400';
+            if (percentage >= 90) return 'bg-green-200';
+            if (percentage >= 85) return 'bg-blue-300';
+            if (percentage >= 80) return 'bg-blue-400';
+            if (percentage >= 75) return 'bg-blue-500';
+            if (percentage >= 70) return 'bg-blue-600';
+            if (percentage >= 65) return 'bg-indigo-200';
+            if (percentage >= 60) return 'bg-indigo-300';
+            if (percentage >= 55) return 'bg-indigo-400';
+            if (percentage >= 50) return 'bg-yellow-200';
+            if (percentage >= 45) return 'bg-yellow-400';
+            if (percentage >= 40) return 'bg-yellow-500';
+            if (percentage >= 35) return 'bg-yellow-600';
+            if (percentage >= 12.5) return 'bg-red-400';
             return 'bg-red-600';
         },
 

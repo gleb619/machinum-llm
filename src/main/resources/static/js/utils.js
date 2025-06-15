@@ -284,5 +284,9 @@ export function utilsApp() {
                  }).then(response => response.text());
       },
 
+      gracefulStop(varName) {
+          setTimeout(() => this[varName] = false, 300);
+      },
+
   }
 }

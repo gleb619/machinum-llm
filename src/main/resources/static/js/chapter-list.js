@@ -33,6 +33,7 @@ export function listApp() {
             const params = this.fromSearchParams(window.location.search);
             const qBookId = params.get('bookId');
             const chapterId = params.get('chapterId');
+            const chapterNumber = params.get('chapterNumber');
             if(qBookId) {
                 this.filters.bookId = qBookId;
                 this.saveFiltersToLocalStorage(false);
@@ -44,6 +45,12 @@ export function listApp() {
 
             this.loadValue('currentPage', 0);
             this.loadValue('activeSearchTab', 'filters');
+
+            if(chapterNumber) {
+                this.filters.chapterNumber = chapterNumber;
+                this.currentPage = 0;
+                this.activeSearchTab = 'filters';
+            }
 
             this.fetchChapters(this.currentPage, () => this.afterInit());
             this.registerHotkeys(this);
@@ -251,15 +258,17 @@ export function listApp() {
                 }
             });
 
-            Mousetrap.bind('alt+right', () => {
-                app.changeNumberFilter(1);
-            });
-            Mousetrap.bind('alt+left', (e) => {
-                e.preventDefault();
-                app.changeNumberFilter(-1);
+            if(!app.chapterId) {
+                Mousetrap.bind('alt+right', () => {
+                    app.changeNumberFilter(1);
+                });
+                Mousetrap.bind('alt+left', (e) => {
+                    e.preventDefault();
+                    app.changeNumberFilter(-1);
 
-                return false;
-            });
+                    return false;
+                });
+            }
         },
 
         afterInit() {

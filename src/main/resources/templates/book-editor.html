@@ -54,6 +54,13 @@
                             @click="changeValue('bookActiveTab', 'glossary')"
                             class="font-bold border-b-2 pb-2">Glossary
                     </button>
+                    <button :class="{
+                                'text-gray-500 border-transparent': bookActiveTab !== 'import-export',
+                                'text-blue-600 border-blue-600': bookActiveTab === 'import-export'
+                            }"
+                            @click="changeValue('bookActiveTab', 'import-export')"
+                            class="font-bold border-b-2 pb-2">Import/Export
+                    </button>
                 </nav>
             </div>
 
@@ -61,7 +68,7 @@
                 <!-- Report Tab -->
                 <div th:remove="tag" th:replace="~{components/book/book-tab-book-report::report}">
                     <p>
-                        Here placed content of components/book/templates/book-tab-book-report.html page,
+                        Here placed content of components/book/book-tab-book-report.html page,
                         tag `th:fragment="report"`
                     </p>
                 </div>
@@ -86,6 +93,14 @@
                     <p>
                         Here placed content of templates/components/book/book-tab-glossary-list.html page,
                         tag `th:fragment="glossary-list"`
+                    </p>
+                </div>
+
+                <!-- Import/Export Tab -->
+                <div th:remove="tag" th:replace="~{components/book/book-tab-import-export::import-export}">
+                    <p>
+                        Here placed content of templates/components/book/book-tab-import-export.html page,
+                        tag `th:fragment="import-export"`
                     </p>
                 </div>
             </div>
