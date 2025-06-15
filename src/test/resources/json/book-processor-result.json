@@ -14,23 +14,21 @@
         }
       ]
     },
-    "translatedText": "Translate fix response for chapter 1",
-    "translatedChunks": {
-      "chunks": [
-        {
-          "part": 1,
-          "text": "Translate fix response for chapter 1",
-          "tokens": 7
-        }
-      ]
-    },
+    "proofreadText": null,
+    "translatedText": "Translated response for chapter 1",
+    "translatedChunks": null,
     "summary": "Summary response for chapter 1",
+    "consolidatedSummary": null,
     "keywords": [],
     "selfConsistency": {
       "questionsAndAnswers": []
     },
     "quotes": [],
     "characters": [],
+    "themes": null,
+    "perspective": null,
+    "tone": null,
+    "foreshadowing": null,
     "names": [
       {
         "name": "First",
@@ -60,23 +58,21 @@
         }
       ]
     },
-    "translatedText": "Translate fix response for chapter 2",
-    "translatedChunks": {
-      "chunks": [
-        {
-          "part": 1,
-          "text": "Translate fix response for chapter 2",
-          "tokens": 7
-        }
-      ]
-    },
+    "proofreadText": null,
+    "translatedText": "Translated response for chapter 2",
+    "translatedChunks": null,
     "summary": "Summary response for chapter 2",
+    "consolidatedSummary": null,
     "keywords": [],
     "selfConsistency": {
       "questionsAndAnswers": []
     },
     "quotes": [],
     "characters": [],
+    "themes": null,
+    "perspective": null,
+    "tone": null,
+    "foreshadowing": null,
     "names": [
       {
         "name": "Second",
@@ -108,23 +104,21 @@
         }
       ]
     },
-    "translatedText": "Translate fix response for chapter 3",
-    "translatedChunks": {
-      "chunks": [
-        {
-          "part": 1,
-          "text": "Translate fix response for chapter 3",
-          "tokens": 7
-        }
-      ]
-    },
+    "proofreadText": null,
+    "translatedText": "Translated response for chapter 3",
+    "translatedChunks": null,
     "summary": "Summary response for chapter 3",
+    "consolidatedSummary": null,
     "keywords": [],
     "selfConsistency": {
       "questionsAndAnswers": []
     },
     "quotes": [],
     "characters": [],
+    "themes": null,
+    "perspective": null,
+    "tone": null,
+    "foreshadowing": null,
     "names": [
       {
         "name": "Third",

@@ -58,7 +58,7 @@ public abstract class AbstractGlossaryTranslateTest extends NormalTest {
                     text(cleanText),
                     context(summaryText),
                     glossary(glossaryJson),
-                    glossary(oldGlossaryJson).obsolete()
+                    glossary(oldGlossaryJson).asObsolete()
             ));
         }).mutate(FlowContext::glossary);
 

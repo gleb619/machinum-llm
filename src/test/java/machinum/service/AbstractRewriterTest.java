@@ -31,7 +31,7 @@ public abstract class AbstractRewriterTest extends NormalTest {
         var rewrite = DurationUtil.measure("rewrite", () -> {
             return rewriter.rewrite((FlowContext<Chapter>) of(
                     iteration(1),
-                    text(oldChapterText).obsolete(),
+                    text(oldChapterText).asObsolete(),
                     text(chapterText)
             ));
         }).mutate(FlowContext::text);

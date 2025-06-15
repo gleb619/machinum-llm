@@ -170,7 +170,7 @@ public class BookController implements ControllerTrait {
         List<ObjectName> names;
         if (file.getOriginalFilename().toLowerCase().endsWith(".csv")) {
             // Handle Csv file
-            names = processCsvFile(file.getInputStream());
+            names = processGlossaryCsvFile(file.getInputStream());
         } else if (file.getOriginalFilename().toLowerCase().endsWith(".json")) {
             // Handle JSON file directly
             names = List.of(mapper.readValue(file.getInputStream(), ObjectName[].class));
@@ -180,6 +180,31 @@ public class BookController implements ControllerTrait {
         }
 
         bookFacade.importGlossaryTranslation(bookId, names);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @SneakyThrows
+    @PostMapping("/{id}/upload/chapters")
+    public ResponseEntity<Void> importChapter(@PathVariable("id") String bookId,
+                                              @RequestParam("file") MultipartFile file,
+                                              @RequestParam("fileName") String fileName) {
+        log.debug("Got request to import chapters for book: {}, file={}", bookId, fileName);
+
+        List<Chapter> chapters;
+        if (file.getOriginalFilename().toLowerCase().endsWith(".json")) {
+            // Handle JSON file directly
+            chapters = List.of(mapper.readValue(file.getInputStream(), Chapter[].class));
+        } else if (file.getOriginalFilename().toLowerCase().endsWith(".jsonl")) {
+            // Parse from jsonl
+            var text = IOUtils.toString(file.getInputStream());
+            chapters = jsonlConverter.convert(text);
+        } else {
+            log.debug("Unknown type of file: {}", file.getOriginalFilename());
+            return ResponseEntity.badRequest().build();
+        }
+
+        bookFacade.importChaptersText(bookId, chapters);
 
         return ResponseEntity.noContent().build();
     }
@@ -233,6 +258,11 @@ public class BookController implements ControllerTrait {
 
         return ResponseEntity
                 .ok()
+//                application/json-lines
+//                text/jsonl
+//                application/jsonl+json
+//                application/jsonl
+                .contentType(new MediaType("application", "jsonl+json"))
                 .body(jsonl);
     }
 
@@ -302,7 +332,7 @@ public class BookController implements ControllerTrait {
     }
 
     @SneakyThrows
-    private List<ObjectName> processCsvFile(InputStream inputStream) throws IOException {
+    private List<ObjectName> processGlossaryCsvFile(InputStream inputStream) throws IOException {
         try (CSVReader reader = new CSVReader(new InputStreamReader(inputStream))) {
             return reader.readAll().stream()
                     .skip(1)

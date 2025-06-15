@@ -17,7 +17,6 @@ import java.util.function.Function;
 
 import static machinum.config.Constants.EMPTY_PLACEHOLDER;
 import static machinum.flow.FlowContextActions.*;
-import static machinum.flow.FlowContextActions.*;
 
 @ExtendWith(MockitoExtension.class)
 class FlowContextTest {
@@ -86,7 +85,7 @@ class FlowContextTest {
     @Test
     void testOldText() {
         var result = flowContext
-                .addArgs(text("example1-old").obsolete())
+                .addArgs(text("example1-old").asObsolete())
                 .oldText();
         Assertions.assertEquals("example1-old", result);
     }
@@ -94,7 +93,7 @@ class FlowContextTest {
     @Test
     void testOldContext() {
         var result = flowContext
-                .addArgs(context("example2-old").obsolete())
+                .addArgs(context("example2-old").asObsolete())
                 .oldContext();
         Assertions.assertEquals("example2-old", result);
     }
@@ -102,7 +101,7 @@ class FlowContextTest {
     @Test
     void testOldConsolidatedContext() {
         var result = flowContext
-                .addArgs(consolidatedContext("example3-old").obsolete())
+                .addArgs(consolidatedContext("example3-old").asObsolete())
                 .oldConsolidatedContext();
         Assertions.assertEquals("example3-old", result);
     }
@@ -116,7 +115,7 @@ class FlowContextTest {
                 Map.of("metadata-old", "metadata-old"));
         var expectedList = List.of(expectedObjectName);
         var result = flowContext
-                .addArgs(glossary(expectedList).obsolete())
+                .addArgs(glossary(expectedList).asObsolete())
                 .oldGlossary();
 
         Assertions.assertEquals(expectedList, result);
@@ -126,7 +125,7 @@ class FlowContextTest {
     @Test
     void testOldProofread() {
         var result = flowContext
-                .addArgs(proofread("example4-old").obsolete())
+                .addArgs(proofread("example4-old").asObsolete())
                 .oldProofread();
         Assertions.assertEquals("example4-old", result);
     }
@@ -222,12 +221,12 @@ class FlowContextTest {
     @Test
     void testObsolete() {
         var argWithValue = text("example1");
-        var oldArgWithValue = text("example1").obsolete();
+        var oldArgWithValue = text("example1").asObsolete();
 
         var emptyArgWithValue = text("example1").toBuilder()
                 .value(null)
                 .build();
-        var emptyOldArgWithValue = text("example1").obsolete().toBuilder()
+        var emptyOldArgWithValue = text("example1").asObsolete().toBuilder()
                 .value(null)
                 .build();
 
@@ -236,11 +235,11 @@ class FlowContextTest {
         Assertions.assertTrue(emptyArgWithValue.isEmpty());
         Assertions.assertTrue(emptyOldArgWithValue.isEmpty());
 
-        Assertions.assertNotSame(emptyArgWithValue.obsolete(), emptyArgWithValue);
-        Assertions.assertSame(emptyOldArgWithValue.obsolete(), emptyOldArgWithValue);
+        Assertions.assertNotSame(emptyArgWithValue.asObsolete(), emptyArgWithValue);
+        Assertions.assertSame(emptyOldArgWithValue.asObsolete(), emptyOldArgWithValue);
 
         Assertions.assertFalse(oldArgWithValue.isEmpty());
-        Assertions.assertTrue(oldArgWithValue.obsolete().isEmpty());
+        Assertions.assertTrue(oldArgWithValue.asObsolete().isEmpty());
     }
 
     @Test
@@ -257,7 +256,7 @@ class FlowContextTest {
     @Test
     void testHasArguments() {
         var result = flowContext
-                .addArgs(text("example1"), text("example1").obsolete())
+                .addArgs(text("example1"), text("example1").asObsolete())
                 .hasArguments(FlowContext::textArg, FlowContext::oldTextArg);
 
         var result2 = flowContext

@@ -38,7 +38,7 @@ public abstract class AbstractGlossaryTest extends DbTest {
         //TODO add to FlowContext a Chapter#number & consolidatedGlossary
         var glossary = DurationUtil.measure("glossaryExtractor", () -> {
             return this.glossary.extractGlossary((FlowContext<Chapter>) of(
-                            context(previousContext).obsolete(),
+                    context(previousContext).asObsolete(),
                             glossary(previousGlossary),
                             text(chapterText),
                             context(contextText)

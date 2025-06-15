@@ -1,17 +1,21 @@
 package machinum.service;
 
+import jakarta.persistence.EntityManager;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.exception.AppIllegalStateException;
 import machinum.flow.FlowContext;
+import machinum.model.Book;
 import machinum.model.Chapter;
 import machinum.model.ChapterGlossary;
+import machinum.model.ObjectName;
 import machinum.processor.core.GeminiClient;
 import machinum.repository.LineDao;
 import machinum.util.TextUtil;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.async.AsyncHelper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -38,6 +42,9 @@ public class ChapterFacade {
     private final LineDao lineDao;
     private final AsyncHelper asyncHelper;
     private final DbHelper dbHelper;
+
+    @Value("${app.batch-size}")
+    private final Integer batchSize;
 
     public Chapter refresh(FlowContext<Chapter> context) {
         return chapterService.refresh(context);
@@ -187,12 +194,6 @@ public class ChapterFacade {
         }
     }
 
-    public Page<ChapterGlossary> findBookGlossary(String bookId, PageRequest pageRequest) {
-        return chapterGlossaryService.findBookGlossary(bookId, pageRequest);
-    }
-
-    /* ============= */
-
     public Chapter loadItemForBootstrap(boolean initState, Chapter currentItem) {
         //For second step and next, we try to refresh item from db
         if (!initState) {
@@ -202,6 +203,35 @@ public class ChapterFacade {
         }
 
         return currentItem;
+    }
+
+    public void importGlossaryTranslation(Book book, List<ObjectName> newNames) {
+        log.debug("Import glossary translation for book: {}, list={}", book.getId(), newNames.size());
+
+        dbHelper.doInNewTransaction(context -> {
+            var entityManager = context.getBean(EntityManager.class);
+            for (int i = 0; i < book.getChapters().size(); i++) {
+                var chapter = book.getChapters().get(i);
+                chapterService.updateGlossaryTranslation(chapter, newNames);
+
+                if (i % batchSize == 0) {
+                    entityManager.flush();
+                    entityManager.clear();
+                }
+            }
+        });
+    }
+
+    public void updateGlossary(String id, ChapterGlossary updatedChapterGlossary) {
+        var template = chapterService.getById(id);
+        var objectName = updatedChapterGlossary.getObjectName();
+        var chapters = chapterGlossaryService.findChaptersByGlossary(List.of(objectName.getName()), template.getBookId());
+
+        dbHelper.doInNewTransaction(() -> {
+            for (var chapter : chapters) {
+                chapterService.updateGlossaryTranslation(chapter, List.of(objectName));
+            }
+        });
     }
 
 }

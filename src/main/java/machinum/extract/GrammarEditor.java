@@ -72,6 +72,7 @@ public class GrammarEditor implements FlowSupport, PreconditionSupport {
     protected final Integer contextLength;
     @Value("${app.translate.copy-editing.provider}")
     protected final String provider;
+    //TODO remove
     @Value("${app.translate.copy-editing.history.mode}")
     protected final String historyMode;
     protected final RetryHelper retryHelper;

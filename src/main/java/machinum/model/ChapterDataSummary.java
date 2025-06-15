@@ -22,6 +22,7 @@ public class ChapterDataSummary {
     private Long emptyTranslatedTexts;
     private Long emptySummaries;
     private Long emptyNames;
+    private Long emptyTranslatedNames;
     private Long emptyWarnings;
     private Double titleCompletionPercentage;
     private Double translatedTitleCompletionPercentage;
@@ -29,6 +30,7 @@ public class ChapterDataSummary {
     private Double translatedTextCompletionPercentage;
     private Double summaryCompletionPercentage;
     private Double namesCompletionPercentage;
+    private Double translatedNamesCompletionPercentage;
     private Double warningsPercentage;
 
     @Data
@@ -64,6 +66,7 @@ public class ChapterDataSummary {
         private Boolean summary;
         private Boolean names;
         private Boolean warnings;
+        private Boolean translatedNames;
         @Builder.Default
         private List<ChapterWarning> chapterWarnings = new ArrayList<>();
 

@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static machinum.config.Constants.BOOK_ID;
 import static machinum.flow.FlowContextActions.consolidatedGlossary;
 import static machinum.util.JavaUtil.*;
 
@@ -36,10 +37,7 @@ public class Glossary {
 
 
     public FlowContext<Chapter> extractGlossaryFast(FlowContext<Chapter> flowContext) {
-        var chapterNumber = flowContext.optional(FlowContext::chapterNumberArg)
-                .map(FlowArgument::getValue)
-                .map(JavaUtil::parseInt)
-                .orElse(Integer.MAX_VALUE - 1);
+        var chapterNumber = resolveChapterNumber(flowContext);
         var references = properNameExtractor.extract(flowContext.text()).stream()
                 .map(ObjectName::forName)
                 .toList();
@@ -61,11 +59,14 @@ public class Glossary {
         var glossaryFromLastChapter = flowContext.optionalValue(FlowContext::oldGlossaryArg)
                 .orElse(Collections.emptyList());
         var fullGlossary = enrichCurrentGlossaryFromDB(flowContext, glossaryFromLastChapter, namesExtractedByNLP);
+        var currentChapterGlossary = chapterGlossaryService.findGlossary(resolveChapterNumber(flowContext), namesExtractedByNLP, resolveBookId(flowContext));
 
         //Run again
         return glossaryExtractor.secondExtract(flowContext.rearrange(FlowContext::glossaryArg, FlowContextActions.glossary(fullGlossary))
-                        .rearrange(FlowContext::oldGlossaryArg, FlowContextActions.glossary(glossaryFromLastChapter).obsolete())
-                        .rearrange(FlowContext::consolidatedGlossaryArg, consolidatedGlossary(fullGlossary)))
+                        .rearrange(FlowContext::oldGlossaryArg, FlowContextActions.glossary(glossaryFromLastChapter).asObsolete())
+                        .rearrange(FlowContext::consolidatedGlossaryArg, consolidatedGlossary(fullGlossary))
+                        .addArgs(FlowContextActions.glossary(currentChapterGlossary).asAlternative())
+                )
                 .then(ctx -> {
                     var chapterNames = new ArrayList<>(ctx.glossary());
 
@@ -79,7 +80,8 @@ public class Glossary {
                     }
 
                     return ctx.replace(FlowContext::glossaryArg, FlowContextActions.glossary(chapterNames));
-                });
+                })
+                .removeArgs(FlowContextActions.alt(FlowContext::glossaryArg));
     }
 
     public FlowContext<Chapter> glossaryTranslateWithCache(FlowContext<Chapter> flowContext) {
@@ -108,13 +110,10 @@ public class Glossary {
     private List<ObjectName> enrichCurrentGlossaryFromDB(FlowContext<Chapter> ctx,
                                                          List<ObjectName> glossaryFromLastChapter,
                                                          List<ObjectName> additionalNames) {
-        var chapterNumber = ctx.optional(FlowContext::chapterNumberArg)
-                .map(FlowArgument::getValue)
-                .map(JavaUtil::parseInt)
-                .orElse(Integer.MAX_VALUE - 1);
+        var chapterNumber = resolveChapterNumber(ctx);
 
         return ctx.findCurrentItem().map(chapter -> {
-                    var bookId = Objects.requireNonNull(chapter.getBookId(), "BookId can't be null");
+                    var bookId = resolveBookId(ctx);
 
                     // Load from db for the terms who just founded
                     var references = ctx.optionalValue(FlowContext::glossaryArg)
@@ -140,6 +139,23 @@ public class Glossary {
                 .sorted(Comparator.comparing(ObjectName::getCategory)
                         .thenComparing(ObjectName::getName))
                 .toList();
+    }
+
+    private String resolveBookId(FlowContext<Chapter> ctx) {
+        var chapter = Objects.requireNonNull(ctx.getCurrentItem(), "Chapter can't be null");
+
+        if (Objects.nonNull(chapter.getBookId())) {
+            return chapter.getBookId();
+        }
+
+        return Objects.requireNonNull(ctx.metadata(BOOK_ID), "Book id can't be null");
+    }
+
+    private Integer resolveChapterNumber(FlowContext<Chapter> ctx) {
+        return ctx.optional(FlowContext::chapterNumberArg)
+                .map(FlowArgument::getValue)
+                .map(JavaUtil::parseInt)
+                .orElse(Integer.MAX_VALUE - 1);
     }
 
 }

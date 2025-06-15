@@ -31,6 +31,7 @@ public class BookFacade {
     private final BookService bookService;
     private final ChapterConverter chapterConverter;
     private final ChapterService chapterService;
+    private final ChapterFacade chapterFacade;
     private final ChapterMapper chapterMapper;
     private final ChapterEntityListener chapterEntityListener;
     private final DbHelper dbHelper;
@@ -124,7 +125,34 @@ public class BookFacade {
         }
         log.debug("Prepare to import glossary translation for: {}", bookId);
         var book = get(bookId);
-        chapterService.importGlossaryTranslation(book, names);
+        chapterFacade.importGlossaryTranslation(book, names);
+    }
+
+    public void importChaptersText(String bookId, List<Chapter> chapters) {
+        Objects.requireNonNull(bookService.getById(bookId), "Book for given id, is not found");
+        log.debug("Got request for chapter text changing: {}, chapters={}", bookId, chapters.size());
+
+        dbHelper.doInNewTransaction(() -> {
+            var chunks = toChunks(chapters, batchSize);
+            for (int i = 0; i < chunks.size(); i++) {
+                var chunk = chunks.get(i);
+
+                for (Chapter chapWithChanges : chunk) {
+                    chapterService.findByNumber(bookId, chapWithChanges.getNumber())
+                            .ifPresentOrElse(chapFromDb -> {
+                                chapFromDb.setText(chapWithChanges.getText());
+                                chapterService.save(chapFromDb);
+                            }, () -> chapterService.save(chapWithChanges.toBuilder()
+                                    .id(null)
+                                    .bookId(bookId)
+                                    .build()));
+                }
+
+                entityManager.flush();
+                entityManager.clear();
+                log.debug("Processed {}/{} chunk of chapters", i + 1, chunks.size());
+            }
+        });
     }
 
 }

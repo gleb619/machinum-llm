@@ -14,12 +14,10 @@ import machinum.exception.AppIllegalStateException;
 import machinum.flow.FlowContext;
 import machinum.flow.Pack;
 import machinum.listener.ChapterEntityListener;
-import machinum.model.Book;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.repository.ChapterGlossaryRepository.GlossaryByQueryResult;
 import machinum.repository.ChapterIndexRepository;
-import machinum.repository.ChapterReportRepository;
 import machinum.repository.ChapterRepository;
 import machinum.util.LanguageDetectorUtil;
 import machinum.util.TextUtil;
@@ -51,7 +49,6 @@ public class ChapterService {
     private final ChapterMapper chapterMapper;
     private final Holder<ObjectMapper> objectMapperHolder;
     private final ChapterEntityListener chapterEntityListener;
-    private final ChapterReportRepository chapterReportRepository;
 
     @Value("${app.batch-size}")
     private final Integer batchSize;
@@ -389,6 +386,7 @@ public class ChapterService {
         return chapters.map(chapterMapper::toDto);
     }
 
+    //TODO move to facade
     @Transactional
     public void importTranslation(String bookId, List<Chapter> list) {
         log.debug("Import translation for book: {}, list={}", bookId, list.size());
@@ -418,33 +416,6 @@ public class ChapterService {
         }
 
         log.debug("Translation was imported for book: {}, list={}", bookId, list.size());
-    }
-
-    @Transactional
-    public void importGlossaryTranslation(Book book, List<ObjectName> newNames) {
-        log.debug("Import glossary translation for book: {}, list={}", book.getId(), newNames.size());
-
-        for (int i = 0; i < book.getChapters().size(); i++) {
-            var chapter = book.getChapters().get(i);
-            var persist = false;
-
-            for (var newObjectName : newNames) {
-                var chapterName = chapter.findObjectName(newObjectName.getName());
-                if (Objects.nonNull(chapterName)) {
-                    chapter.replaceObjectName(chapterName, chapterName.ruName(newObjectName.ruName()));
-                    persist = true;
-                }
-            }
-
-            if (persist) {
-                chapterRepository.updateGlossary(chapter.getId(), objectMapperHolder.execute(mapper -> mapper.writeValueAsString(chapter.getNames())));
-            }
-
-            if (i % batchSize == 0) {
-                entityManager.flush();
-                entityManager.clear();
-            }
-        }
     }
 
     @Transactional
@@ -493,6 +464,23 @@ public class ChapterService {
         return chapterMapper.toDto(chapterRepository.save(entity));
     }
 
+    @Transactional
+    public void updateGlossaryTranslation(Chapter chapter, List<ObjectName> newNames) {
+        boolean persist = false;
+
+        for (var newObjectName : newNames) {
+            var chapterName = chapter.findObjectName(newObjectName.getName());
+            if (Objects.nonNull(chapterName)) {
+                chapter.replaceObjectName(chapterName, chapterName.ruName(newObjectName.ruName()));
+                persist = true;
+            }
+        }
+
+        if (persist) {
+            chapterRepository.updateGlossary(chapter.getId(), objectMapperHolder.execute(mapper -> mapper.writeValueAsString(chapter.getNames())));
+        }
+    }
+
     /* ============= */
 
     private String toJsonString(ObjectMapper mapper, Object value) throws JsonProcessingException {
@@ -500,6 +488,7 @@ public class ChapterService {
                 .writeValueAsString(value);
     }
 
+    @Deprecated(forRemoval = true)
     private List<String> findMissingNames(List<GlossaryByQueryResult> pairs, List<String> dtoNames) {
         // Find Pair's first values that are not in dtoNames
         return pairs.stream()

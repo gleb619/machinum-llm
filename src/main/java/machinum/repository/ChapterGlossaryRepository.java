@@ -33,6 +33,24 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterEntity, 
                                                     @Param("bookId") String bookId);
 
     @Query(value = """ 
+                select distinct
+                    c2.chapter_id
+                from 
+                    chapter_glossary c2 
+                where 
+                    c2.name in :names 
+                    and c2.book_id = :bookId 
+            """, nativeQuery = true)
+    List<String> findChaptersByGlossary_Native(@Param("names") List<String> names,
+                                               @Param("bookId") String bookId);
+
+    default List<ChapterEntity> findChaptersByGlossary(@Param("names") List<String> names,
+                                                       @Param("bookId") String bookId) {
+        List<String> ids = findChaptersByGlossary_Native(names, bookId);
+        return findAllById(ids);
+    }
+
+    @Query(value = """ 
                 WITH data AS (
                    SELECT c0.*
                    FROM chapter_glossary c0
@@ -232,6 +250,26 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterEntity, 
                     ORDER BY cg1.chapterNumber, cg1.category, cg1.name""",
             countQuery = BOOK_GLOSSARY + "SELECT count(cg1.id) FROM data cg1 WHERE cg1.row_num = 1", nativeQuery = true)
     Page<ChapterGlossaryProjection> findGlossary(@Param("bookId") String bookId, PageRequest pageRequest);
+
+    @Query(value =
+            BOOK_GLOSSARY + """
+                    SELECT 
+                        cg1.id,
+                        cg1.chapterId,
+                        cg1.chapterNumber,
+                        cg1.rawJson 
+                    FROM data cg1 
+                    WHERE cg1.row_num = 1 
+                    AND cg1.translated = :translated  
+                    ORDER BY cg1.chapterNumber, cg1.category, cg1.name""",
+            countQuery = BOOK_GLOSSARY + """
+                    SELECT count(cg1.id) 
+                    FROM data cg1 
+                    WHERE cg1.row_num = 1 
+                    AND cg1.translated = :translated  """, nativeQuery = true)
+    Page<ChapterGlossaryProjection> findTranslatedGlossary(@Param("bookId") String bookId,
+                                                           @Param("translated") Boolean translated,
+                                                           PageRequest pageRequest);
 
     interface GlossaryByQueryResult {
 

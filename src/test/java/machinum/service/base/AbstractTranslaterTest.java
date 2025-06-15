@@ -26,7 +26,7 @@ public abstract class AbstractTranslaterTest extends NormalTest {
     @Autowired
     Translater translater;
 
-    @Disabled
+    //    @Disabled
     @DisplayName("Translate")
     @RepeatedIfExceptionsTest
     void testTranslate() throws IOException {
@@ -36,7 +36,7 @@ public abstract class AbstractTranslaterTest extends NormalTest {
         });
 
         var translate = DurationUtil.measure("translate", () -> {
-            return translater.translate((FlowContext<Chapter>) of(
+            return translater.translateAll((FlowContext<Chapter>) of(
                     text(chapterText),
                     context(contextText),
                     glossary(glossary)
@@ -70,6 +70,7 @@ public abstract class AbstractTranslaterTest extends NormalTest {
         });
     }
 
+    @Disabled
     @DisplayName("Translate with scoring")
     @RepeatedIfExceptionsTest
     void testTranslateWithScoring() throws IOException {

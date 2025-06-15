@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
 import machinum.converter.ChapterMapper;
+import machinum.model.Chapter;
 import machinum.model.ChapterGlossary;
 import machinum.model.ObjectName;
 import machinum.repository.ChapterGlossaryRepository;
@@ -30,6 +31,38 @@ public class ChapterGlossaryService {
     private final Holder<ObjectMapper> objectMapperHolder;
     private final ChapterMapper chapterMapper;
 
+
+    @Transactional(readOnly = true)
+    public List<Chapter> findChaptersByGlossary(@NonNull List<String> names, @NonNull String bookId) {
+        if (names.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        var pairs = chapterRepository.findChaptersByGlossary(names, bookId);
+
+        return pairs.stream()
+                .map(chapterMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ObjectName> findGlossary(@NonNull Integer chapterNumber, @NonNull List<ObjectName> glossary, String bookId) {
+        if (glossary.isEmpty()) {
+            return glossary;
+        }
+
+        log.debug("Prepare to load references for glossary: {}", glossary.size());
+        var names = uniqueBy(glossary, ObjectName::getName).stream()
+                .map(ObjectName::getName)
+                .collect(Collectors.toList());
+
+        var pairs = chapterRepository.findGlossaryByQuery(names, chapterNumber, bookId);
+
+        return pairs.stream()
+                .map(GlossaryByQueryResult::getRawJson)
+                .map(rawJson -> objectMapperHolder.execute(mapper -> mapper.readValue(rawJson, ObjectName.class)))
+                .collect(Collectors.toList());
+    }
 
     @Transactional(readOnly = true)
     public List<ObjectName> findReferences(@NonNull Integer chapterNumber, @NonNull List<ObjectName> glossary, String bookId, int similarityRatio) {
@@ -86,6 +119,19 @@ public class ChapterGlossaryService {
     public Page<ChapterGlossary> findBookGlossary(@NonNull String bookId, @NonNull PageRequest pageRequest) {
         log.debug("Prepare to load book's glossary from db: {}", bookId);
         return chapterRepository.findGlossary(bookId, pageRequest)
+                .map(projection -> {
+                    var dto = chapterMapper.toDto(projection);
+                    var objectName = objectMapperHolder.execute(mapper -> mapper.readValue(projection.getRawJson(), ObjectName.class));
+                    dto.setObjectName(objectName);
+
+                    return dto;
+                });
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ChapterGlossary> findBookTranslatedGlossary(@NonNull String bookId, boolean translated, @NonNull PageRequest pageRequest) {
+        log.debug("Prepare to load book's translated glossary from db: {}", bookId);
+        return chapterRepository.findTranslatedGlossary(bookId, translated, pageRequest)
                 .map(projection -> {
                     var dto = chapterMapper.toDto(projection);
                     var objectName = objectMapperHolder.execute(mapper -> mapper.readValue(projection.getRawJson(), ObjectName.class));

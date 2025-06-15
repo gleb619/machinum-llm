@@ -24,6 +24,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.cache.plugin.PluginConfig;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -96,8 +97,8 @@ public class Config {
     }
 
     @Bean
-    public DbHelper dbHelper(VectorStore vectorStore) {
-        return new DbHelper(vectorStore);
+    public DbHelper dbHelper(VectorStore vectorStore, ApplicationContext context) {
+        return new DbHelper(vectorStore, context);
     }
 
     @Bean

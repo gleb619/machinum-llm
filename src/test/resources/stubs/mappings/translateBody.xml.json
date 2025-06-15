@@ -1,0 +1,67 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are translating a web novel from English to Russian')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Clean response for chapter 1')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\" standalone=\\\"no\\\"?> <results> <result> <origin>Clean response for chapter 1<\\/origin> <translated>Translated response for chapter 1<\/translated> <\\/result> <\\/results>\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are translating a web novel from English to Russian')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Clean response for chapter 2')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\" standalone=\\\"no\\\"?> <results> <result> <origin>Clean response for chapter 2<\\/origin> <translated>Translated response for chapter 2<\/translated> <\\/result> <\\/results>\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are translating a web novel from English to Russian')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Clean response for chapter 3')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\" standalone=\\\"no\\\"?> <results> <result> <origin>Clean response for chapter 3<\\/origin> <translated>Translated response for chapter 3<\/translated> <\\/result> <\\/results>\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    }
+  ]
+}

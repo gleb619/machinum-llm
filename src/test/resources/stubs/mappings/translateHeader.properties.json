@@ -1,0 +1,46 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are a professional Russian localization specialist responsible for translating English')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Chapter 1')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Chapter 1=Translated chapter 1\\nChapter 2=Translated chapter 2\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "url": "/api/chat",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'You are a professional Russian localization specialist responsible for translating English')]"
+          },
+          {
+            "matchesJsonPath": "$.messages[?(@.content contains 'Chapter 3')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"model\":\"llama3.2\",\"created_at\":\"2021-02-20T04:34:34.424696968Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Chapter 3=Translated chapter 3\"},\"done_reason\":\"stop\",\"done\":true,\"total_duration\":69696472453,\"load_duration\":19979028,\"prompt_eval_count\":1338,\"prompt_eval_duration\":1274000000,\"eval_count\":696,\"eval_duration\":68391000000}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    }
+  ]
+}

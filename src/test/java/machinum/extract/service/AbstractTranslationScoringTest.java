@@ -40,7 +40,7 @@ public abstract class AbstractTranslationScoringTest extends NormalTest {
 
         var translationScore = DurationUtil.measure("translationScore", () -> {
             return translationScoring.scoreTranslate((FlowContext<Chapter>) of(
-                    translatedText(oldTranslatedText).obsolete(),
+                    translatedText(oldTranslatedText).asObsolete(),
                     translatedText(translatedText),
                     text(chapterText),
                     context(contextText),

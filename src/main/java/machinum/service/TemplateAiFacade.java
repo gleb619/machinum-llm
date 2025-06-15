@@ -63,6 +63,10 @@ public class TemplateAiFacade {
         return translater.translate(context);
     }
 
+    public FlowContext<Chapter> translateAll(FlowContext<Chapter> context) {
+        return translater.translateAll(context);
+    }
+
     public FlowContext<Chapter> translateInChunks(FlowContext<Chapter> context) {
         return translater.translateInChunks(context);
     }

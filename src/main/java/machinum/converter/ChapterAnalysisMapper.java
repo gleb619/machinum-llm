@@ -30,6 +30,7 @@ public abstract class ChapterAnalysisMapper {
         boolean hasTranslatedText = projection.getTranslatedText() != null && !projection.getTranslatedText().trim().isEmpty();
         boolean hasSummary = projection.getSummary() != null && !projection.getSummary().trim().isEmpty();
         boolean hasNames = projection.getNameCount() != null && projection.getNameCount() > 0;
+        boolean hasTranslatedNames = projection.getTranslatedNameCount() == 1;
         boolean hasNotWarnings = projection.getWarningCount() == null || projection.getWarningCount() == 0;
 
         builder.title(hasTitle)
@@ -38,22 +39,24 @@ public abstract class ChapterAnalysisMapper {
                 .translatedText(hasTranslatedText)
                 .summary(hasSummary)
                 .names(hasNames)
+                .translatedNames(hasTranslatedNames)
                 .warnings(hasNotWarnings);
 
         // Calculate readiness index (0-100)
         double score = 0;
 
-        // Core content (50% weight)
-        if (hasTitle) score += 15;
-        if (hasText) score += 20;
-        if (hasSummary) score += 15;
-
-        // Translation (35% weight)
-        if (hasTranslatedTitle) score += 15;
-        if (hasTranslatedText) score += 20;
-
-        // Metadata (15% weight)
+        // Core content (45% weight)
+        if (hasTitle) score += 12.5;
+        if (hasText) score += 12.5;
+        if (hasSummary) score += 10;
         if (hasNames) score += 10;
+
+        // Translation (50% weight)
+        if (hasTranslatedTitle) score += 15;
+        if (hasTranslatedNames) score += 5;
+        if (hasTranslatedText) score += 30;
+
+        // Metadata (5% weight)
         if (hasNotWarnings) score += 5;
 
         builder.readinessIndex(score);

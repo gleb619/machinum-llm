@@ -47,7 +47,7 @@ public abstract class AbstractGrammarEditorTest extends NormalTest {
 
         var grammarEdit = DurationUtil.measure("grammarEdit", () -> {
             return grammarEditor.fixTranslate((FlowContext<Chapter>) of(
-                    translatedText(oldTranslatedText).obsolete(),
+                    translatedText(oldTranslatedText).asObsolete(),
                     translatedText(translatedText),
                     text(chapterText),
                     context(contextText),
@@ -76,7 +76,7 @@ public abstract class AbstractGrammarEditorTest extends NormalTest {
 
         var grammarEdit = DurationUtil.measure("grammarEdit", () -> {
             return translater.fixGrammarWithScoringLoop((FlowContext<Chapter>) of(
-                    translatedText(oldTranslatedText).obsolete(),
+                    translatedText(oldTranslatedText).asObsolete(),
                     translatedText(translatedText),
                     text(chapterText),
                     context(contextText),

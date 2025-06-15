@@ -59,6 +59,7 @@ public class ChapterAnalysisService {
         Long emptyTranslatedTexts = chapterReportRepository.countEmptyTranslatedTextsByBookId(bookId);
         Long emptySummaries = chapterReportRepository.countEmptySummariesByBookId(bookId);
         Long emptyNames = chapterReportRepository.countEmptyNamesByBookId(bookId);
+        Long emptyTranslatedNames = chapterReportRepository.countTranslatedNamesByBookId(bookId);
         Long emptyWarnings = chapterReportRepository.countEmptyWarningsByBookId(bookId);
 
         // Calculate completion percentages
@@ -68,6 +69,7 @@ public class ChapterAnalysisService {
         Double translatedTextCompletionPercentage = ((double) (totalChapters - emptyTranslatedTexts) / totalChapters) * 100;
         Double summaryCompletionPercentage = ((double) (totalChapters - emptySummaries) / totalChapters) * 100;
         Double namesCompletionPercentage = ((double) (totalChapters - emptyNames) / totalChapters) * 100;
+        Double translatedNamesCompletionPercentage = ((double) (totalChapters - emptyTranslatedNames) / totalChapters) * 100;
         Double warningsPercentage = ((double) (totalChapters - emptyWarnings) / totalChapters) * 100;
 
         return ChapterDataSummary.builder()
@@ -79,6 +81,7 @@ public class ChapterAnalysisService {
                 .emptyTranslatedTexts(emptyTranslatedTexts)
                 .emptySummaries(emptySummaries)
                 .emptyNames(emptyNames)
+                .emptyTranslatedNames(emptyTranslatedNames)
                 .emptyWarnings(emptyWarnings)
                 .titleCompletionPercentage(titleCompletionPercentage)
                 .translatedTitleCompletionPercentage(translatedTitleCompletionPercentage)
@@ -86,6 +89,7 @@ public class ChapterAnalysisService {
                 .translatedTextCompletionPercentage(translatedTextCompletionPercentage)
                 .summaryCompletionPercentage(summaryCompletionPercentage)
                 .namesCompletionPercentage(namesCompletionPercentage)
+                .translatedNamesCompletionPercentage(translatedNamesCompletionPercentage)
                 .warningsPercentage(warningsPercentage)
                 .build();
     }

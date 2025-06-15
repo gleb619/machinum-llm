@@ -93,18 +93,19 @@ public class ObjectName implements StringSupport {
     }
 
     public String invertedStringValue() {
-        String string = "`%s` - it's a %s; Example of usage: %s;".formatted(ruName(), category, description);
-
-        if (metadata.containsKey(RU_NAME)) {
-            return "%s English translation is: `%s`;".formatted(string, name);
-        }
-
-        return string;
+        return "`%s` - it's a %s; Example of usage: %s;  English translation is: `%s`;".formatted(
+                ruName(), category, description, name);
     }
 
     @Override
     public String shortStringValue() {
-        return "`%s` - it's a %s. On Russian - `%s`;".formatted(name, category, ruName());
+        String string = "`%s` - it's a %s.".formatted(name, category);
+
+        if (metadata.containsKey(RU_NAME)) {
+            return "%s On Russian - `%s`;".formatted(string, ruName());
+        }
+
+        return string;
     }
 
 }

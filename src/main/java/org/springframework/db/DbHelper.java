@@ -3,16 +3,19 @@ package org.springframework.db;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 @RequiredArgsConstructor
 public class DbHelper {
 
     private final VectorStore vectorStore;
+    private final ApplicationContext context;
 
     @Deprecated
     @Transactional
@@ -29,6 +32,15 @@ public class DbHelper {
     public void doInNewTransaction(Runnable runnable) {
         doInNewTransaction(() -> {
             runnable.run();
+
+            return null;
+        });
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void doInNewTransaction(Consumer<ApplicationContext> consumer) {
+        doInNewTransaction(() -> {
+            consumer.accept(context);
 
             return null;
         });

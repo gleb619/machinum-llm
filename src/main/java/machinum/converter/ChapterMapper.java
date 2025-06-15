@@ -21,8 +21,11 @@ import static machinum.util.TextUtil.length;
 public interface ChapterMapper extends BaseMapper<ChapterEntity, Chapter> {
 
     default Chapter checkForWarnings(Chapter source) {
-        var target = source.toBuilder().build();
+        var target = source.toBuilder()
+                .warnings(new ArrayList<>(source.getWarnings()))
+                .build();
         var list = new HashSet<>(firstNotNull(target.getWarnings(), Collections.emptyList()));
+
         if (length(target.getTitle()) < 2) {
             list.add(ChapterWarning.createNew(b -> b
                     .type(EMPTY_FIELD)

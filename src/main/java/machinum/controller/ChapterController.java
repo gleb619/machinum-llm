@@ -10,6 +10,7 @@ import machinum.model.ChapterDataSummary.ChapterHeatmapData;
 import machinum.model.ChapterGlossary;
 import machinum.service.ChapterAnalysisService;
 import machinum.service.ChapterFacade;
+import machinum.service.ChapterGlossaryService;
 import machinum.service.ChapterService;
 import machinum.util.TextUtil;
 import org.springframework.data.domain.Page;
@@ -28,10 +29,14 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class ChapterController implements ControllerTrait {
 
+    private static final int MISSING_MODE = 0;
+    private static final int TRANSLATION_MODE = 1;
+
     private final ChapterService chapterService;
     private final ChapterAnalysisService chapterAnalysisService;
     private final ChapterFacade chapterFacade;
     private final ChapterMapper chapterMapper;
+    private final ChapterGlossaryService chapterGlossaryService;
 
     @GetMapping("/api/chapters")
     public ResponseEntity<List<Chapter>> getAllChapters(ChapterSearchRequest request) {
@@ -110,18 +115,29 @@ public class ChapterController implements ControllerTrait {
             @PathVariable("bookId") String bookId,
             @RequestParam("page") int page,
             @RequestParam("size") int size,
-            @RequestParam(value = "missingTranslation", defaultValue = "false") boolean missingTranslation) {
+            @RequestParam(value = "translationMode", defaultValue = "-1") int translationMode) {
         log.debug("Fetching chapters names for bookId: {}", bookId);
 
         Page<ChapterGlossary> result;
-        if (missingTranslation) {
-            //TODO add handler for missingTranslation param
-            result = chapterFacade.findBookGlossary(bookId, PageRequest.of(page, size));
+        if (translationMode == MISSING_MODE) {
+            result = chapterGlossaryService.findBookTranslatedGlossary(bookId, false, PageRequest.of(page, size));
+        } else if (translationMode == TRANSLATION_MODE) {
+            result = chapterGlossaryService.findBookTranslatedGlossary(bookId, true, PageRequest.of(page, size));
         } else {
-            result = chapterFacade.findBookGlossary(bookId, PageRequest.of(page, size));
+            result = chapterGlossaryService.findBookGlossary(bookId, PageRequest.of(page, size));
         }
 
         return pageResponse(result);
+    }
+
+    @PatchMapping("/api/chapters/{id}/glossary")
+    public ResponseEntity<Chapter> updateGlossary(
+            @PathVariable("id") String id,
+            @RequestBody ChapterGlossary updatedChapterGlossary) {
+
+        chapterFacade.updateGlossary(id, updatedChapterGlossary);
+
+        return ResponseEntity.noContent().build();
     }
 
     /* ============= */

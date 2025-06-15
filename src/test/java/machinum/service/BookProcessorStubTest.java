@@ -59,8 +59,10 @@ class BookProcessorStubTest extends NormalTest {
 
     @Autowired
     ChapterHistoryRepository chapterHistoryRepository;
+
     @Value("classpath:json/book-processor-result.json")
     Resource resultFile;
+
     private String bookId;
     private List<Chapter> awaitedChapters;
 
@@ -78,7 +80,7 @@ class BookProcessorStubTest extends NormalTest {
                 .operationName(COMPLEX_FLOW)
                 .build());
 
-        var statistic = statisticService.currentStatistic();
+        var statistics = statisticService.currentStatistics();
         var chapters = new ArrayList<>(chapterService.loadBookChapters(bookId, PageRequest.of(0, 10_000))
                 .getContent());
         chapters.sort(Comparator.comparing(Chapter::getNumber));
@@ -88,18 +90,22 @@ class BookProcessorStubTest extends NormalTest {
                 .isNotNull()
                 .isEqualTo(awaitedChapters);
 
-        assertThat(statistic)
+        assertThat(statistics)
                 .isNotNull();
 
         assertThat(patches)
                 .isNotEmpty()
-                .hasSize(3)
+                .hasSize(2)
                 .extracting(ChapterHistory::getFieldName)
-                .containsExactly(TRANSLATED_TEXT, TRANSLATED_TEXT, CLEAN_TEXT);
+                .containsExactly(TRANSLATED_TEXT, CLEAN_TEXT);
 
-        assertThat(statistic.getData())
+        assertThat(statistics)
                 .isNotEmpty()
-                .hasSizeGreaterThanOrEqualTo(25);
+                .hasSizeGreaterThanOrEqualTo(15);
+
+        assertThat(statistics.getFirst().getMessages())
+                .isNotEmpty()
+                .hasSize(3);
     }
 
 }

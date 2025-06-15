@@ -34,6 +34,15 @@ public interface ChapterReportRepository extends JpaRepository<ChapterEntity, St
     @Query(value = "SELECT COUNT(ci0.id) FROM chapter_info ci0 WHERE ci0.book_id = :bookId AND (ci0.names IS NULL OR json_array_length(ci0.names) = 0)", nativeQuery = true)
     Long countEmptyNamesByBookId(@Param("bookId") String bookId);
 
+    @Query(value = """
+             SELECT COUNT(ci0.id) FROM chapter_info ci0 
+             WHERE ci0.book_id = :bookId AND (ci0.names IS NOT NULL AND json_array_length(ci0.names) <> (
+              SELECT COUNT(*)
+              FROM json_array_elements(ci0.names) as elem
+              WHERE elem->>'ruName' IS NOT NULL AND elem->>'ruName' != ''
+            ))""", nativeQuery = true)
+    Long countTranslatedNamesByBookId(@Param("bookId") String bookId);
+
     @Query(value = "SELECT COUNT(ci0.id) FROM chapter_info ci0 WHERE ci0.book_id = :bookId AND (ci0.warnings IS NULL OR jsonb_array_length(ci0.warnings) = 0)", nativeQuery = true)
     Long countEmptyWarningsByBookId(@Param("bookId") String bookId);
 
@@ -56,7 +65,16 @@ public interface ChapterReportRepository extends JpaRepository<ChapterEntity, St
              ci0.summary, 
              json_array_length(ci0.names) as nameCount, 
              jsonb_array_length(ci0.warnings) as warningCount,
-             ci0.warnings #>> '{}' as warningsRaw 
+             ci0.warnings #>> '{}' as warningsRaw ,
+             CASE 
+               WHEN json_array_length(ci0.names) = 0 THEN 0
+               WHEN json_array_length(ci0.names) = (
+                 SELECT COUNT(*)
+                 FROM json_array_elements(ci0.names) as elem
+                 WHERE elem->>'ruName' IS NOT NULL AND elem->>'ruName' != ''
+               ) THEN 1
+               ELSE 0
+             END as translatedNameCount
             FROM chapter_info ci0 
             WHERE ci0.book_id = :bookId 
             ORDER BY ci0.number""", nativeQuery = true)
@@ -85,6 +103,8 @@ public interface ChapterReportRepository extends JpaRepository<ChapterEntity, St
         Long getWarningCount();
 
         String getWarningsRaw();
+
+        Long getTranslatedNameCount();
 
     }
 
