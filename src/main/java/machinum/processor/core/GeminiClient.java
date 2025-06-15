@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowContextArgs;
 import machinum.flow.FlowException;
+import machinum.util.TextUtil;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -96,7 +97,7 @@ public class GeminiClient implements AiClient {
                     if (Objects.nonNull(e)) {
                         log.error("Error during Gemini execution: {}|{}", e.getClass(), e.getMessage());
                     } else {
-                        log.info("Successfully execute Gemini request.");
+                        log.info("Successfully executed Gemini request: {}", TextUtil.toShortDescription(result.text()));
                     }
                 });
     }

@@ -27,6 +27,7 @@ import static machinum.flow.FlowContextActions.translatedChunks;
 public class Translater implements FlowSupport {
 
     private final TranslaterBody translaterBody;
+    private final TranslaterXmlBody xmlTranslaterBody;
     private final TranslaterPlainHeader plainTranslaterHeader;
     private final TranslaterPropertiesHeader propertiesTranslaterHeader;
     private final TranslationScoring translationScoring;
@@ -64,6 +65,10 @@ public class Translater implements FlowSupport {
         return translaterBody.translate(context);
     }
 
+    public FlowContext<Chapter> translateAll(FlowContext<Chapter> context) {
+        return xmlTranslaterBody.translate(context);
+    }
+
     public FlowContext<Chapter> translateTitle(FlowContext<Chapter> context) {
         return plainTranslaterHeader.translate(context);
     }
@@ -76,13 +81,13 @@ public class Translater implements FlowSupport {
         return translate(context)
                 .then(translationScoring::scoreTranslate)
                 .then(this::translate)
-                .removeArgs(ctx -> ctx.arg(SCORE), ctx -> ctx.arg(SCORE).obsolete());
+                .removeArgs(ctx -> ctx.arg(SCORE), ctx -> ctx.arg(SCORE).asObsolete());
     }
 
     public FlowContext<Chapter> scoreAndTranslate(FlowContext<Chapter> context) {
         return translationScoring.scoreTranslate(context)
                 .then(this::translate)
-                .removeArgs(ctx -> ctx.arg(SCORE), ctx -> ctx.arg(SCORE).obsolete());
+                .removeArgs(ctx -> ctx.arg(SCORE), ctx -> ctx.arg(SCORE).asObsolete());
     }
 
     public FlowContext<Chapter> translateWithScoringLoop(FlowContext<Chapter> context) {
@@ -97,7 +102,7 @@ public class Translater implements FlowSupport {
         return fixGrammar(context)
                 .then(grammarEditorScoring::scoreTranslate)
                 .then(this::fixGrammar)
-                .removeArgs(ctx -> ctx.arg(SCORE), ctx -> ctx.arg(SCORE).obsolete());
+                .removeArgs(ctx -> ctx.arg(SCORE), ctx -> ctx.arg(SCORE).asObsolete());
     }
 
     public FlowContext<Chapter> fixGrammarWithScoringLoop(FlowContext<Chapter> context) {
@@ -107,7 +112,7 @@ public class Translater implements FlowSupport {
     public FlowContext<Chapter> scoreAndFix(FlowContext<Chapter> context) {
         return grammarEditorScoring.scoreTranslate(context)
                 .then(this::fixGrammar)
-                .removeArgs(ctx -> ctx.arg(SCORE), ctx -> ctx.arg(SCORE).obsolete());
+                .removeArgs(ctx -> ctx.arg(SCORE), ctx -> ctx.arg(SCORE).asObsolete());
     }
 
     /**
@@ -168,7 +173,7 @@ public class Translater implements FlowSupport {
                     }
                 }) // Return default if no results are found
                 //TODO: Is it necessary to save the SCORE to the db?
-                .removeArgs(ctx -> ctx.arg(SCORE), ctx -> ctx.arg(SCORE).obsolete()); //Clean context from score args
+                .removeArgs(ctx -> ctx.arg(SCORE), ctx -> ctx.arg(SCORE).asObsolete()); //Clean context from score args
     }
 
     public FlowContext<Chapter> translateInChunks(FlowContext<Chapter> context) {

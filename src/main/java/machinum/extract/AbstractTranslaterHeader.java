@@ -18,6 +18,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.retry.RetryHelper;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -26,8 +27,7 @@ import java.util.stream.Collectors;
 import static machinum.config.Constants.TITLE;
 import static machinum.config.Constants.TRANSLATED_TITLE;
 import static machinum.util.JavaUtil.createSuitableMap;
-import static machinum.util.TextUtil.detectLost;
-import static machinum.util.TextUtil.toShortDescription;
+import static machinum.util.TextUtil.*;
 
 @Slf4j
 public abstract class AbstractTranslaterHeader implements FlowSupport, PreconditionSupport, JsonSupport, PropertiesSupport {
@@ -61,15 +61,15 @@ public abstract class AbstractTranslaterHeader implements FlowSupport, Precondit
 
     public FlowContext<Chapter> batchTranslate(FlowContext<Chapter> flowContext) {
         List<Pack<Chapter, String>> items = flowContext.result();
-        Map<String, Chapter> data = items.stream()
-                .collect(Collectors.toMap(pack -> pack.getArgument().getValue(), Pack::getItem, (f, s) -> f));
+        var data = items.stream()
+                .collect(Collectors.toMap(pack -> pack.getArgument().getValue(), Pack::getItem, (f, s) -> f, LinkedHashMap::new));
 
         var text = String.join("\n", data.keySet());
 
         log.debug("Prepare to translate batch: titles[{}]={}...", data.size(), toShortDescription(data.keySet()));
 
         var aiResult = doTranslate(flowContext, text, false);
-        Map<String, String> result = remap(data, aiResult.entity());
+        var result = remap(data, aiResult.entity());
 
         var output = result.entrySet().stream()
                 .map(entry -> Pack.createNew(b -> b
@@ -79,7 +79,7 @@ public abstract class AbstractTranslaterHeader implements FlowSupport, Precondit
                 .filter(Predicate.not(Pack::isEmpty))
                 .collect(Collectors.toList());
 
-        log.debug("Prepared translated version: titles[{}]={}...", result.size(), toShortDescription(result.values()));
+        log.debug("Prepared translated version: titles[{}]=\n{}...", result.size(), indent(toShortDescription(result.values())));
 
         if (output.size() != data.size()) {
             throw new AppIllegalStateException("Some titles is not translated: %s <> %s", data.size(), output.size());
@@ -105,7 +105,7 @@ public abstract class AbstractTranslaterHeader implements FlowSupport, Precondit
 
     private AssistantContext.Result doTranslate(FlowContext<Chapter> flowContext, String text, boolean mode) {
         //TODO use NLP extract names from title, go to glossary and check if we already have such term
-        var history = fulfillHistory(getSystemTemplate(), flowContext, HistoryItem.GLOSSARY);
+        var history = fulfillHistory(getSystemTemplate(), flowContext, HistoryItem.CONSOLIDATED_GLOSSARY, HistoryItem.GLOSSARY);
         flowContext.hasArgument(ctx -> ctx.arg(TRANSLATED_TITLE), translatedTitle -> {
             var previousTitle = flowContext.oldArg(TITLE);
 
@@ -157,6 +157,10 @@ public abstract class AbstractTranslaterHeader implements FlowSupport, Precondit
         var unsuitableNames = detectLost(translatedList, originList);
         var possibleNames = createSuitableMap(lostNames, unsuitableNames);
 
+        for (var key : originTitles.keySet()) {
+            output.put(key, translatedTitles.get(key));
+        }
+
         for (var entry : possibleNames.entrySet()) {
             var originKey = entry.getKey();
             var translatedKey = entry.getValue();
@@ -165,7 +169,7 @@ public abstract class AbstractTranslaterHeader implements FlowSupport, Precondit
         }
 
         if (originTitles.size() != output.size()) {
-            throw new AppIllegalStateException("Some of the titles were not found");
+            throw new AppIllegalStateException("Some of the titles were not found: \n\torigin: %s\n\ttranslated: %s\n", originTitles.keySet(), translatedTitles.values());
         }
 
         return output;

@@ -20,7 +20,6 @@ import org.springframework.cache.CacheHelper;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StreamUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -212,6 +211,8 @@ public class Assistant {
             String[] lines = content.split("\n", 2);
             if (lines[0].trim().equalsIgnoreCase("```json")) {
                 content = lines.length > 1 ? lines[1] : "";
+            } else if (lines[0].trim().equalsIgnoreCase("```xml")) {
+                content = lines.length > 1 ? lines[1] : "";
             } else {
                 content = content.substring(3); // Remove leading ```
             }
@@ -222,6 +223,7 @@ public class Assistant {
             // Trim again to remove any potential whitespace
             content = content.trim();
         }
+
         return content;
     }
 

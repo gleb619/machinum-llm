@@ -12,8 +12,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ollama.autoconfigure.OllamaChatProperties;
@@ -23,7 +21,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
@@ -136,9 +133,9 @@ public class OllamaAiClient implements AiClient {
             ChatOptions options = prompt.getOptions().copy();
             if (options instanceof OllamaOptions ollamaOptions) {
                 ollamaOptions.setModel(ollamaChatProperties.get().getModel());
-                ollamaOptions.setKeepAlive("1s");
+                ollamaOptions.setKeepAlive("0");
             }
-            var simplePrompt = new Prompt("1 + 1 = ?", options);
+            var simplePrompt = new Prompt("", options);
             chatClient.prompt(simplePrompt)
                     .call().chatResponse();
         } catch (Exception innerException) {
