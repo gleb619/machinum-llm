@@ -14,8 +14,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static machinum.flow.FlowContextConstants.NEW_FLAG;
-import static machinum.flow.FlowContextConstants.OLD_FLAG;
+import static machinum.flow.FlowContextConstants.*;
 import static machinum.util.JavaUtil.newId;
 
 @Slf4j
@@ -49,7 +48,13 @@ public class FlowArgument<U> implements StringSupport {
         return copy(b -> b.ephemeral(Boolean.TRUE));
     }
 
-    public FlowArgument<U> obsolete() {
+    public FlowArgument<U> asAlternative() {
+        var result = asEphemeral();
+        result.setType(ALT_FLAG);
+        return result;
+    }
+
+    public FlowArgument<U> asObsolete() {
         if (NEW_FLAG.equals(getType())) {
             return toBuilder()
                     .type(OLD_FLAG)

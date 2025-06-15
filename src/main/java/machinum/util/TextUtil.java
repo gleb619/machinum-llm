@@ -17,10 +17,7 @@ import org.springframework.util.StreamUtils;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -364,6 +361,34 @@ public class TextUtil {
         }
 
         return output;
+    }
+
+    /**
+     * Splits a string into a list of paragraphs.
+     *
+     * <p>Paragraphs are separated by one or more blank lines.
+     * A blank line is a line containing only whitespace.
+     * This method handles various newline conventions (\n, \r\n).
+     *
+     * @param text The input string to be split.
+     * @return A list of strings, where each string is a paragraph.
+     * Returns an empty list if the input is null or consists only of whitespace.
+     */
+    public static List<String> toParagraphs(String text) {
+        if (text == null || text.isBlank()) {
+            return List.of();
+        }
+
+        String[] array = text.trim().split("(?m)^\\s*$");
+
+        if (array.length == 1) {
+            array = text.trim().split("(?<=\r\n)");
+        }
+
+        return Arrays.stream(array)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 
 }

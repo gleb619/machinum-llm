@@ -234,65 +234,66 @@ public interface FlowSupport {
             return;
         }
 
-        int itemTokens = glossary.countTokens();
+        var glossaryResult = findAffordableGlossary(historyContext, uniqueGlossary);
 
-        boolean canAllocate = false;
-        String glossaryText;
+        if (glossaryResult.canAllocate()) {
+            history.add(new UserMessage(templateText));
+            history.add(new AssistantMessage(glossaryResult.text()));
 
-        if (historyContext.getBudget().canAllocate(itemTokens)) {
-            glossaryText = uniqueGlossary.stringValue();
-            canAllocate = true;
-        } else {
-            var shortStringValue = uniqueGlossary.shortStringValue();
-            int shortItemTokens = countTokens(shortStringValue);
+            names.addAll(glossary.getValue());
+            historyContext.getBudget().allocate(glossaryResult.tokenCount());
+        }
+        // TODO: add logs for failed allocation
+    }
 
-            if (historyContext.getBudget().canAllocate(shortItemTokens)) {
-                glossaryText = shortStringValue;
-                canAllocate = true;
-                itemTokens = shortItemTokens;
-            } else {
-                boolean hasArgument = historyContext.getFlowContext().hasArgument(alt(FlowContext::glossaryArg));
-                if (hasArgument) {
-                    var glossaryArg = historyContext.getFlowContext().resolve(alt(FlowContext::glossaryArg));
-                    Integer currentChapTokens = glossaryArg.countTokens();
-                    if (historyContext.getBudget().canAllocate(currentChapTokens)) {
-                        glossaryText = glossaryArg.stringValue();
-                        canAllocate = true;
-                        itemTokens = currentChapTokens;
-                    } else {
-                        var shortCurrentChapValue = glossaryArg.shortStringValue();
-                        int shortCurrentChapTokens = countTokens(shortStringValue);
+    private GlossaryResult findAffordableGlossary(HistoryContext historyContext, FlowArgument<List<ObjectName>> uniqueGlossary) {
+        var budget = historyContext.getBudget();
 
-                        if (historyContext.getBudget().canAllocate(shortCurrentChapTokens)) {
-                            glossaryText = shortCurrentChapValue;
-                            canAllocate = true;
-                            itemTokens = shortCurrentChapTokens;
-                        } else {
-                            var smallArg = uniqueGlossary.map(val -> cut(val, subList -> glossary(subList).countTokens(), historyContext.getBudget()::canAllocate));
-                            glossaryText = smallArg.stringValue();
-                            canAllocate = true;
-                            itemTokens = smallArg.countTokens();
-                        }
-                    }
-                } else {
-                    var smallArg = uniqueGlossary.map(val -> cut(val, subList -> glossary(subList).countTokens(), historyContext.getBudget()::canAllocate));
-                    glossaryText = smallArg.stringValue();
-                    canAllocate = true;
-                    itemTokens = smallArg.countTokens();
-                }
+        // Try full unique glossary
+        var fullTokens = uniqueGlossary.countTokens();
+        if (budget.canAllocate(fullTokens)) {
+            return new GlossaryResult(uniqueGlossary.stringValue(), fullTokens, true);
+        }
+
+        // Try alt glossary argument if available
+        var flowContext = historyContext.getFlowContext();
+        if (flowContext.hasArgument(alt(FlowContext::glossaryArg))) {
+            var glossaryArg = flowContext.resolve(alt(FlowContext::glossaryArg));
+
+            // Try full existing glossary
+            var altFullTokens = glossaryArg.countTokens();
+            if (budget.canAllocate(altFullTokens)) {
+                return new GlossaryResult(glossaryArg.stringValue(), altFullTokens, true);
             }
         }
 
-        if (canAllocate) {
-            history.add(new UserMessage(templateText));
-            history.add(new AssistantMessage(glossaryText));
+//        // Try short unique glossary
+//        var shortValue = uniqueGlossary.shortStringValue();
+//        int shortTokens = countTokens(shortValue);
+//        if (budget.canAllocate(shortTokens)) {
+//            return new GlossaryResult(shortValue, shortTokens, true);
+//        }
 
-            names.addAll(glossary.getValue());
+//        // Try existing glossary argument if available
+//        if (flowContext.hasArgument(alt(FlowContext::glossaryArg))) {
+//            var glossaryArg = flowContext.resolve(alt(FlowContext::glossaryArg));
 
-            historyContext.getBudget().allocate(itemTokens);
-        } else {
-            //TODO add logs here
-        }
+//            // Try short existing glossary
+//            var altShortValue = glossaryArg.shortStringValue();
+//            int altShortTokens = countTokens(altShortValue);
+//            if (budget.canAllocate(altShortTokens)) {
+//                return new GlossaryResult(altShortValue, altShortTokens, true);
+//            }
+//        }
+
+        // Fallback to truncated glossary
+        var truncated = uniqueGlossary.map(val ->
+                cut(val, subList -> glossary(subList).countTokens(), budget::canAllocate));
+
+        return new GlossaryResult(truncated.stringValue(), truncated.countTokens(), true);
+    }
+
+    record GlossaryResult(String text, int tokenCount, boolean canAllocate) {
     }
 
 }

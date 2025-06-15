@@ -38,8 +38,6 @@ import static machinum.flow.Pack.anArgument;
 @RequiredArgsConstructor
 public class BookProcessor {
 
-    @Deprecated(forRemoval = true)
-    private final BookWindowProcessor bookWindowProcessor;
     private final BookFacade bookFacade;
     private final FlowFactory flowFactory;
     private final AsyncHelper asyncHelper;
@@ -57,18 +55,14 @@ public class BookProcessor {
     public void doStart(BookOperationRequest request) {
         log.debug("Prepare to process book with ai: {}", request);
 
-        if (request.isWindowOperation()) {
-            bookWindowProcessor.doStart(request);
-        } else {
-            var book = bookFacade.get(request.getId());
-            var chapters = new ArrayList<>(book.getChapters());
-            var bookId = book.getId();
-            var bookState = book.getBookState().state();
+        var book = bookFacade.get(request.getId());
+        var chapters = new ArrayList<>(book.getChapters());
+        var bookId = book.getId();
+        var bookState = book.getBookState().state();
 
-            var flow = enrichMetadata(flowFactory.createFlow(request.getOperationName(), bookId, chapters), request);
-            flowFactory.createRunner(request, flow)
-                    .run(bookState);
-        }
+        var flow = enrichMetadata(flowFactory.createFlow(request.getOperationName(), bookId, chapters), request);
+        flowFactory.createRunner(request, flow)
+                .run(bookState);
     }
 
     private Flow<Chapter> enrichMetadata(Flow<Chapter> flow, BookOperationRequest request) {
@@ -147,9 +141,9 @@ public class BookProcessor {
 
                         log.info("|-- Working with pipe №%s".formatted(ctx.getCurrentPipeIndex()));
 
-//                        if(ctx.getCurrentItem().getNumber() >= 268) {
-//                            throw new IllegalArgumentException("Stop");
-//                        }
+                        if(ctx.getCurrentItem().getNumber() >= 391) {
+                            throw new IllegalArgumentException("Stop");
+                        }
 //                        if(ctx.getCurrentItem().getNumber() >= 338) {
 //                            throw new IllegalArgumentException("Stop");
 //                        }
@@ -280,11 +274,11 @@ public class BookProcessor {
                         .onState(ProcessorState.TRANSLATE)
                             .comment("On %s state we use t-pro"::formatted)
                             .pipeStateless(templateAiFacade::bootstrapWith)
-                            .pipe(templateAiFacade::translateInChunks)
-                        .onState(ProcessorState.COPYEDIT)
-                            .comment("On %s state we use saiga"::formatted)
-                            .pipeStateless(templateAiFacade::bootstrapWith)
-                            .pipe(templateAiFacade::editGrammarInChunks)
+                            .pipe(templateAiFacade::translateAll)
+//                        .onState(ProcessorState.COPYEDIT)
+//                            .comment("On %s state we use saiga"::formatted)
+//                            .pipeStateless(templateAiFacade::bootstrapWith)
+//                            .pipe(templateAiFacade::editGrammarInChunks)
                         .onState(ProcessorState.FINISHED)
                             .comment("Cooldown on last state[%s]"::formatted)
                             .nothing()

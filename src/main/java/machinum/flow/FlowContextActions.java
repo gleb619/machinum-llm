@@ -109,4 +109,12 @@ public class FlowContextActions {
                 .build();
     }
 
+    public static <U> FlowArgument<U> alt(FlowArgument<U> argument) {
+        return argument.asAlternative();
+    }
+
+    public static <T, U> Function<FlowContext<? super T>, FlowArgument<? extends U>> alt(Function<FlowContext<? super T>, FlowArgument<? extends U>> extractor) {
+        return flowContext -> extractor.apply(flowContext).asAlternative();
+    }
+
 }

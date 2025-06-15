@@ -15,6 +15,7 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -220,7 +221,7 @@ public class JavaUtil {
         return new ArrayList<>(result);
     }
 
-    public static <T, K> List<T> uniqueItems(List<T> list1, List<T> list2, Function<T, K> extractor) {
+    public static <T, K> List<T> uniqueItems(Collection<T> list1, Collection<T> list2, Function<T, K> extractor) {
         var set1 = new HashSet<>(list1).stream()
                 .collect(Collectors.toMap(extractor, Function.identity(), (f, s) -> f));
 
@@ -346,6 +347,30 @@ public class JavaUtil {
         try (var inputStream = resource.getInputStream()) {
             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         }
+    }
+
+    public static <T, R> List<T> cut(
+            List<T> originalList,
+            Function<List<T>, R> metricCalculator,
+            Predicate<R> conditionChecker) {
+
+        // Create a mutable copy of the original list to perform removals on.
+        // The originalList remains untouched.
+        List<T> currentList = new ArrayList<>(originalList);
+//        currentList.stream().filter()
+
+        // Continuously remove the last element from the list as long as:
+        // 1. The list is not empty (to prevent IndexOutOfBoundsException).
+        // 2. The condition, checked by conditionChecker, is NOT met for the current metric.
+        //    If the condition IS met, we stop removing.
+        while (!currentList.isEmpty() && !conditionChecker.test(metricCalculator.apply(currentList))) {
+            currentList.remove(currentList.size() - 1); // Remove the element at the last index
+        }
+
+        // Return the (potentially modified) new list.
+        // If the loop finished because the condition was met, this is the cut list.
+        // If the loop finished because the list became empty, this is an empty list.
+        return currentList;
     }
 
 }

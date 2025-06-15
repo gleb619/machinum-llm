@@ -114,4 +114,18 @@ public class CodeBlockExtractor {
         return matcher.find();
     }
 
+    public static String removeHeader(String text) {
+        if (text.startsWith("xml")) {
+            return text.substring(3);
+        } else if (text.startsWith("json")) {
+            return text.substring(4);
+        }
+
+        return text;
+    }
+
+    public static String extract(String text) {
+        return removeHeader(extractCode(text));
+    }
+
 }

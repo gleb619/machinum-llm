@@ -12,6 +12,8 @@ public class FlowContextConstants {
 
     public static final String COPY_FLAG = "copy";
 
+    public static final String ALT_FLAG = "alt";
+
     public static final String TEXT_PARAM = "text";
 
     public static final String TRANSLATED_TEXT_PARAM = "translatedText";

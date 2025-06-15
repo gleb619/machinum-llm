@@ -380,7 +380,7 @@ public class FlowContext<T> implements FlowContextArgs {
     public <U> FlowContext<T> rearrange(Function<FlowContext<? super T>, FlowArgument<? extends U>> extractor,
                                         Function<FlowContextBuilder<T>, FlowContextBuilder<T>> fn) {
         var currentArg = acquireArgument(extractor);
-        var oldArg = currentArg.obsolete();
+        var oldArg = currentArg.asObsolete();
 
         return removeArgs(oldArg, currentArg)
                 .addArgs(oldArg)
@@ -591,6 +591,11 @@ public class FlowContext<T> implements FlowContextArgs {
         }
 
         return result ? Optional.of(acquireArgument(extractor)) : Optional.empty();
+    }
+
+    public <U> FlowArgument<U> resolve(Function<FlowContext<? super T>, FlowArgument<? extends U>> extractor) {
+        var arg = acquireArgument(extractor);
+        return getArgument(arg.getName(), arg.getType());
     }
 
     /* ============= */
