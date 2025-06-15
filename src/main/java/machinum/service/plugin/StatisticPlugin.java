@@ -3,6 +3,7 @@ package machinum.service.plugin;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.model.Statistic;
+import machinum.model.Statistic.StatisticMessage;
 import machinum.processor.core.AssistantContext;
 import machinum.service.StatisticService;
 import machinum.util.DurationUtil;
@@ -12,9 +13,11 @@ import machinum.util.TextUtil;
 import machinum.util.TraceUtil;
 import org.springframework.async.AsyncHelper;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import static machinum.config.Constants.ARGUMENT;
 import static machinum.config.Constants.CHAPTER;
@@ -22,6 +25,7 @@ import static machinum.util.JavaUtil.calculatePercent;
 import static machinum.util.JavaUtil.round;
 import static machinum.util.TextUtil.*;
 
+//TODO change agreement, move this class to separate api call, e.g remove DurationPlugin
 @Slf4j
 @RequiredArgsConstructor
 public class StatisticPlugin implements DurationPlugin {
@@ -65,6 +69,7 @@ public class StatisticPlugin implements DurationPlugin {
         var arg = context.context().get(ARGUMENT);
 
         if (arg instanceof AssistantContext ctx) {
+            var flowCtx = ctx.getFlowContext();
             var result = (AssistantContext.Result) response.result();
             var inputHistory = ctx.getHistory();
             var outputHistory = result.getHistory();
@@ -86,7 +91,9 @@ public class StatisticPlugin implements DurationPlugin {
             var duration = response.duration();
             var report = DurationUtil.DurationConfig.humanReadableDuration(duration);
 
-            var item = Statistic.StatisticItem.builder()
+            var statistic = Statistic.builder()
+                    .date(LocalDate.now())
+                    .position(flowCtx.iteration())
                     .mode(statisticService.getMode())
                     .runId(statisticService.getRunId())
                     .operationName(operationName)
@@ -108,10 +115,12 @@ public class StatisticPlugin implements DurationPlugin {
                     .tokens(options.getNumCtx())
                     .tokensLeft(left)
                     .aiOptions(options)
+                    .messages(outputHistory.stream()
+                            .map(StatisticMessage::of)
+                            .collect(Collectors.toList()))
                     .build();
 
-            var statistic = statisticService.currentStatistic();
-            statisticService.update(statistic.addItem(item));
+            statisticService.save(statistic);
         }
 
     }

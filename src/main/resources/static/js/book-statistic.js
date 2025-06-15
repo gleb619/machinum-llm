@@ -1,6 +1,13 @@
 /**
  * Creates an Alpine.js data object with list functionality
  */
+let charts = {
+    tokenChart: null,
+    timeChart: null,
+    operationTypeChart: null,
+    tokensComparisonChart: null,
+};
+
 export function statisticApp() {
     return {
         collapsed: false,
@@ -15,13 +22,11 @@ export function statisticApp() {
         totalTokens: '0',
         avgConversion: 0,
         operationsTime: '00:00:00',
-        tokenChart: null,
-        timeChart: null,
-        operationTypeChart: null,
-        tokensComparisonChart: null,
         statisticCurrentPage: 1,
         statisticPageSize: 10,
         statisticSearchTerm: '',
+        statisticModalIsOpen: false,
+        statisticItem: undefined,
 
 
         initStatistic() {
@@ -182,10 +187,10 @@ export function statisticApp() {
             const labels = Object.keys(groupedData).sort((a, b) => new Date(a) - new Date(b));
             const data = labels.map(date => groupedData[date]);
 
-            if (!this[id]) {
+            if (!charts[id]) {
                 // Create new chart if it doesn't exist
                 const ctx = el.getContext('2d');
-                this[id] = new Chart(ctx, {
+                charts[id] = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: labels,
@@ -210,9 +215,9 @@ export function statisticApp() {
                 });
             } else {
                 // Update existing chart
-                this[id].data.labels = labels;
-                this[id].data.datasets[0].data = data;
-                this[id].update();
+                charts[id].data.labels = labels;
+                charts[id].data.datasets[0].data = data;
+                charts[id].update();
             }
         },
 
@@ -244,10 +249,10 @@ export function statisticApp() {
             const labels = Object.keys(typeData);
             const data = labels.map(type => typeData[type]);
 
-            if (!this.operationTypeChart) {
+            if (!charts.operationTypeChart) {
                 // Create new chart if it doesn't exist
                 const ctx = el.getContext('2d');
-                this.operationTypeChart = new Chart(ctx, {
+                charts.operationTypeChart = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
                         labels: labels,
@@ -270,9 +275,9 @@ export function statisticApp() {
                 });
             } else {
                 // Update existing chart
-                this.operationTypeChart.data.labels = labels;
-                this.operationTypeChart.data.datasets[0].data = data;
-                this.operationTypeChart.update();
+                charts.operationTypeChart.data.labels = labels;
+                charts.operationTypeChart.data.datasets[0].data = data;
+                charts.operationTypeChart.update();
             }
         },
 
@@ -305,10 +310,10 @@ export function statisticApp() {
             const inputData = sortedDates.map(date => dateGroups[date].input);
             const outputData = sortedDates.map(date => dateGroups[date].output);
 
-            if (!this.tokensComparisonChart) {
+            if (!charts.tokensComparisonChart) {
                 // Create new chart if it doesn't exist
                 const ctx = el.getContext('2d');
-                this.tokensComparisonChart = new Chart(ctx, {
+                charts.tokensComparisonChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: labels,
@@ -337,10 +342,10 @@ export function statisticApp() {
                 });
             } else {
                 // Update existing chart
-                this.tokensComparisonChart.data.labels = labels;
-                this.tokensComparisonChart.data.datasets[0].data = inputData;
-                this.tokensComparisonChart.data.datasets[1].data = outputData;
-                this.tokensComparisonChart.update();
+                charts.tokensComparisonChart.data.labels = labels;
+                charts.tokensComparisonChart.data.datasets[0].data = inputData;
+                charts.tokensComparisonChart.data.datasets[1].data = outputData;
+                charts.tokensComparisonChart.update();
             }
         },
 
@@ -395,6 +400,24 @@ export function statisticApp() {
           }
 
           return pages;
+        },
+
+        async statisticOpenModal(id) {
+            this.statisticModalIsOpen = true;
+            this.statisticItem = null;
+
+            try {
+                const response = await fetch(`/api/statistics/${id}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                this.statisticItem = await response.json();
+            } catch (err) {
+                this.showToast(`Failed to load statistics: ${err.message}`, true);
+                console.error('Statistics API Error:', err);
+            }
         },
 
     };

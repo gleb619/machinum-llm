@@ -13,7 +13,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1" for="dateFilter">Date
                             Filter:</label>
                         <input
-                                @change="fetchData()"
+                                @change="fetchStatisticsData()"
                                 class="border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 id="dateFilter"
                                 type="date"
@@ -181,8 +181,13 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                     <template :key="statIndex" x-for="(stat, statIndex) in paginatedData">
                         <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
-                                x-text="stat.operationName"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                <p x-text="stat.operationName"></p>
+                                <button @click="statisticOpenModal(stat.id)"
+                                        class="text-gray-400 hover:text-blue-900 mt-2">
+                                    Open details
+                                </button>
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                                 x-text="stat.operationType"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
@@ -322,6 +327,16 @@
                 </div>
             </div>
         </div>
+
+        <!-- Statistic Modal -->
+        <div th:remove="tag" th:replace="~{components/book/book-statistic-modal::modal}">
+            <p>
+                Here placed content of components/book/book-statistic-modal.html page,
+                tag `th:fragment="modal"`
+            </p>
+        </div>
+
+
     </div>
 </div>
 

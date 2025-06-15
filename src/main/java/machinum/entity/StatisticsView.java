@@ -1,17 +1,17 @@
 package machinum.entity;
 
-import java.time.LocalDate;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
 import lombok.*;
 import org.hibernate.annotations.Immutable;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Deprecated(forRemoval = true)
 @Data
 @AllArgsConstructor
 @Builder(toBuilder = true)

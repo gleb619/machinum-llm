@@ -6,6 +6,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import machinum.converter.StatisticMapper;
 import machinum.converter.StatisticsMapper;
+import machinum.exception.AppIllegalStateException;
 import machinum.model.Statistic;
 import machinum.model.StatisticsDto;
 import machinum.repository.StatisticRepository;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -25,6 +27,7 @@ public class StatisticService {
 
     private final StatisticRepository statisticRepository;
     private final StatisticMapper mapper;
+    @Deprecated(forRemoval = true)
     private final StatisticsRepository statisticsRepository;
     private final StatisticsMapper statisticsMapper;
 
@@ -37,8 +40,18 @@ public class StatisticService {
 
     @SneakyThrows
     @Transactional
-    public Statistic currentStatistic() {
-        return mapper.toDto(statisticRepository.getCurrent());
+    public List<Statistic> currentStatistics() {
+        LocalDate currentDate = LocalDate.now();
+        return mapper.toDto(statisticRepository.findAllByDate(currentDate));
+    }
+
+    @Transactional
+    public Statistic save(Statistic statistic) {
+        var entity = mapper.toEntity(statistic.toBuilder()
+                .id(null)
+                .build());
+        var result = statisticRepository.save(entity);
+        return mapper.toDto(result);
     }
 
     @Transactional
@@ -48,6 +61,19 @@ public class StatisticService {
         return mapper.toDto(result);
     }
 
+    @Transactional(readOnly = true)
+    public Statistic getById(String id) {
+        return findById(id)
+                .orElseThrow(() -> new AppIllegalStateException("Statistic for given id, is not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Statistic> findById(String id) {
+        return statisticRepository.findById(id)
+                .map(mapper::toDto);
+    }
+
+    @Deprecated
     @Transactional(readOnly = true)
     public List<StatisticsDto> getStatisticsUpToDate(LocalDate date) {
         log.info("Fetching statistics up to date: {}", date);
