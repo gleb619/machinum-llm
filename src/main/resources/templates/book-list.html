@@ -101,8 +101,13 @@
                     <tr :class="{ 'bg-blue-50': activeId === book.id }"
                         @click="changeActiveItem(book.id)"
                         class="even:bg-gray odd:bg-white hover:bg-gray-100 cursor-pointer">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 align-text-top"
-                            x-text="book.id"></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 align-text-top">
+                            <a class="hover:text-blue-600"
+                               target="_blank"
+                               x-bind:href="`/books?bookId=${book.id}`"
+                               x-text="book.id">
+                            </a>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 align-text-top"
                             x-text="book.title"></td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

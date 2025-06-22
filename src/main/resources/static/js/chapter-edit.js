@@ -1,16 +1,12 @@
 // Import core functions
 import { getById, getByKey, getNextById, getPrevById, readBoolSetting, writeSetting, readSetting } from './core.js';
-import { analyzeText } from './report.js';
+import { analyzeText, analyzeTokens } from './report.js';
 
 /**
  * Creates an Alpine.js data object with edit functionality
  */
 export function editApp() {
     return {
-        // currentChapter: {
-        //     translatedText: "Initial translated text.\nLine 2.\nLine 3.",
-        //     fixedTranslatedText: "Initial fixed translated text.\nLine 2.\nLine 3."
-        // },
         selectedField: 'translatedText',
         currentContent: '',
         originalContent: '',
@@ -57,7 +53,7 @@ export function editApp() {
         },
 
         pullChapterContentChangesById(chapterId) {
-           fetchChapter(chapterId)
+           this.fetchChapter(chapterId)
                 .then(rsp => {
                     const chapterToUpdate = this.getById(this.chapters, chapterId);
                     if (chapterToUpdate) {
@@ -78,13 +74,16 @@ export function editApp() {
             }
         },
 
-        updateContent() {
+        async updateContent() {
             this.analysis = {};
             if(this.currentChapter) {
                 this.currentContent = this.currentChapter[this.selectedField] || '';
                 this.originalContent = this.currentChapter[this.selectedField] || '';
                 this.fieldsForAnalysis.forEach(field => {
                     this.analysis[field] = analyzeText(this.currentChapter[field] || "");
+                });
+                this.fieldsForAnalysis.forEach(async (field) => {
+                    this.analysis[field] = await analyzeTokens(this.currentChapter[field] || "", this.analysis[field]);
                 });
             } else {
                 Alpine.nextTick(() => {
@@ -206,19 +205,15 @@ export function editApp() {
                 });
 
                 this.clickOnElement(target);
-
-//                setTimeout(() => {
-//                    target.style.height = target.parentElement.clientHeight;
-//                    mergeView.refresh();
-//                }, 20);
             }, 10);
         },
 
-        getAnalysis(text) {
-          return analyzeText(text);
+        async getAnalysis(text) {
+          const result = analyzeText(text);
+          return await analyzeTokens(text, result);
         },
 
-        getPropertyNames() {
+        get propertyNames() {
             if(Object.keys(this.analysis).length > 0) {
                 const first = Object.keys(this.analysis)[0];
                 if(first && this.analysis[first]) {

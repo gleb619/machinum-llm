@@ -1,11 +1,14 @@
+const app = {
+    completionChart: null,
+    missingDataChart: null,
+};
+
 /**
  * Creates an Alpine.js data object with book report functionality
  */
 export function bookReportApp() {
     return {
         summary: null,
-        completionChart: null,
-        missingDataChart: null,
         heatmapData: null,
         selectedChapter: null,
         chaptersPerRow: 20,
@@ -80,11 +83,11 @@ export function bookReportApp() {
 
         createCompletionChart() {
             const ctx = document.getElementById('completionChart');
-            if (this.completionChart) {
-                this.completionChart.destroy();
+            if (app.completionChart) {
+                app.completionChart.destroy();
             }
 
-            this.completionChart = new Chart(ctx, {
+            app.completionChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['Titles', 'Translated Titles', 'Summaries', 'Texts', 'Translated Texts', 'Names', 'Warnings'],
@@ -118,11 +121,11 @@ export function bookReportApp() {
 
         createMissingDataChart() {
             const ctx = document.getElementById('missingDataChart');
-            if (this.missingDataChart) {
-                this.missingDataChart.destroy();
+            if (app.missingDataChart) {
+                app.missingDataChart.destroy();
             }
 
-            this.missingDataChart = new Chart(ctx, {
+            app.missingDataChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: ['Titles', 'Translated Titles', 'Summaries', 'Texts', 'Translated Texts', 'Names', 'Warnings'],
@@ -150,11 +153,6 @@ export function bookReportApp() {
                 }
             });
         },
-
-
-
-
-
 
         async bookReportLoadHeatmapData() {
             if(!this.activeId) return;
@@ -256,6 +254,7 @@ export function bookReportApp() {
                 translatedText: chapterReadinessItem.translatedText,
                 summary: chapterReadinessItem.summary,
                 names: chapterReadinessItem.names,
+                translatedNames: chapterReadinessItem.translatedNames,
                 warnings: chapterReadinessItem.warnings
             };
         }

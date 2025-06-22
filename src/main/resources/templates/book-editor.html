@@ -7,19 +7,19 @@
     <!-- New Section with Two Panels -->
     <div class="mt-8 flex gap-4">
         <!-- Left Panel: Collapsible -->
-        <div :class="collapsed ? 'w-12' : 'w-1/4'"
+        <div :class="bookEditorCollapsed ? 'w-[50px]' : 'w-1/4'"
              class="bg-white rounded-lg shadow-md p-2 transition-all duration-300 overflow-hidden min-w-[50px]">
 
-            <div th:remove="tag" th:replace="~{components/book/book-statistic-sidebar::processor-settings}">
+            <div th:remove="tag" th:replace="~{components/book/book-editor-sidebar::processor-settings}">
                 <p>
-                    Here placed content of templates/components/book/book-statistic-sidebar.html page, tag
+                    Here placed content of templates/components/book/book-editor-sidebar.html page, tag
                     `th:fragment="processor-settings"`
                 </p>
             </div>
         </div>
 
         <!-- Central Panel: Diagram -->
-        <div :class="collapsed ? 'w-full' : 'w-3/4'"
+        <div :class="bookEditorCollapsed ? 'w-full' : 'w-3/4'"
              class="bg-white rounded-lg shadow-md relative transition-all duration-300"
              x-data="{ bookActiveTab: 'report' }" x-init="loadValue('bookActiveTab', 'report')">
 
@@ -34,11 +34,11 @@
                             class="font-bold border-b-2 pb-2">Report
                     </button>
                     <button :class="{
-                                'text-gray-500 border-transparent': bookActiveTab !== 'flow',
-                                'text-blue-600 border-blue-600': bookActiveTab === 'flow'
+                                'text-gray-500 border-transparent': bookActiveTab !== 'chart',
+                                'text-blue-600 border-blue-600': bookActiveTab === 'chart'
                             }"
-                            @click="changeValue('bookActiveTab', 'flow')"
-                            class="font-bold border-b-2 pb-2">Flow
+                            @click="changeValue('bookActiveTab', 'chart')"
+                            class="font-bold border-b-2 pb-2">Chart
                     </button>
                     <button :class="{
                                 'text-gray-500 border-transparent': bookActiveTab !== 'titles',
@@ -74,9 +74,9 @@
                 </div>
 
                 <!-- Statistic Tab -->
-                <div th:remove="tag" th:replace="~{book-statistic::statistic}">
+                <div th:remove="tag" th:replace="~{components/book/book-chart::chart}">
                     <p>
-                        Here placed content of templates/book-statistic.html page, tag `th:fragment="statistic"`
+                        Here placed content of templates/components/book/book-chart.html page, tag `th:fragment="chart"`
                     </p>
                 </div>
 

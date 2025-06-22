@@ -56,6 +56,15 @@ export function utilsApp() {
         this[name] = newValue;
       },
 
+      receiveValue(name, defaultValue) {
+        const currValue = localStorage.getItem(name);
+        try {
+          return JSON.parse(currValue) || defaultValue;
+        } catch (e) {
+          return currValue || defaultValue;
+        }
+      },
+
       loadValue(name, defaultValue) {
         const currValue = localStorage.getItem(name);
         try {

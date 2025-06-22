@@ -3,22 +3,22 @@
 <body>
 <!-- Layout -->
 <div th:fragment="processor-settings" th:remove="tag">
-<!-- Collapse Button -->
-<button @click="changeState('collapsed')"
-        class="flex items-center justify-center w-full px-2 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none">
-    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-         x-show="!collapsed" xmlns="http://www.w3.org/2000/svg">
-        <path d="M13 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-    </svg>
-    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-         x-show="collapsed" xmlns="http://www.w3.org/2000/svg">
-        <path d="M11 19l7-7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-    </svg>
-</button>
+    <!-- Collapse Button -->
+    <button @click="changeState('bookEditorCollapsed')"
+            class="flex items-center justify-center w-full px-2 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             x-show="!bookEditorCollapsed" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </svg>
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             x-show="bookEditorCollapsed" xmlns="http://www.w3.org/2000/svg">
+            <path d="M11 19l7-7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </svg>
+    </button>
 
-<!-- Buttons -->
+    <!-- Buttons -->
     <div>
-        <div x-show="!collapsed">
+        <div x-show="!bookEditorCollapsed">
             <h2 class="text-xl font-bold mt-4 mb-4">
                 Actions
                 <small class="ms-2 font-semibold text-gray-500" x-show="isExecuting"
@@ -87,9 +87,17 @@
                     </div>
                 </div>
 
+                <hr class="h-px my-8 bg-gray-200 border-0 dark:bg-gray-700">
 
-                <!-- TODO: Add max chapter to process -->
-
+                <div class="space-y-4">
+                    <!-- Sidebar chapter selector component -->
+                    <div th:remove="tag" th:replace="~{components/book/sidebar-chap-selector::selector}">
+                        <p>
+                            Here placed content of components/book/sidebar-chap-selector.html page,
+                            tag `th:fragment="selector"`
+                        </p>
+                    </div>
+                </div>
 
                 <hr class="h-px my-8 bg-gray-200 border-0 dark:bg-gray-700">
 
@@ -218,20 +226,20 @@
     <div class="mt-4 space-y-2">
         <div class="flex items-center justify-between">
             <button :disabled="isExecuting"
-                    :class="collapsed ? 'max-w-[50px]' : 'w-full'"
+                    :class="bookEditorCollapsed ? 'max-w-[50px]' : 'w-full'"
                     @click="changeValue('bookActiveTab', 'flow'); executeOperation('simpleFlow')"
                     class="bg-purple-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed overflow-hidden"
                     title="Execute simple flow for book(Glossary + Summary).">
-                <span x-text="collapsed ? 'S' : 'Simple Flow'"></span>
+                <span x-text="bookEditorCollapsed ? 'S' : 'Simple Flow'"></span>
             </button>
         </div>
         <div class="flex items-center justify-between">
             <button :disabled="isExecuting"
-                    :class="collapsed ? 'max-w-[50px]' : 'w-full'"
+                    :class="bookEditorCollapsed ? 'max-w-[50px]' : 'w-full'"
                     @click="changeValue('bookActiveTab', 'flow'); executeOperation('complexFlow')"
                     class="bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed border-r-4 border-red-400 overflow-hidden"
                     title="Execute complex flow for book(All actions).">
-                <span x-text="collapsed ? 'C' : 'Complex Flow'"></span>
+                <span x-text="bookEditorCollapsed ? 'C' : 'Complex Flow'"></span>
             </button>
         </div>
     </div>

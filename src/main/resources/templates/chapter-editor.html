@@ -61,19 +61,19 @@
                 <!-- Editor Tab -->
                 <div class="h-full" x-show="chapterActiveTab === 'editor'">
                     <div class="font-bold flex items-center space-x-2 m-2 p-2">
-                        <div class="space-x-2 mr-2 border-r-4 border-grey-700 pr-1">
+                        <div class="space-x-2 mr-2 border-r-4 border-gray-700 pr-1">
                             <label for="highlightSuspicious">Highlight Suspicious Lines:</label>
                             <input @change="changeValue('highlightSuspicious', highlightSuspicious)" id="highlightSuspicious" type="checkbox"
                                    x-model="highlightSuspicious">
                         </div>
 
-                        <div class="space-x-2 mr-2 border-r-4 border-grey-700 pr-1">
+                        <div class="space-x-2 mr-2 border-r-4 border-gray-700 pr-1">
                             <label for="hideNonSuspicious">Hide Non-Suspicious Lines:</label>
                             <input @change="changeValue('hideNonSuspicious', hideNonSuspicious)" id="hideNonSuspicious" type="checkbox"
                                    x-model="hideNonSuspicious">
                         </div>
 
-                        <div class="space-x-2 mr-2 border-r-4 border-grey-700 pr-1">
+                        <div class="space-x-2 mr-2 border-r-4 border-gray-700 pr-1">
                             <span>Font Size:</span>
                             <input @change="changeValue('chapterFontSize', $event.target.value)" max="36" min="10" step="1" type="range"
                                    x-bind:title="'Font size is: ' + chapterFontSize"
@@ -211,7 +211,7 @@
                             </thead>
                             <tbody>
                             <template :key="'th-' + prop + '-' + propIndex"
-                                      x-for="(prop, propIndex) in getPropertyNames()">
+                                      x-for="(prop, propIndex) in propertyNames">
                                 <tr class="bg-white border-b border-gray-200">
                                     <th class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
                                         scope="row"

@@ -13,10 +13,7 @@ export function analyzeText(text) {
   const lines = text.split(/\r\n|\r|\n/);
   const lineCount = lines.length;
 
-  // Tokens (simplified as words and punctuation)
-  const tokenRegex = /\S+/g;
-  const tokens = text.match(tokenRegex) || [];
-  const tokensLength = tokens.length;
+  const tokensLength = 0;
 
   // Words
   const wordRegex = /[a-zA-Z0-9а-яА-Я]+/g;
@@ -130,4 +127,27 @@ export function analyzeText(text) {
     alphanumericRatio,
     specialCharacterCount
   };
+}
+
+export async function analyzeTokens(text, analysis) {
+    if(analysis === undefined || analysis === null) return analysis;
+
+    const tokensLength = await countTokens(text) || 0
+    analysis.tokensLength = tokensLength;
+    return analysis;
+}
+
+async function countTokens(text) {
+  if(text.length == 0) return 0;
+
+  const response = await fetch('/api/tokens', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: text
+  });
+  const result = await response.text();
+
+  return parseInt(result);
 }

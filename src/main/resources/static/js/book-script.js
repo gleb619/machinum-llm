@@ -2,12 +2,13 @@
 import { initApp } from './init.js';
 import { utilsApp } from './utils.js';
 import { listApp } from './book-list.js';
-import { statisticApp } from './book-statistic.js';
-import { processorSettingsApp } from './components/book-statistic-sidebar.js';
+import { bookChartApp } from './components/book-chart.js';
+import { processorSettingsApp } from './components/book-editor-sidebar.js';
 import { bookStateApp } from './components/book-state.js';
 import { bookReportApp } from './components/book-report.js';
 import { titleListApp } from './components/book-title-list.js';
 import { glossaryListApp } from './components/book-glossary-list.js';
+import { sidebarChapterSelectorApp } from './components/sidebar-chap-selector.js';
 
 const startTime = new Date().getTime();
 
@@ -26,12 +27,13 @@ export function app() {
             ...Object.getOwnPropertyDescriptors(initApp()),
             ...Object.getOwnPropertyDescriptors(utilsApp()),
             ...Object.getOwnPropertyDescriptors(listApp()),
-            ...Object.getOwnPropertyDescriptors(statisticApp()),
+            ...Object.getOwnPropertyDescriptors(bookChartApp()),
             ...Object.getOwnPropertyDescriptors(processorSettingsApp()),
             ...Object.getOwnPropertyDescriptors(bookStateApp()),
             ...Object.getOwnPropertyDescriptors(bookReportApp()),
             ...Object.getOwnPropertyDescriptors(titleListApp()),
             ...Object.getOwnPropertyDescriptors(glossaryListApp()),
+            ...Object.getOwnPropertyDescriptors(sidebarChapterSelectorApp()),
         });
     } catch(e) {
         debugger;

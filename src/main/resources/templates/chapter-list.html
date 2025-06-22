@@ -55,7 +55,7 @@
                 </div>
             </li>
 
-            <li x-show="filters.chapterNumber && activeSearchTab === 'filters'">
+            <li x-show="!chapterId && filters.chapterNumber && activeSearchTab === 'filters'">
                 <div class="flex items-center">
                     <svg aria-hidden="true" class="rtl:rotate-180 w-3 h-3 text-gray-400 mx-1 mr-2"
                          fill="none" viewBox="0 0 6 10" xmlns="http://www.w3.org/2000/svg">

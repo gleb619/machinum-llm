@@ -242,18 +242,16 @@
                     </div>
 
                     <!-- AI Options Section -->
-                    <div class="bg-gray-50 rounded-xl p-6"
+                    <div class="bg-gray-50 rounded-xl p-6 mb-8"
                          x-show="statisticItem?.aiOptions && Object.keys(statisticItem.aiOptions).length > 0">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Messages</h3>
-                        <div class="space-y-3 max-h-64 overflow-y-auto">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">AI Options</h3>
+                        <div class="h-full">
                             <template :key="key" x-for="[key, value] in Object.entries(statisticItem.aiOptions || {})">
-                                <div class="bg-white rounded-lg p-4 border-l-4 border-blue-200">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <div class="flex space-x-4 text-xs text-gray-500">
-                                            <span class="font-bold" x-text="key"></span>
-                                            <span x-text="value"></span>
-                                        </div>
-                                    </div>
+                                <div class="p-2 rounded-sm border flex items-center bg-white border-gray-200">
+                                    <label class="ml-3 text-sm font-medium text-gray-700 cursor-pointer flex-grow"
+                                           x-text="key">Key</label>
+                                    <span class="text-xs px-2 py-1 rounded-full transition-colors duration-200 bg-gray-200 text-gray-600"
+                                          x-text="value"></span>
                                 </div>
                             </template>
                         </div>
@@ -263,12 +261,12 @@
                     <div class="bg-gray-50 rounded-xl p-6"
                          x-show="statisticItem?.messages && statisticItem.messages.length > 0">
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">Messages</h3>
-                        <div class="space-y-3 max-h-64 overflow-y-auto">
+                        <div class="space-y-3 max-h-256 overflow-y-auto">
                             <template :key="index" x-for="(message, index) in statisticItem?.messages || []">
                                 <div :class="{
                                          'border-blue-500': message.type === 'system',
                                          'border-green-500': message.type === 'assistant',
-                                         'border-gray-500': message.type === 'message',
+                                         'border-gray-500': message.type === 'user',
                                          'border-yellow-500': message.type === 'tool'
                                      }"
                                      class="bg-white rounded-lg p-4 border-l-4">
@@ -276,7 +274,7 @@
                                     <span :class="{
                                               'bg-blue-100 text-blue-800': message.type === 'system',
                                               'bg-green-100 text-green-800': message.type === 'assistant',
-                                              'bg-gray-100 text-gray-800': message.type === 'message',
+                                              'bg-gray-100 text-gray-800': message.type === 'user',
                                               'bg-yellow-100 text-yellow-800': message.type === 'tool'
                                           }"
                                           class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -286,8 +284,10 @@
                                             <span>Words: <span x-text="message.words || 0"></span></span>
                                         </div>
                                     </div>
-                                    <p class="text-gray-700 text-sm leading-relaxed"
-                                       x-text="message.text || 'No content'"></p>
+                                    <div class="overflow-x-auto">
+                                        <pre class="text-gray-700 text-sm leading-relaxed"
+                                             x-text="message.text || 'No content'"></pre>
+                                    </div>
                                 </div>
                             </template>
                         </div>

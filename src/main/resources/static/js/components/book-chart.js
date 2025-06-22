@@ -8,9 +8,9 @@ let charts = {
     tokensComparisonChart: null,
 };
 
-export function statisticApp() {
+export function bookChartApp() {
     return {
-        collapsed: false,
+        bookEditorCollapsed: false,
         open: false,
         isExecuting: false,
         startTime: null,
@@ -30,7 +30,7 @@ export function statisticApp() {
 
 
         initStatistic() {
-            this.loadState('collapsed');
+            this.loadState('bookEditorCollapsed');
             this.fetchStatisticsData();
         },
 
@@ -59,6 +59,7 @@ export function statisticApp() {
                         ...this.bookRequestTemplate,
                         operationName: operationName,
                         forceMode: false,
+                        ruleConfig: this.generateRuleConfig()
                     };
 
                     const response = await fetch(`/api/books/${this.activeId}/execute`, {
@@ -206,10 +207,37 @@ export function statisticApp() {
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        plugins: {
+                          tooltip: {
+                            callbacks: {
+                              afterBody: (context) => {
+                                const data = parseItem(this.statistics, context[0].dataIndex);
+                                return [
+                                  `ID: ${data.id}`,
+                                  `Type: ${data.operationType}`,
+                                  `Chapter: ${data.chapter}`,
+                                  `Input Tokens: ${data.inputHistoryTokens}`,
+                                  `Output Tokens: ${data.outputHistoryTokens}`,
+                                  `Time: ${data.operationTimeString}`
+                                ];
+                              }
+                            },
+                            // Makes tooltip interactive (clickable)
+                            interaction: {
+                              intersect: false,
+                              mode: 'index',
+                            },
+                          },
+                          title: {
+                            display: true,
+                            text: 'Token Statistics (Hover for Details)',
+                            font: { size: 16 }
+                          },
+                          legend: { position: 'top' }
+                        },
                         scales: {
-                            y: {
-                                beginAtZero: true
-                            }
+                          y: { beginAtZero: true, title: { display: true, text: 'Token Count' } },
+                          x: { title: { display: true, text: 'Operation & Date' } }
                         }
                     }
                 });
@@ -421,4 +449,12 @@ export function statisticApp() {
         },
 
     };
+}
+
+function parseItem(statistics, dataIndex) {
+    let index = statistics.length - dataIndex;
+    if(!statistics[index]) {
+        index = statistics.length - 1;
+    }
+    return statistics[index];
 }
