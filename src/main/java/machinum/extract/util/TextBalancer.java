@@ -1,12 +1,15 @@
 package machinum.extract.util;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TextBalancer {
 
     public static List<String> balanceText(String text, int numChunks) {
@@ -47,19 +50,14 @@ public class TextBalancer {
             // If the current chunk exceeds the allowed deviation, redistribute
             while (currentChunk.getTotalLength() > targetChunkSize + allowedDeviation &&
                     !nextChunk.getLines().isEmpty()) {
-                String lastLine = currentChunk.getLines().get(currentChunk.getLines().size() - 1);
+                String lastLine = currentChunk.getLines().getLast();
                 currentChunk.removeLastLine();
-                nextChunk.getLines().add(0, lastLine); // Move the line to the start of the next chunk
+                nextChunk.getLines().addFirst(lastLine); // Move the line to the start of the next chunk
                 nextChunk.setTotalLength(nextChunk.getTotalLength() + lastLine.length() + 1);
             }
         }
 
         // Step 6: Convert chunks back to lists of strings
-        List<List<String>> result = new ArrayList<>();
-        for (LocalChunk chunk : chunks) {
-            result.add(chunk.getLines());
-        }
-
         return chunks.stream()
                 .map(LocalChunk::text)
                 .collect(Collectors.toList());
@@ -83,7 +81,7 @@ public class TextBalancer {
 
         public void removeLastLine() {
             if (!lines.isEmpty()) {
-                String removedLine = lines.remove(lines.size() - 1);
+                String removedLine = lines.removeLast();
                 totalLength -= removedLine.length() + 1; // Subtract 1 for the newline delimiter
             }
         }

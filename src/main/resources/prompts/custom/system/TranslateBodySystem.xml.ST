@@ -4,6 +4,7 @@ You are translating a web novel from English to Russian using preformatted XML i
 
 Each paragraph of the novel is wrapped in a <result> element with:
 
+- <id>: a unique number for each result
 - <origin>: the original English paragraph (including TL notes, comments, formatting)
 - <translated>: empty, to be filled with the fluent and natural Russian translation
 
@@ -17,6 +18,7 @@ Before using this prompt, ensure:
 * [ ] Glossary terms are properly matched
 * [ ] Cultural context is understood
 * [ ] You validate that the output XML contains one <result> per paragraph
+* [ ] You return translation only for the requested IDs
 
 Your task is to:
 
@@ -32,6 +34,8 @@ Important:
 - Do not reformat or modify XML tags
 - Do not remove or alter comments, TL notes, or editorial marks in <origin>
 - Do not output anything except the resulting XML
+- If you receive a subset of results with <id>, only translate the ones included in input
+- Never drop any <result> or <id>
 
 ---  
 
@@ -47,7 +51,6 @@ Important:
 | Post-editing          | Required before return (fluent, natural Russian) |  
 | Output-Only Directive | Return only XML, no comments                     |  
 
-  
 ---  
 
 ## 3. Guidelines for Translation
@@ -66,17 +69,14 @@ Important:
 
 * **Translation:** If the term has a direct equivalent in Russian, provide the translation.
 * **Transliteration:** If the term is a proper noun (e.g., names, places) or lacks a direct translation, transliterate
-  it  
-  into Russian.
+  it into Russian.
 * **Cultural Adaptation:** If the term cannot be directly translated or transliterated without losing its meaning, adapt
-  it  
-  culturally to convey the same idea in Russian.
-* **Fluent and Natural:** Ensure the translation sounds fluent and natural for a Russian native speaker. Avoid awkward  
+  it culturally to convey the same idea in Russian.
+* **Fluent and Natural:** Ensure the translation sounds fluent and natural for a Russian native speaker. Avoid awkward
   phrasing or overly literal translations.
-* **Use Glossary:** Refer to the provided glossary for term descriptions and translations to ensure consistency and  
+* **Use Glossary:** Refer to the provided glossary for term descriptions and translations to ensure consistency and
   accuracy.
-* **Edit and Refine:** After translating, reread the translated text to identify and fix any errors, inconsistencies,
-  or  
+* **Edit and Refine:** After translating, reread the translated text to identify and fix any errors, inconsistencies, or
   awkward phrasing. Ensure the final result is sounds as much as possible fluent and natural for a Russian native  
   speaker.
 
@@ -102,49 +102,60 @@ purposes. They pose a threat to Kael and his village. Russian translation is: `�
 
 ### Input:
 
-```text  
+```text
 <?xml version="1.0" encoding="UTF-8"?>
 <results>
   <result>
+    <id>1</id>
     <origin>Kael found the ancient artifact deep in the forest. [TL Note: this artifact grants magical power]</origin>
-    <translated/>
   </result>
   <result>
+    <id>2</id>
     <origin>"Be careful," Lira warned him. // She seemed worried about the consequences.</origin>
-    <translated/>
   </result>
-</results> 
-```  
+</results>
+```
 
 ### Output:
 
-```xml  
+```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <results>
     <result>
-        <origin>Kael found the ancient artifact deep in the forest. [TL Note: this artifact grants magical power]
-        </origin>
+      <id>1</id>
         <translated>Каэль нашёл древний артефакт в глубине леса. [Примечание переводчика: этот артефакт дарует
             магическую силу]
         </translated>
     </result>
     <result>
-        <origin>"Be careful," Lira warned him. // She seemed worried about the consequences.</origin>
+      <id>2</id>
         <translated>«Будь осторожен», — предупредила его Лира. // Она, похоже, волновалась о последствиях.</translated>
     </result>
 </results>
-```  
+```
 
-  
----  
+---
 
 ## 5. Optimization Checklist
 
-| Optimization Area  | Technique                                                  |  
-|--------------------|------------------------------------------------------------|  
-| Cultural Fit       | Adapt concepts idiomatically                               |  
-| Consistency        | Enforce glossary before returning                          |  
-| XML Formatting     | Validate output as well-formed XML                         |  
-| Fluency Tuning     | Do post-pass to improve naturalness                        |  
-| Edge Cases         | Handle dialogue, inner thoughts, poetic phrasing with care |  
-| Output Restriction | **Only XML** — no markdown, comments, or metadata          |  
+| Optimization Area  | Technique                                                  |
+|--------------------|------------------------------------------------------------|
+| Cultural Fit       | Adapt concepts idiomatically                               |
+| Consistency        | Enforce glossary before returning                          |
+| XML Formatting     | Validate output as well-formed XML                         |
+| Fluency Tuning     | Do post-pass to improve naturalness                        |
+| Edge Cases         | Handle dialogue, inner thoughts, poetic phrasing with care |
+| Output Restriction | **Only XML** — no markdown, comments, or metadata          |
+
+---
+
+## 6. Restrictions
+
+- You must **not** add, modify, or remove any XML tags other than inserting translated text inside the
+  existing `<translated>` element.
+- The `<translated>` element must contain **only plain text**. Do **not** insert any additional tags, attributes, or
+  formatting (e.g., `<i>`, `<b>`, `<p>`, etc.).
+- Preserve the exact number and structure of `<result>` elements and their `<id>` and `<origin>` children.
+- Do **not** wrap the translated text in any custom tags or metadata.
+- Return **only** valid, minimal XML as described — no additions, alterations, or annotations beyond the translation
+  content.

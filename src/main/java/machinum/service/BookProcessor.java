@@ -30,6 +30,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static machinum.config.Constants.*;
+import static machinum.controller.BookOperationController.BookOperationRequest.RuleConfig.RuleType.ALL;
+import static machinum.flow.Flow.FlowPredicateResult.accept;
+import static machinum.flow.Flow.FlowPredicateResult.reject;
 import static machinum.flow.OneStepRunner.Window.tumbling;
 import static machinum.flow.Pack.anArgument;
 
@@ -56,6 +59,11 @@ public class BookProcessor {
         log.debug("Prepare to process book with ai: {}", request);
 
         var book = bookFacade.get(request.getId());
+
+        if (!Objects.equals(request.getConfig().getRuleType(), ALL)) {
+            throw new AppIllegalStateException("RuleType[%s] is not supported", request.getConfig().getRuleType());
+        }
+
         var chapters = new ArrayList<>(book.getChapters());
         var bookId = book.getId();
         var bookState = book.getBookState().state();
@@ -115,7 +123,7 @@ public class BookProcessor {
             return (bookId, chapters) -> Flow.from(chapters)
                     .metadata(BOOK_ID, bookId)
 //                    .map(chapterConverter::convert)
-                    .map(chapterConverter::restore)
+                    //.map(chapterConverter::restore)
                     .withStateManager(bookFlowManager)
                     .bootstrap(chapterFacade::bootstrap)
                     .refresh(chapterFacade::refresh)
@@ -126,22 +134,25 @@ public class BookProcessor {
                         Map<ProcessorState, Boolean> availableStates = ctx.metadata(AVAILABLE_STATES);
 
                         if(Objects.nonNull(availableStates) && Boolean.FALSE.equals(availableStates.get(ctx.getState()))) {
-                            log.info("|== Execution of state is forbidden by settings : {}) {}", ctx.iteration(), ctx.getCurrentItem());
+                            log.info("|==✕ Execution of state is forbidden by settings : {}) {}", ctx.iteration(), ctx.getCurrentItem());
                         } else {
                             log.info("|== Current item is : {}) {}", ctx.iteration(), ctx.getCurrentItem());
                             TraceUtil.trace("pipeAction", action);
                         }
                     }))
-                    .aroundEach((ctx, action) -> DurationUtil.measure("pipeFlow-%s-%s-%s".formatted(ctx.getCurrentPipeIndex(), ctx.iteration(), ctx.getState()), () -> {
+                    .eachCondition(ctx -> {
                         Boolean allowOverrideMode = ctx.metadata(ALLOW_OVERRIDE_MODE, Boolean.FALSE);
                         if(allowOverrideMode && !chapterFacade.checkExecutionIsAllowed(ctx)) {
-                            log.info("|-- Data already exists, skip execution of pipe №%s".formatted(ctx.getCurrentPipeIndex()));
-                            return ctx.preventSink();
+                            log.info("|--✕ Data already exists, skip execution of pipe №%s".formatted(ctx.getCurrentPipeIndex()));
+                            return reject(ctx.preventSink());
                         }
 
+                        return accept(ctx);
+                    })
+                    .aroundEach((ctx, action) -> DurationUtil.measure("pipeFlow-%s-%s-%s".formatted(ctx.getCurrentPipeIndex(), ctx.iteration(), ctx.getState()), () -> {
                         log.info("|-- Working with pipe №%s".formatted(ctx.getCurrentPipeIndex()));
 
-                        if(ctx.getCurrentItem().getNumber() >= 391) {
+                        if(ctx.getCurrentItem().getNumber() >= 801) {
                             throw new IllegalArgumentException("Stop");
                         }
 //                        if(ctx.getCurrentItem().getNumber() >= 338) {
@@ -161,15 +172,16 @@ public class BookProcessor {
 //                            return ctx.preventSink();
 //                        }
 
-                        var result = action.apply(ctx);
-                        if(ctx.getCurrentPipeIndex() == 0) {
-                            return result.preventChanges();
-                        } else {
-                            return result;
-                        }
+                        return action.apply(ctx);
+//                        var result = action.apply(ctx);
+//                        if(ctx.getCurrentPipeIndex() == 0) {
+//                            return result.preventChanges();
+//                        } else {
+//                            return result;
+//                        }
                     }).result())
                     .exception((ctx, e) -> {
-                        log.error("|-- Got exception(%s iteration): {}|{}".formatted(ctx.iteration()), e.getClass(), e.getMessage());
+                        log.error("|--! Got exception(%s iteration): {}|{}".formatted(ctx.iteration()), e.getClass(), e.getMessage());
 
                         chapterFacade.handleChapterException(ctx, e);
                     })

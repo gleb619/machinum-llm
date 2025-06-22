@@ -63,9 +63,20 @@ public class ObjectName implements StringSupport {
         return metadata;
     }
 
-    public ObjectName ruName(String ruName) {
+    public ObjectName ruName(String value) {
+        var map = new HashMap<>(getMetadata());
+        if (map.containsKey(RU_NAME)) {
+            int index = 1;
+            while (map.containsKey(RU_NAME + index)) {
+                index++;
+            }
+            map.put(RU_NAME + index, map.get(RU_NAME));
+        }
+        map.put(RU_NAME, value);
+
         return toBuilder()
-                .metadata(RU_NAME, ruName)
+                .clearMetadata()
+                .metadata(map)
                 .build();
     }
 
@@ -79,6 +90,21 @@ public class ObjectName implements StringSupport {
 
     public Optional<String> optionalRuName() {
         return hasRuName() ? Optional.of(ruName()) : Optional.empty();
+    }
+
+    public String getTranslationHistory(int version) {
+        return metadata.get(RU_NAME + version);
+    }
+
+    public List<String> getTranslationHistory() {
+        List<String> history = new ArrayList<>();
+        int index = 1;
+        while (metadata.containsKey(RU_NAME + index)) {
+            history.add(getTranslationHistory(index));
+            index++;
+        }
+
+        return history;
     }
 
     @Override

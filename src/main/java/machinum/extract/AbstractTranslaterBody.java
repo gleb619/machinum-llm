@@ -46,6 +46,9 @@ public abstract class AbstractTranslaterBody implements FlowSupport, Preconditio
             """;
 
     protected static final String USER_CHUNK_TEMPLATE = """
+            Provide last lines for the previous web novel's chapter chunk text""";
+
+    protected static final String USER_TRANSLATED_CHUNK_TEMPLATE = """
             Provide Russian translation for the web novel's chapter chunk text:
             %s 
             """;
@@ -136,12 +139,9 @@ public abstract class AbstractTranslaterBody implements FlowSupport, Preconditio
         flowContext.hasArgument(FlowContext::oldChunkArg, chunkArg -> {
             flowContext.hasArgument(FlowContext::translatedChunkArg, translatedChunkArg -> {
                 //If previous chunk is more that 5% of context window we truncate head of text, and leave only last 5 sentences/lines
-                history.add(new UserMessage(USER_CHUNK_TEMPLATE.formatted(chunkArg
-                        .mapValueWithCondition(chunk -> chunk.check(s -> calculatePercent(countTokens(s), contextLength) >= 5),
-                                chunk -> chunk.map(TextUtil::truncateFromHead))
-                        .stringValue())));
+                history.add(new UserMessage(USER_CHUNK_TEMPLATE));
 
-                history.add(new AssistantMessage(translatedChunkArg
+                history.add(new AssistantMessage(chunkArg
                         .mapValueWithCondition(chunk -> chunk.check(s -> calculatePercent(countTokens(s), contextLength) >= 5),
                                 chunk -> chunk.map(TextUtil::truncateFromHead))
                         .stringValue()));

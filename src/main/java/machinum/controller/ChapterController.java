@@ -140,6 +140,11 @@ public class ChapterController implements ControllerTrait {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/api/tokens")
+    public ResponseEntity<Integer> tokens(@RequestBody String text) {
+        return ResponseEntity.ok(TextUtil.countTokens(text));
+    }
+
     /* ============= */
 
     private Page<Chapter> doSearch(ChapterSearchRequest request) {

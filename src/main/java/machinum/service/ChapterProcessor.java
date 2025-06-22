@@ -20,8 +20,8 @@ import java.util.concurrent.CompletableFuture;
 
 import static machinum.flow.FlowContextActions.iteration;
 import static machinum.service.BookProcessor.ProcessorState.*;
-import static machinum.service.ChapterProcessor.Operations.*;
 import static machinum.service.ChapterProcessor.Operations.TRANSLATE;
+import static machinum.service.ChapterProcessor.Operations.*;
 
 @Slf4j
 @Service
@@ -56,8 +56,10 @@ public class ChapterProcessor {
         var result = switch (request.getOperationName()) {
             case SUMMARIZE -> templateAiFacade.summary(flowContext)
                     .withState(SUMMARY);
-            case TRANSLATE -> templateAiFacade.translateInChunks(flowContext)
+            case TRANSLATE -> templateAiFacade.translateAll(flowContext)
                     .withState(ProcessorState.TRANSLATE);
+//            case TRANSLATE -> templateAiFacade.translateInChunks(flowContext)
+//                    .withState(ProcessorState.TRANSLATE);
             case SCORE_AND_TRANSLATE -> templateAiFacade.scoreAndTranslateInChunks(flowContext)
                     .withState(ProcessorState.TRANSLATE);
             case SCORE_AND_FIX -> templateAiFacade.scoreAndEditGrammarInChunks(flowContext)

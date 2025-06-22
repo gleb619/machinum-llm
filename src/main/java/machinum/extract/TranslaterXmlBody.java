@@ -11,25 +11,26 @@ import machinum.processor.core.AssistantContext;
 import machinum.util.CodeBlockExtractor;
 import machinum.util.TextUtil;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -41,6 +42,9 @@ import static org.apache.commons.lang3.StringEscapeUtils.escapeXml;
 @RequiredArgsConstructor
 public class TranslaterXmlBody extends AbstractTranslaterBody {
 
+    public static final Pattern XML_HEADER_PATTERN = Pattern.compile("^<\\?xml[^>]+\\?>");
+    public static final Pattern WRONG_XML_TAG_PATTERN = Pattern.compile("<([^>]+)>");
+
     @Getter
     @Value("classpath:prompts/custom/system/TranslateBodySystem.xml.ST")
     private final Resource systemTemplate;
@@ -48,16 +52,28 @@ public class TranslaterXmlBody extends AbstractTranslaterBody {
     @Value("classpath:prompts/custom/TranslateBody.xml.ST")
     private final Resource translateTemplate;
 
-    @Override
-    public FlowContext<Chapter> translate(FlowContext<Chapter> flowContext) {
-        var textArg = flowContext.textArg();
-        var list = TextUtil.toParagraphs(textArg.stringValue()).stream()
-                .map(s -> new Translation(escapeXml(s), ""))
-                .collect(Collectors.toList());
-        var newText = convertTranslations(list);
+    public static String fixXmlTags(String text) {
+        var xmlDeclarationMatcher = XML_HEADER_PATTERN.matcher(text);
 
-        return super.translate(flowContext.replace(FlowContext::textArg, text(newText)))
-                .replace(FlowContext::textArg, textArg);
+        // Extract and preserve the XML declaration if it exists
+        var xmlDeclaration = "";
+        if (xmlDeclarationMatcher.find()) {
+            xmlDeclaration = xmlDeclarationMatcher.group();
+            text = text.substring(xmlDeclaration.length()).trim();
+        }
+
+        // Process the rest of the XML content
+        var tagMatcher = WRONG_XML_TAG_PATTERN.matcher(text);
+        var result = new StringBuilder();
+
+        while (tagMatcher.find()) {
+            String tagContent = tagMatcher.group(1);
+            String cleanedTag = tagContent.replaceAll("\\s+", "");
+            tagMatcher.appendReplacement(result, "<" + cleanedTag + ">");
+        }
+        tagMatcher.appendTail(result);
+
+        return xmlDeclaration + result;
     }
 
     @Override
@@ -85,23 +101,44 @@ public class TranslaterXmlBody extends AbstractTranslaterBody {
         return result;
     }
 
+    @Override
+    public FlowContext<Chapter> translate(FlowContext<Chapter> flowContext) {
+        var textArg = flowContext.textArg();
+        var counter = new AtomicInteger(1);
+        var list = TextUtil.toParagraphs(textArg.stringValue()).stream()
+                .map(s -> new Translation(counter.getAndIncrement(), escapeXml(s), ""))
+                .collect(Collectors.toList());
+        var newText = convertTranslations(list);
+
+        return super.translate(flowContext.replace(FlowContext::textArg, text(newText)))
+                .replace(FlowContext::textArg, textArg);
+    }
+
     @SneakyThrows
     private List<Translation> parseTranslations(String xml) {
+        var localXml = fixXmlTags(xml);
         try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            var factory = DocumentBuilderFactory.newInstance();
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true); // Security hardening
 
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(new InputSource(new StringReader(xml)));
+            var builder = factory.newDocumentBuilder();
+            var doc = builder.parse(new InputSource(new StringReader(localXml)));
 
-            NodeList resultNodes = doc.getElementsByTagName("result");
+            var resultNodes = doc.getElementsByTagName("result");
 
             return IntStream.range(0, resultNodes.getLength())
                     .mapToObj(i -> (Element) resultNodes.item(i))
-                    .map(element -> new Translation(
-                            element.getElementsByTagName("origin").item(0).getTextContent(),
-                            element.getElementsByTagName("translated").item(0).getTextContent()
-                    ))
+                    .map(element -> {
+                        var id = element.getElementsByTagName("id");
+                        var origin = element.getElementsByTagName("origin");
+                        var translated = element.getElementsByTagName("translated");
+
+                        return new Translation(
+                                NumberUtils.toInt(parseValue(id), 0),
+                                parseValue(origin),
+                                parseValue(translated)
+                        );
+                    })
                     .toList();
         } catch (Exception e) {
             log.error("Got error: `{}`; response:\n{}", e.getMessage(), xml);
@@ -111,40 +148,57 @@ public class TranslaterXmlBody extends AbstractTranslaterBody {
 
     @SneakyThrows
     public String convertTranslations(List<Translation> translations) {
-        Document doc = DocumentBuilderFactory.newInstance()
+        var doc = DocumentBuilderFactory.newInstance()
                 .newDocumentBuilder()
                 .newDocument();
 
         // Create root element
-        Element root = doc.createElement("results");
+        var root = doc.createElement("results");
         doc.appendChild(root);
 
         // Add each translation
-        for (Translation t : translations) {
-            Element result = doc.createElement("result");
+        for (var t : translations) {
+            var result = doc.createElement("result");
 
-            Element origin = doc.createElement("origin");
-            origin.setTextContent(t.origin());
-            result.appendChild(origin);
+            var id = doc.createElement("id");
+            id.setTextContent(String.valueOf(t.id()));
+            result.appendChild(id);
 
-            Element translated = doc.createElement("translated");
-            translated.setTextContent(t.translated());
-            result.appendChild(translated);
+            if (Objects.nonNull(t.origin()) && !t.origin().isBlank()) {
+                var origin = doc.createElement("origin");
+                origin.setTextContent(t.origin());
+                result.appendChild(origin);
+            }
+
+            if (Objects.nonNull(t.translated()) && !t.translated().isBlank()) {
+                var translated = doc.createElement("translated");
+                translated.setTextContent(t.translated());
+                result.appendChild(translated);
+            }
 
             root.appendChild(result);
         }
 
         // Convert to XML string
-        Transformer transformer = TransformerFactory.newInstance()
+        var transformer = TransformerFactory.newInstance()
                 .newTransformer();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 
-        StringWriter writer = new StringWriter();
+        var writer = new StringWriter();
         transformer.transform(new DOMSource(doc), new StreamResult(writer));
         return writer.toString();
     }
 
-    record Translation(String origin, String translated) {
+    private String parseValue(NodeList nodeList) {
+        if (nodeList.getLength() > 0) {
+            var item = nodeList.item(0);
+            return TextUtil.firstNotEmpty(item.getTextContent(), "");
+        }
+
+        return "";
+    }
+
+    record Translation(Integer id, String origin, String translated) {
     }
 
 }

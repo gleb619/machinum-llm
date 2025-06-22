@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         properties = {
                 "spring.ai.ollama.base-url=${wiremock.server.baseUrl}"
                 , "test.init-script-path=sql/init_only_book.sql"
-                , "app.logic-splitter.chunkSize=1"
+                , "app.logic-splitter.chunk-size=1"
                 , "app.flow.batch-size=2"
         }
 )

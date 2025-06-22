@@ -1,14 +1,14 @@
 package machinum.extract;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.Chunks;
 import machinum.model.Chunks.ChunkItem;
-import machinum.flow.FlowContext;
 import machinum.processor.core.SplitStrategy;
 import machinum.processor.core.SplitStrategy.BalancedSentenceSplitter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -24,11 +24,23 @@ import static machinum.util.TextUtil.toShortDescription;
 @RequiredArgsConstructor
 public class Splitter {
 
-    @Value("${app.logic-splitter.chunkSize}")
+    @Value("${app.logic-splitter.chunk-size}")
     protected final Integer chunkSize;
 
     private final SplitStrategy splitStrategy;
 
+
+    public FlowContext<Chapter> optionalSplit(FlowContext<Chapter> flowContext) {
+        var text = flowContext.text();
+        var textTokens = countTokens(text);
+
+        if (textTokens > (chunkSize * 1.6)) {
+            log.debug("Text is large and will be divided into chunks: {}", flowContext);
+            return split(flowContext);
+        } else {
+            return flowContext;
+        }
+    }
 
     public FlowContext<Chapter> split(FlowContext<Chapter> flowContext) {
         var text = flowContext.text();

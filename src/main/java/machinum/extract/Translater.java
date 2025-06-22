@@ -34,6 +34,7 @@ public class Translater implements FlowSupport {
     private final GrammarEditorScoring grammarEditorScoring;
     private final GrammarEditor grammarEditor;
     private final ProofreaderRu proofreaderRu;
+    private final Splitter splitter;
 
     @Value("${app.translate.score.iterations}")
     private final Integer numberOfIterations;
@@ -66,7 +67,23 @@ public class Translater implements FlowSupport {
     }
 
     public FlowContext<Chapter> translateAll(FlowContext<Chapter> context) {
-        return xmlTranslaterBody.translate(context);
+        var flowContext = splitter.optionalSplit(context);
+        boolean chunkedMode = flowContext.hasArgument(FlowContext::chunksArg);
+
+        if (chunkedMode) {
+            return doTranslateChunks(flowContext, xmlTranslaterBody::translate)
+                    .removeArgs(
+                            FlowContext::chunksArg,
+                            FlowContext::chunkArg,
+                            FlowContext::translatedChunksArg,
+                            FlowContext::translatedChunkArg,
+                            FlowContext::oldChunksArg,
+                            FlowContext::oldChunkArg,
+                            FlowContext::oldTranslatedChunksArg,
+                            FlowContext::oldTranslatedChunkArg);
+        } else {
+            return xmlTranslaterBody.translate(context);
+        }
     }
 
     public FlowContext<Chapter> translateTitle(FlowContext<Chapter> context) {
@@ -210,7 +227,7 @@ public class Translater implements FlowSupport {
                         .rearrange(FlowContext::chunkArg, FlowContextActions.chunk(chunk))
                         .rearrange(FlowContext::subIterationArg, FlowContextActions.subIteration(counter.getAndIncrement()))
                 )
-                .map(fn::apply)
+                .map(fn)
                 .map(ctx -> ctx.rearrange(FlowContext::translatedChunkArg, translatedChunk(ctx.chunkArg()
                         .flatMap(chunk -> chunk.withText(ctx.translatedText())))
                 ))

@@ -382,7 +382,7 @@ public class TextUtil {
         String[] array = text.trim().split("(?m)^\\s*$");
 
         if (array.length == 1) {
-            array = text.trim().split("(?<=\r\n)");
+            array = text.lines().toArray(String[]::new);
         }
 
         return Arrays.stream(array)

@@ -184,8 +184,18 @@ public class OneStepRunner<T> implements FlowRunner<T> {
 
     private void processSinglePipe(RunnerContext<T> runnerContext, int itemIndex, int pipeIndex,
                                    Function<FlowContext<T>, FlowContext<T>> pipe, Flow.State state) {
-        var eachContext = runnerContext.executeAroundEachAction(
-                runnerContext.getFlowContext().withCurrentPipeIndex(pipeIndex), pipe);
+
+
+        var context = runnerContext.getFlowContext().withCurrentPipeIndex(pipeIndex);
+        var result = runnerContext.executeAroundEachCondition(context);
+
+        FlowContext<T> eachContext;
+        if (result.testResult()) {
+            eachContext = runnerContext.executeAroundEachAction(
+                    context, pipe);
+        } else {
+            eachContext = result.context();
+        }
 
         var sinkEnabled = !Boolean.TRUE.equals(eachContext.metadata(PREVENT_SINK));
         var stateUpdateEnabled = !Boolean.TRUE.equals(eachContext.metadata(PREVENT_STATE_UPDATE));
@@ -451,6 +461,10 @@ public class OneStepRunner<T> implements FlowRunner<T> {
 
         public T getItem(Integer index) {
             return getSource().get(index);
+        }
+
+        public Flow.FlowPredicateResult<T> executeAroundEachCondition(FlowContext<T> context) {
+            return getFlow().getAroundEachCondition().test(context);
         }
 
         public FlowContext<T> executeAroundEachAction(FlowContext<T> context, Function<FlowContext<T>, FlowContext<T>> action) {

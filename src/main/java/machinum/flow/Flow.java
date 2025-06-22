@@ -59,8 +59,8 @@ public class Flow<T> {
     @Builder.Default
     BiFunction<FlowContext<T>, Function<FlowContext<T>, FlowContext<T>>, FlowContext<T>> aroundEachAction = DefaultHandler.defaultAroundEach();
 
-//    @Singular("aroundEachAction")
-//    List<BiFunction<FlowContext<T>, Function<FlowContext<T>, FlowContext<T>>, FlowContext<T>>> aroundEachActions = new ArrayList<>();
+    @Builder.Default
+    FlowPredicate<T> aroundEachCondition = FlowPredicateResult::accept;
 
     @Builder.Default
     Function<FlowContext<T>, T> refreshAction = FlowContext::getCurrentItem;
@@ -155,18 +155,12 @@ public class Flow<T> {
         return copy(b -> b.refreshAction(action));
     }
 
+    public Flow<T> eachCondition(FlowPredicate<T> condition) {
+        return copy(b -> b.aroundEachCondition(condition));
+    }
+
     public Flow<T> aroundEach(BiFunction<FlowContext<T>, Function<FlowContext<T>, FlowContext<T>>, FlowContext<T>> action) {
         return copy(b -> b.aroundEachAction(action));
-
-//        if(DefaultHandler.isDefaultHandler(this.aroundEachAction)) {
-//            return copy(b -> b.aroundEachActions(action));
-//        } else {
-//            var currentAction = this.aroundEachAction;
-//            return copy(b -> b.aroundEachActions((ctx, fn) -> currentAction
-//                    .andThen(after -> action.apply(after, fn))
-//                    .apply(ctx, fn)
-//            ));
-//        }
     }
 
     public Flow<T> exception(BiConsumer<FlowContext<T>, Exception> action) {
@@ -220,69 +214,17 @@ public class Flow<T> {
 
     }
 
-    @Value
-    @Builder(toBuilder = true)
-    public static class StateBuilder<T> {
+    @FunctionalInterface
+    public interface FlowPredicate<T> {
 
-        Flow<T> flow;
-
-        State state;
-
-        public StateBuilder(Flow<T> flow, State state) {
-            this.flow = flow;
-            this.state = state;
-        }
-
-        public StateBuilder<T> comment(Function<State, String> comment) {
-            log.debug(comment.apply(state));
-            return this;
-        }
-
-        //TODO combine with FlowContext.preventChanges()
-        public StateBuilder<T> pipeStateless(Function<FlowContext<T>, FlowContext<T>> action) {
-            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(action);
-            return this;
-        }
-
-        public StateBuilder<T> pipe(Function<FlowContext<T>, FlowContext<T>> action) {
-            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(action);
-            return this;
-        }
-
-        public StateBuilder<T> window(Window window, Aggregation<T> action) {
-            return pipe(aggregate(window, action));
-        }
-
-        public StateBuilder<T> nothing() {
-            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(Function.identity());
-            return this;
-        }
-
-        public StateBuilder<T> waitFor(Duration duration) {
-            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(ctx -> {
-                try {
-                    log.debug("Waiting for {} to cool down GPU", humanReadableDuration(duration));
-                    TimeUnit.MILLISECONDS.sleep(duration.toMillis());
-                } catch (InterruptedException e) {
-                    return ExceptionUtils.rethrow(e);
-                }
-
-                return ctx;
-            });
-            return this;
-        }
-
-        public StateBuilder<T> onState(State state) {
-            return flow.onState(state);
-        }
-
-        public Flow<T> sink(Consumer<FlowContext<T>> action) {
-            return flow.sink(action);
-        }
-
-        public Flow<T> build() {
-            return flow;
-        }
+        /**
+         * Evaluates this predicate on the given argument.
+         *
+         * @param t the input argument
+         * @return {@code true} if the input argument matches the predicate,
+         * otherwise {@code false}
+         */
+        FlowPredicateResult<T> test(FlowContext<T> t);
 
     }
 
@@ -328,6 +270,84 @@ public class Flow<T> {
         @Override
         public FlowContext<U> apply(FlowContext<U> ctx, Function<FlowContext<U>, FlowContext<U>> fn) {
             return fn.apply(ctx);
+        }
+
+    }
+
+    @Value
+    @Builder(toBuilder = true)
+    public static class StateBuilder<T> {
+
+        Flow<T> flow;
+
+        State state;
+
+        public StateBuilder(Flow<T> flow, State state) {
+            this.flow = flow;
+            this.state = state;
+        }
+
+        public StateBuilder<T> comment(Function<State, String> comment) {
+            log.debug(comment.apply(state));
+            return this;
+        }
+
+        public StateBuilder<T> pipeStateless(Function<FlowContext<T>, FlowContext<T>> action) {
+            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(context -> action.apply(context)
+                    .preventChanges());
+            return this;
+        }
+
+        public StateBuilder<T> pipe(Function<FlowContext<T>, FlowContext<T>> action) {
+            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(action);
+            return this;
+        }
+
+        public StateBuilder<T> window(Window window, Aggregation<T> action) {
+            return pipe(aggregate(window, action));
+        }
+
+        public StateBuilder<T> nothing() {
+            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(Function.identity());
+            return this;
+        }
+
+        public StateBuilder<T> waitFor(Duration duration) {
+            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(ctx -> {
+                try {
+                    log.debug("Waiting for {} to cool down GPU", humanReadableDuration(duration));
+                    TimeUnit.MILLISECONDS.sleep(duration.toMillis());
+                } catch (InterruptedException e) {
+                    return ExceptionUtils.rethrow(e);
+                }
+
+                return ctx;
+            });
+            return this;
+        }
+
+        public StateBuilder<T> onState(State state) {
+            return flow.onState(state);
+        }
+
+        public Flow<T> sink(Consumer<FlowContext<T>> action) {
+            return flow.sink(action);
+        }
+
+        public Flow<T> build() {
+            return flow;
+        }
+
+    }
+
+    public record FlowPredicateResult<T>(FlowContext<T> context, boolean testResult) {
+
+        public static <U> FlowPredicateResult<U> accept(FlowContext<U> context) {
+            return new FlowPredicateResult<>(context, true);
+        }
+
+        public static <U> FlowPredicateResult<U> reject(FlowContext<U> context) {
+            return new FlowPredicateResult<>(context, false);
         }
 
     }

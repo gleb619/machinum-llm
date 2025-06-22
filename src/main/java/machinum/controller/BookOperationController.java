@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -58,6 +60,8 @@ public class BookOperationController {
         private boolean allowOverride;
         @Builder.Default
         private Map<String, Boolean> availableStates = new HashMap<>();
+        @Builder.Default
+        private RuleConfig config = new RuleConfig();
 
         public BookOperationRequest copy(Function<BookOperationRequest.BookOperationRequestBuilder, BookOperationRequest.BookOperationRequestBuilder> builderFn) {
             return builderFn.apply(toBuilder())
@@ -67,6 +71,80 @@ public class BookOperationController {
         public Map<ProcessorState, Boolean> availableStates() {
             return availableStates.entrySet().stream()
                     .collect(Collectors.toMap(e -> ProcessorState.parse(e.getKey()), Map.Entry::getValue, (f, s) -> f));
+        }
+
+        @Data
+        @AllArgsConstructor
+        @Builder(toBuilder = true)
+        @NoArgsConstructor(access = AccessLevel.PUBLIC)
+        public static class RuleConfig {
+
+            @Builder.Default
+            private RuleType ruleType = RuleType.ALL;
+            @Builder.Default
+            private Range range = new Range();
+            @Builder.Default
+            private Specific specific = new Specific();
+            @Builder.Default
+            private Filters filters = new Filters();
+
+            public enum RuleType {
+
+                ALL,
+                RANGE,
+                SPECIFIC,
+                FILTER,
+                NONE,
+
+            }
+
+            @Data
+            @AllArgsConstructor
+            @Builder(toBuilder = true)
+            @NoArgsConstructor(access = AccessLevel.PUBLIC)
+            public static class Range {
+
+                private int min;
+                private int max;
+                private int count;
+
+            }
+
+            @Data
+            @AllArgsConstructor
+            @Builder(toBuilder = true)
+            @NoArgsConstructor(access = AccessLevel.PUBLIC)
+            public static class Specific {
+
+                @Builder.Default
+                private List<String> items = new ArrayList<>();
+                private int count;
+
+            }
+
+            @Data
+            @AllArgsConstructor
+            @Builder(toBuilder = true)
+            @NoArgsConstructor(access = AccessLevel.PUBLIC)
+            public static class Filters {
+
+                @Builder.Default
+                private List<String> selected = new ArrayList<>();
+                @Builder.Default
+                private List<FilterDefinition> definitions = new ArrayList<>();
+
+            }
+
+            @Data
+            @AllArgsConstructor
+            @Builder(toBuilder = true)
+            @NoArgsConstructor(access = AccessLevel.PUBLIC)
+            public static class FilterDefinition {
+
+                private String id;
+
+            }
+
         }
 
     }
