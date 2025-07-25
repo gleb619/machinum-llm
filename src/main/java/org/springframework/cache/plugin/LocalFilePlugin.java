@@ -5,6 +5,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CachePlugin;
@@ -24,11 +25,13 @@ import java.util.Optional;
 //@Order(100)
 @Slf4j
 @RequiredArgsConstructor
+@Deprecated(forRemoval = true)
 @ConditionalOnProperty(name = "app.mode", havingValue = "production")
 public class LocalFilePlugin implements CachePlugin {
 
     @Value("${app.cache.folder}")
     private final String storageDirectory;
+    @Qualifier("objectMapperHolder")
     private final Holder<ObjectMapper> objectMapper;
 
 

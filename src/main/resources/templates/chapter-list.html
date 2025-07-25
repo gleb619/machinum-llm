@@ -168,10 +168,56 @@
 
         <!-- Search Bar -->
         <div class="flex justify-between items-center space-x-4 p-4" x-show="activeSearchTab === 'searchBar'">
-            <input @input.debounce.300ms="fetchChapters(0)" class="p-2 border rounded w-1/2" placeholder="Search chapters..."
-                   title="Search chapters..." type="text" x-model="searchQuery">
-            <input @input.debounce.300ms="fetchChapters(0)" class="p-2 border rounded w-1/2" placeholder="Search names..."
-                   title="Search names..." type="text" x-model="searchNames">
+            <div class="relative w-1/2">
+                <input @input.debounce.300ms="fetchChapters(0)" class="p-2 pr-20 border rounded w-full"
+                       placeholder="Search chapters..."
+                       title="Search chapters..." type="text" x-model="searchQuery">
+                <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-1">
+                    <button :class="filters.chapterMatchCase ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'"
+                            @click="filters.chapterMatchCase = !filters.chapterMatchCase; backupValue('filters')"
+                            class="w-6 h-6 rounded text-xs font-bold flex items-center justify-center hover:bg-blue-400 transition-colors"
+                            title="Match case">
+                        Aa
+                    </button>
+                    <button :class="filters.chapterWholeWord ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'"
+                            @click="filters.chapterWholeWord = !filters.chapterWholeWord; backupValue('filters')"
+                            class="w-6 h-6 rounded text-xs font-bold flex items-center justify-center hover:bg-blue-400 transition-colors"
+                            title="Whole word">
+                        W
+                    </button>
+                    <button :class="filters.chapterRegex ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'"
+                            @click="filters.chapterRegex = !filters.chapterRegex; backupValue('filters')"
+                            class="w-6 h-6 rounded text-xs font-bold flex items-center justify-center hover:bg-blue-400 transition-colors"
+                            title="Regex">
+                        .*
+                    </button>
+                </div>
+            </div>
+            <div class="relative w-1/2">
+                <input @input.debounce.300ms="fetchChapters(0)" class="p-2 pr-20 border rounded w-full"
+                       placeholder="Search names..."
+                       title="Search names..." type="text" x-model="searchNames">
+                <div class="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-1">
+                    <button :class="filters.namesMatchCase ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'"
+                            @click="filters.namesMatchCase = !filters.namesMatchCase; backupValue('filters')"
+                            class="w-6 h-6 rounded text-xs font-bold flex items-center justify-center hover:bg-blue-400 transition-colors"
+                            title="Match case">
+                        Aa
+                    </button>
+                    <button :class="filters.namesWholeWord ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'"
+                            @click="filters.namesWholeWord = !filters.namesWholeWord; backupValue('filters')"
+                            class="w-6 h-6 rounded text-xs font-bold flex items-center justify-center hover:bg-blue-400 transition-colors"
+                            title="Whole word">
+                        W
+                    </button>
+                    <button :class="filters.namesRegex ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'"
+                            @click="filters.namesRegex = !filters.namesRegex; backupValue('filters')"
+                            class="w-6 h-6 rounded text-xs font-bold flex items-center justify-center hover:bg-blue-400 transition-colors"
+                            title="Regex">
+                        .*
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Tabs Navigation -->

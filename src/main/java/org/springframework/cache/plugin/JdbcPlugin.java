@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
 import org.springframework.async.AsyncHelper;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -30,6 +31,7 @@ import java.util.Optional;
 public class JdbcPlugin implements CachePlugin {
 
     private final JdbcTemplate jdbcTemplate;
+    @Qualifier("objectMapperHolder")
     private final Holder<ObjectMapper> objectMapper;
     private final AsyncHelper asyncHelper;
 

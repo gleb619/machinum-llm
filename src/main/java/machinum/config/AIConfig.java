@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import io.micrometer.observation.ObservationRegistry;
+import lombok.extern.slf4j.Slf4j;
 import machinum.extract.util.NamedEntityRecognizer;
 import machinum.extract.util.ProperNameExtractor;
 import machinum.util.TraceUtil;
-import io.micrometer.observation.ObservationRegistry;
-import lombok.extern.slf4j.Slf4j;
 import opennlp.tools.namefind.NameFinderME;
 import opennlp.tools.namefind.TokenNameFinderModel;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -17,7 +17,6 @@ import org.springframework.ai.autoconfigure.ollama.OllamaTransformProperties;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.converter.AssistantMessageDeserializer;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -34,10 +33,10 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.async.AsyncHelper;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.web.client.RestClientBuilderConfigurer;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.http.client.JdkClientHttpRequestFactoryBuilder;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -51,10 +50,10 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
+import java.net.http.HttpClient;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -62,53 +61,11 @@ import java.util.function.Supplier;
 
 import static machinum.config.Holder.of;
 import static machinum.util.TextUtil.toShortDescription;
-//import org.springframework.jdbc.core.JdbcTemplate;
 
 @Slf4j
 @Configuration
 @EnableConfigurationProperties({OllamaTransformProperties.class, OllamaReserveProperties.class})
 public class AIConfig {
-
-//    @Bean
-//    public EmbeddingModel embeddingModel() {
-//        return OllamaEmbeddingModel.builder()
-//                .build();
-//    }
-
-//    @Bean
-//    VectorStore vectorStore(JdbcTemplate template, EmbeddingModel embeddingModel) {
-//        return PgVectorStore.builder(template, embeddingModel)
-//                .build();
-//    }
-
-    private static OllamaApi createApi(OllamaConnectionDetails connectionDetails,
-                                       RestClientBuilderConfigurer restClientBuilderConfigurer,
-                                       ObjectProvider<WebClient.Builder> webClientBuilderProvider,
-                                       WiremockRequestInterceptor requestInterceptorHolder) {
-        var clientHttpRequestFactory = new JdkClientHttpRequestFactory();
-        clientHttpRequestFactory.setReadTimeout(Duration.ofMinutes(15));
-
-        var builder = RestClient.builder()
-                .requestFactory(new BufferingClientHttpRequestFactory(clientHttpRequestFactory))
-                .requestInterceptors(list -> list.add((request, body, execution) -> {
-                    var rayId = TraceUtil.getCurrentRayId();
-
-                    log.debug("[{}] >> {} {}", rayId, request.getMethod(), request.getURI());
-                    request.getHeaders().add("X-Ray-Id", rayId);
-                    var response = execution.execute(request, body);
-                    log.debug("[{}] << {} {} {}", rayId, request.getMethod(), request.getURI(), response.getStatusCode());
-
-                    return response;
-                }))
-                .requestInterceptor(requestInterceptorHolder);
-
-        return OllamaApi.builder()
-                .baseUrl(connectionDetails.getBaseUrl())
-                .restClientBuilder(builder)
-//                .webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
-                .responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
-                .build();
-    }
 
     @Bean
     @Deprecated
@@ -139,11 +96,6 @@ public class AIConfig {
         return of(chatModel);
     }
 
-//    @Bean
-//    public TokenTextSplitter tokenTextSplitter() {
-//        return new TokenTextSplitter();
-//    }
-
     @Bean
     @Primary
     public OllamaApi ollamaApi(OllamaConnectionDetails connectionDetails, RestClientBuilderConfigurer restClientBuilderConfigurer,
@@ -164,20 +116,22 @@ public class AIConfig {
                                 99
                         )
                 )
-//                .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore, request))
                 .build();
     }
 
-    @Bean
-    public Holder<ObjectMapper> objectMapperHolder(Jackson2ObjectMapperBuilder builder) {
+    public static Holder<ObjectMapper> createMapper(Jackson2ObjectMapperBuilder builder) {
         Supplier<ObjectMapper> creator = () -> builder
                 .createXmlMapper(false)
                 .featuresToEnable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
                 .featuresToDisable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-//                .modules(assistantMessageModule())
                 .build();
 
         return new Holder<>(creator.get(), mapper -> creator.get());
+    }
+
+    @Bean
+    public Holder<ObjectMapper> objectMapperHolder(Jackson2ObjectMapperBuilder builder) {
+        return createMapper(builder);
     }
 
     @Bean
@@ -197,14 +151,8 @@ public class AIConfig {
     }
 
     @Bean
-    public Holder<WiremockRequestInterceptor> wiremockRequestInterceptor(Holder<ObjectMapper> objectMapperHolder,
-                                                                         @Value("${app.http.logs-path}") String logsPath,
-                                                                         @Value("${app.http.logs-enabled}") Boolean logsEnabled,
-                                                                         AsyncHelper asyncHelper) {
-        var logsDir = Paths.get(logsPath);
-        logsDir.toFile().mkdirs();
-
-        return of(new WiremockRequestInterceptor(logsEnabled, objectMapperHolder.get(), logsDir.toAbsolutePath(), asyncHelper));
+    public Holder<HttpClient> httpClient() {
+        return of(HttpClient.newHttpClient());
     }
 
     @Bean
@@ -243,14 +191,53 @@ public class AIConfig {
         return new ProperNameExtractor(namedEntityRecognizer);
     }
 
-    /* ============= */
-
     @Bean
     public Holder<RestTemplate> ollamaAiClientRestTemplate(RestTemplateBuilder restTemplateBuilder) {
         return of(restTemplateBuilder
                 .setConnectTimeout(Duration.ofSeconds(30))
                 .setReadTimeout(Duration.ofSeconds(30))
                 .build());
+    }
+
+    /* ============= */
+
+    @Bean
+    public Holder<WiremockRequestInterceptor> wiremockRequestInterceptor(@Qualifier("objectMapperHolder") Holder<ObjectMapper> objectMapperHolder,
+                                                                         @Value("${app.http.logs-path}") String logsPath,
+                                                                         @Value("${app.http.logs-enabled}") Boolean logsEnabled,
+                                                                         AsyncHelper asyncHelper) {
+        var logsDir = Paths.get(logsPath);
+        logsDir.toFile().mkdirs();
+
+        return of(new WiremockRequestInterceptor(logsEnabled, objectMapperHolder.get(), logsDir.toAbsolutePath(), asyncHelper));
+    }
+
+    private OllamaApi createApi(OllamaConnectionDetails connectionDetails,
+                                RestClientBuilderConfigurer restClientBuilderConfigurer,
+                                ObjectProvider<WebClient.Builder> webClientBuilderProvider,
+                                WiremockRequestInterceptor requestInterceptorHolder) {
+        var clientHttpRequestFactory = new JdkClientHttpRequestFactory();
+        clientHttpRequestFactory.setReadTimeout(Duration.ofMinutes(15));
+
+        var builder = RestClient.builder()
+                .requestFactory(new BufferingClientHttpRequestFactory(clientHttpRequestFactory))
+                .requestInterceptors(list -> list.add((request, body, execution) -> {
+                    var rayId = TraceUtil.getCurrentRayId();
+
+                    log.debug("[{}] >> {} {}", rayId, request.getMethod(), request.getURI());
+                    request.getHeaders().add("X-Ray-Id", rayId);
+                    var response = execution.execute(request, body);
+                    log.debug("[{}] << {} {} {}", rayId, request.getMethod(), request.getURI(), response.getStatusCode());
+
+                    return response;
+                }))
+                .requestInterceptor(requestInterceptorHolder);
+
+        return OllamaApi.builder()
+                .baseUrl(connectionDetails.getBaseUrl())
+                .restClientBuilder(builder)
+                .responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+                .build();
     }
 
 }

@@ -17,6 +17,7 @@ import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.async.AsyncHelper;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheHelper;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.CachePlugin;
@@ -40,7 +41,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static machinum.config.Config.CacheConstants.*;
-//import org.springframework.jdbc.core.JdbcTemplate;
 
 @Slf4j
 @Configuration
@@ -48,12 +48,6 @@ import static machinum.config.Config.CacheConstants.*;
 @EnableRetry
 @Import({PluginConfig.class})
 public class Config {
-
-//    @Bean
-//    public EmbeddingModel embeddingModel() {
-//        return OllamaEmbeddingModel.builder()
-//                .build();
-//    }
 
     @Bean
     VectorStore vectorStore(JdbcTemplate template, EmbeddingModel embeddingModel) {
@@ -82,7 +76,6 @@ public class Config {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCaffeine(caffeine);
         caffeineCacheManager.setCacheNames(List.of(STORE, BOOKS_FOR_EXPORT, CHAPTER_DATA_SUMMARY, CHAPTER_HEATMAP_DATA));
-//        return SnapshottingCacheManager.withSnapshot(caffeineCacheManager);
         return caffeineCacheManager;
     }
 
@@ -107,22 +100,12 @@ public class Config {
     }
 
     @Bean
-    public ChapterInfoHistoryConverter chapterInfoHistoryConverter(Holder<ObjectMapper> holder) {
+    public ChapterInfoHistoryConverter chapterInfoHistoryConverter(@Qualifier("objectMapperHolder") Holder<ObjectMapper> holder) {
         ObjectMapper mapper = holder.copy();
         mapper.registerModule(diffUtilsModule());
 
         return new ChapterInfoHistoryConverter(mapper);
     }
-
-//    @Bean
-//    @Lazy
-//    @Order
-//    public ChapterEntityListener chapterInfoEntityListener(JdbcTemplate jdbcTemplate,
-//                                                               DbHelper dbHelper,
-//                                                               AsyncHelper asyncHelper,
-//                                                               ChapterHistoryService chapterInfoHistoryService) {
-//        return new ChapterEntityListener(jdbcTemplate, dbHelper, asyncHelper, chapterInfoHistoryService);
-//    }
 
     @Bean
     public SimpleModule diffUtilsModule() {
@@ -151,7 +134,6 @@ public class Config {
     public DiffRowGenerator diffRowGenerator() {
         return DiffRowGenerator.create()
                 .showInlineDiffs(true)
-//                .mergeOriginalRevised(true)
                 .inlineDiffByWord(true)
                 .oldTag(f -> "~~")      //introduce markdown style for strikethrough
                 .newTag(f -> "**")     //introduce markdown style for bold

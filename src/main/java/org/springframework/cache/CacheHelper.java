@@ -2,14 +2,15 @@ package org.springframework.cache;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import machinum.model.CheckedSupplier;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import static machinum.config.Config.CacheConstants.STORE;
 
@@ -57,7 +58,8 @@ public class CacheHelper {
      * @param supplier The supplier to create the value if not found
      * @return The retrieved or newly created value
      */
-    public <T> T getOrCreate(@NonNull String key, Supplier<T> supplier) {
+    @SneakyThrows
+    public <T> T getOrCreate(@NonNull String key, CheckedSupplier<T> supplier) {
         // First try to get from any plugin
         for (CachePlugin plugin : plugins) {
             if (plugin.hasKey(key)) {

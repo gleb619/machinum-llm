@@ -159,9 +159,9 @@ public class ChapterController implements ControllerTrait {
                 return chapterService.findByCombinedCriteria(request.getBookId(), request.getQuery(),
                         request.getQueryNames(), request.getPageRequest());
             } else if (TextUtil.isNotEmpty(request.getQuery())) {
-                return chapterService.findByChapterInfoFields(request.getBookId(), request.getQuery(), request.getPageRequest());
+                return chapterService.findByChapterText(request);
             } else if (TextUtil.isNotEmpty(request.getQueryNames())) {
-                return chapterService.findByChapterInfoNames(request.getBookId(), request.getQueryNames(), request.getPageRequest());
+                return chapterService.findByChapterNames(request);
             } else if (Objects.nonNull(request.getChapterNumber())) {
                 return chapterService.findByNumber(request.getBookId(), request.getChapterNumber())
                         .map(chapter -> List.of(chapter))
@@ -210,6 +210,12 @@ public class ChapterController implements ControllerTrait {
         private List<String> userFilters;
         private int page = 0;
         private int size = 10;
+        private boolean chapterMatchCase;
+        private boolean chapterWholeWord;
+        private boolean chapterRegex;
+        private boolean namesMatchCase;
+        private boolean namesWholeWord;
+        private boolean namesRegex;
 
         public PageRequest getPageRequest() {
             return PageRequest.of(page, size);

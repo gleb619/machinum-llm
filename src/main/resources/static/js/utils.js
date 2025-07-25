@@ -44,18 +44,22 @@ export function utilsApp() {
         localStorage.setItem(name, newValue);
         this[name] = newValue;
       },
-
+  
       loadState(name) {
         const currValue = JSON.parse(localStorage.getItem(name));
         this[name] = !!currValue;
       },
-
-      changeValue(name, newValue) {
+  
+      backupValue(name, newValue = this[name]) {
         const valueToStore = typeof newValue === 'object' ? JSON.stringify(newValue) : newValue;
         localStorage.setItem(name, valueToStore);
+      },
+  
+      changeValue(name, newValue) {
+        this.backupValue(name, newValue);
         this[name] = newValue;
       },
-
+  
       receiveValue(name, defaultValue) {
         const currValue = localStorage.getItem(name);
         try {
@@ -64,7 +68,7 @@ export function utilsApp() {
           return currValue || defaultValue;
         }
       },
-
+  
       loadValue(name, defaultValue) {
         const currValue = localStorage.getItem(name);
         try {

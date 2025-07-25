@@ -8,6 +8,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
+import machinum.controller.ChapterController.ChapterSearchRequest;
 import machinum.converter.ChapterMapper;
 import machinum.entity.ChapterEntity;
 import machinum.exception.AppIllegalStateException;
@@ -21,6 +22,7 @@ import machinum.repository.ChapterIndexRepository;
 import machinum.repository.ChapterRepository;
 import machinum.util.LanguageDetectorUtil;
 import machinum.util.TextUtil;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -47,6 +49,7 @@ public class ChapterService {
     private final ChapterIndexRepository chapterIndexRepository;
     private final ChapterRepository chapterRepository;
     private final ChapterMapper chapterMapper;
+    @Qualifier("objectMapperHolder")
     private final Holder<ObjectMapper> objectMapperHolder;
     private final ChapterEntityListener chapterEntityListener;
 
@@ -285,6 +288,7 @@ public class ChapterService {
                             chapterRepository.updateTranslatedChunks(chapterInfo.getId(), chunksText);
                         });
             }
+            case SYNTHESIZE -> log.trace("Ignore chapter changing on audio generation...");
             case FINISHED -> {
             }
             default -> throw new AppIllegalStateException("Unknown state: %s".formatted(state));
@@ -366,16 +370,19 @@ public class ChapterService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Chapter> findByChapterInfoFields(String bookId, String query, PageRequest pageRequest) {
-        log.debug("Loading chapters by query from db: {}, query={}", bookId, query);
-        var chapters = chapterRepository.searchByChapterInfoFields(bookId, query, pageRequest);
+    public Page<Chapter> findByChapterText(ChapterSearchRequest request) {
+        log.debug("Loading chapters by query from db: {}, query={}", request.getBookId(), request.getQuery());
+        var chapters = chapterRepository.searchInText(request.getBookId(), request.getQuery(),
+                request.isChapterMatchCase(), request.isChapterWholeWord(), request.isChapterRegex(),
+                request.getPageRequest());
         return chapters.map(chapterMapper::toDto);
     }
 
     @Transactional(readOnly = true)
-    public Page<Chapter> findByChapterInfoNames(String bookId, String query, PageRequest pageRequest) {
-        log.debug("Loading chapters by query to names from db: {}, query={}", bookId, query);
-        var chapters = chapterRepository.searchByObjectNameFields(bookId, query, pageRequest);
+    public Page<Chapter> findByChapterNames(ChapterSearchRequest request) {
+        log.debug("Loading chapters by query to names from db: {}, query={}", request.getBookId(), request.getQuery());
+        var chapters = chapterRepository.searchInGlossary(request.getBookId(), request.getQueryNames(),
+                request.isNamesMatchCase(), request.isNamesWholeWord(), request.isNamesRegex(), request.getPageRequest());
         return chapters.map(chapterMapper::toDto);
     }
 
@@ -451,7 +458,7 @@ public class ChapterService {
     @Transactional
     public Chapter updateTitleFields(String id, String title, String translatedTitle) {
         ChapterEntity entity = chapterRepository.findById(id)
-                .orElseThrow(() -> new AppIllegalStateException("Chapter not found for id: ", id));
+                .orElseThrow(() -> new AppIllegalStateException("Chapter not found for id: %s", id));
 
         if (title != null) {
             entity.setTitle(title);

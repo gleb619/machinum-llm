@@ -21,6 +21,7 @@ import machinum.util.CustomTypeReference;
 import machinum.util.JavaUtil;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
@@ -56,6 +57,7 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
     @Autowired
     protected RetryHelper retryHelper;
     @Autowired
+    @Qualifier("objectMapperHolder")
     private Holder<ObjectMapper> objectMapperHolder;
     @Autowired
     private Assistant assistant;

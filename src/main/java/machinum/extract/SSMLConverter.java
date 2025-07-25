@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Deprecated(forRemoval = true)
 public class SSMLConverter implements ChunkSupport, FlowSupport {
 
     @Value("${app.ssml.chunkSize}")

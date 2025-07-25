@@ -391,4 +391,15 @@ public class TextUtil {
                 .collect(Collectors.toList());
     }
 
+    public static String toSnakeCase(String input) {
+        if (input == null || input.isEmpty()) {
+            return "";
+        }
+
+        var words = input.trim().split("\\W+");
+        return Arrays.stream(words)
+                .map(String::toLowerCase)
+                .collect(Collectors.joining("_"));
+    }
+
 }

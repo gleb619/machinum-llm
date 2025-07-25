@@ -86,46 +86,171 @@ public interface ChapterRepository extends JpaRepository<ChapterEntity, String> 
                                           @Param("endNumber") Integer endNumber,
                                           Sort sort);
 
-    // 1) Search by title, translatedTitle, rawText, text, proofreadText, translatedText, fixedTranslatedText, summary, consolidatedSummary contains ignore case given string
     @Query(value = """
             SELECT c.id FROM chapter_info c WHERE 
             c.book_id = :bookId AND (
-                LOWER(c.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
-                LOWER(c.translated_title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
-                LOWER(c.raw_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
-                LOWER(c.text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
-                LOWER(c.proofread_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
-                LOWER(c.translated_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
-                LOWER(c.fixed_translated_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
-                LOWER(c.summary) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
-                LOWER(c.consolidated_summary) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+                CASE 
+                    WHEN :matchCase = true AND :wholeWord = true AND :regex = true THEN
+                        (c.title ~ :searchTerm OR 
+                         c.translated_title ~ :searchTerm OR 
+                         c.raw_text ~ :searchTerm OR 
+                         c.text ~ :searchTerm OR 
+                         c.proofread_text ~ :searchTerm OR 
+                         c.translated_text ~ :searchTerm OR 
+                         c.fixed_translated_text ~ :searchTerm OR 
+                         c.summary ~ :searchTerm OR 
+                         c.consolidated_summary ~ :searchTerm)
+                    WHEN :matchCase = true AND :wholeWord = true AND :regex = false THEN
+                        (c.title ~ CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.translated_title ~ CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.raw_text ~ CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.text ~ CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.proofread_text ~ CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.translated_text ~ CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.fixed_translated_text ~ CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.summary ~ CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.consolidated_summary ~ CONCAT('\\m', :searchTerm, '\\M'))
+                    WHEN :matchCase = true AND :wholeWord = false AND :regex = true THEN
+                        (c.title ~ :searchTerm OR 
+                         c.translated_title ~ :searchTerm OR 
+                         c.raw_text ~ :searchTerm OR 
+                         c.text ~ :searchTerm OR 
+                         c.proofread_text ~ :searchTerm OR 
+                         c.translated_text ~ :searchTerm OR 
+                         c.fixed_translated_text ~ :searchTerm OR 
+                         c.summary ~ :searchTerm OR 
+                         c.consolidated_summary ~ :searchTerm)
+                    WHEN :matchCase = true AND :wholeWord = false AND :regex = false THEN
+                        (c.title LIKE CONCAT('%', :searchTerm, '%') OR 
+                         c.translated_title LIKE CONCAT('%', :searchTerm, '%') OR 
+                         c.raw_text LIKE CONCAT('%', :searchTerm, '%') OR 
+                         c.text LIKE CONCAT('%', :searchTerm, '%') OR 
+                         c.proofread_text LIKE CONCAT('%', :searchTerm, '%') OR 
+                         c.translated_text LIKE CONCAT('%', :searchTerm, '%') OR 
+                         c.fixed_translated_text LIKE CONCAT('%', :searchTerm, '%') OR 
+                         c.summary LIKE CONCAT('%', :searchTerm, '%') OR 
+                         c.consolidated_summary LIKE CONCAT('%', :searchTerm, '%'))
+                    WHEN :matchCase = false AND :wholeWord = true AND :regex = true THEN
+                        (c.title ~* :searchTerm OR 
+                         c.translated_title ~* :searchTerm OR 
+                         c.raw_text ~* :searchTerm OR 
+                         c.text ~* :searchTerm OR 
+                         c.proofread_text ~* :searchTerm OR 
+                         c.translated_text ~* :searchTerm OR 
+                         c.fixed_translated_text ~* :searchTerm OR 
+                         c.summary ~* :searchTerm OR 
+                         c.consolidated_summary ~* :searchTerm)
+                    WHEN :matchCase = false AND :wholeWord = true AND :regex = false THEN
+                        (c.title ~* CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.translated_title ~* CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.raw_text ~* CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.text ~* CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.proofread_text ~* CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.translated_text ~* CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.fixed_translated_text ~* CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.summary ~* CONCAT('\\m', :searchTerm, '\\M') OR 
+                         c.consolidated_summary ~* CONCAT('\\m', :searchTerm, '\\M'))
+                    WHEN :matchCase = false AND :wholeWord = false AND :regex = true THEN
+                        (c.title ~* :searchTerm OR 
+                         c.translated_title ~* :searchTerm OR 
+                         c.raw_text ~* :searchTerm OR 
+                         c.text ~* :searchTerm OR 
+                         c.proofread_text ~* :searchTerm OR 
+                         c.translated_text ~* :searchTerm OR 
+                         c.fixed_translated_text ~* :searchTerm OR 
+                         c.summary ~* :searchTerm OR 
+                         c.consolidated_summary ~* :searchTerm)
+                    ELSE
+                        (LOWER(c.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                         LOWER(c.translated_title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                         LOWER(c.raw_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                         LOWER(c.text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                         LOWER(c.proofread_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                         LOWER(c.translated_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                         LOWER(c.fixed_translated_text) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                         LOWER(c.summary) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                         LOWER(c.consolidated_summary) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+                END
             )
             """, nativeQuery = true)
-    Page<String> searchByChapterInfoFields_Native(@Param("bookId") String bookId, @Param("searchTerm") String searchTerm, PageRequest pageRequest);
+    Page<String> searchInText_Native(
+            @Param("bookId") String bookId,
+            @Param("searchTerm") String searchTerm,
+            @Param("matchCase") boolean matchCase,
+            @Param("wholeWord") boolean wholeWord,
+            @Param("regex") boolean regex,
+            PageRequest pageRequest
+    );
 
-    default Page<ChapterEntity> searchByChapterInfoFields(String bookId, String searchTerm, PageRequest pageRequest) {
+    default Page<ChapterEntity> searchInText(String bookId, String searchTerm, boolean matchCase,
+                                             boolean wholeWord, boolean regex, PageRequest pageRequest) {
         var withSort = pageRequest.withSort(Sort.by("number"));
-        var ids = searchByChapterInfoFields_Native(bookId, searchTerm, withSort);
+        var ids = searchInText_Native(bookId, searchTerm, matchCase, wholeWord, regex, pageRequest);
         return page(findAllById(ids.getContent()), withSort, ids.getTotalElements());
     }
 
-    // 2) Search by name, category, description, ruName contains ignore case given string in ObjectName JSON field
     @Query(value = """
             SELECT c.id FROM chapter_info c WHERE 
             c.book_id = :bookId AND (
                 EXISTS (SELECT 1 FROM json_array_elements(c.names::json) AS elem 
-                WHERE LOWER(elem->>'name') LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
-                LOWER(elem->>'category') LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
-                LOWER(elem->>'description') LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
-                LOWER(elem->>'ruName') LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+                WHERE CASE 
+                    WHEN :matchCase = true AND :wholeWord = true AND :regex = true THEN
+                        (elem->>'name' ~ :searchTerm OR 
+                         elem->>'category' ~ :searchTerm OR 
+                         elem->>'description' ~ :searchTerm OR 
+                         elem->>'ruName' ~ :searchTerm)
+                    WHEN :matchCase = true AND :wholeWord = true AND :regex = false THEN
+                        (elem->>'name' ~ CONCAT('\\m', :searchTerm, '\\M') OR 
+                         elem->>'category' ~ CONCAT('\\m', :searchTerm, '\\M') OR 
+                         elem->>'description' ~ CONCAT('\\m', :searchTerm, '\\M') OR 
+                         elem->>'ruName' ~ CONCAT('\\m', :searchTerm, '\\M'))
+                    WHEN :matchCase = true AND :wholeWord = false AND :regex = true THEN
+                        (elem->>'name' ~ :searchTerm OR 
+                         elem->>'category' ~ :searchTerm OR 
+                         elem->>'description' ~ :searchTerm OR 
+                         elem->>'ruName' ~ :searchTerm)
+                    WHEN :matchCase = true AND :wholeWord = false AND :regex = false THEN
+                        (elem->>'name' LIKE CONCAT('%', :searchTerm, '%') OR 
+                         elem->>'category' LIKE CONCAT('%', :searchTerm, '%') OR 
+                         elem->>'description' LIKE CONCAT('%', :searchTerm, '%') OR 
+                         elem->>'ruName' LIKE CONCAT('%', :searchTerm, '%'))
+                    WHEN :matchCase = false AND :wholeWord = true AND :regex = true THEN
+                        (elem->>'name' ~* :searchTerm OR 
+                         elem->>'category' ~* :searchTerm OR 
+                         elem->>'description' ~* :searchTerm OR 
+                         elem->>'ruName' ~* :searchTerm)
+                    WHEN :matchCase = false AND :wholeWord = true AND :regex = false THEN
+                        (elem->>'name' ~* CONCAT('\\m', :searchTerm, '\\M') OR 
+                         elem->>'category' ~* CONCAT('\\m', :searchTerm, '\\M') OR 
+                         elem->>'description' ~* CONCAT('\\m', :searchTerm, '\\M') OR 
+                         elem->>'ruName' ~* CONCAT('\\m', :searchTerm, '\\M'))
+                    WHEN :matchCase = false AND :wholeWord = false AND :regex = true THEN
+                        (elem->>'name' ~* :searchTerm OR 
+                         elem->>'category' ~* :searchTerm OR 
+                         elem->>'description' ~* :searchTerm OR 
+                         elem->>'ruName' ~* :searchTerm)
+                    ELSE
+                        (LOWER(elem->>'name') LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                         LOWER(elem->>'category') LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                         LOWER(elem->>'description') LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR 
+                         LOWER(elem->>'ruName') LIKE LOWER(CONCAT('%', :searchTerm, '%')))
+                END)
             )
             """, nativeQuery = true)
-    Page<String> searchByObjectNameFields_Native(@Param("bookId") String bookId, @Param("searchTerm") String searchTerm, PageRequest pageRequest);
+    Page<String> searchInGlossary_Native(
+            @Param("bookId") String bookId,
+            @Param("searchTerm") String searchTerm,
+            @Param("matchCase") boolean matchCase,
+            @Param("wholeWord") boolean wholeWord,
+            @Param("regex") boolean regex,
+            PageRequest pageRequest
+    );
 
-    default Page<ChapterEntity> searchByObjectNameFields(String bookId, String searchTerm, PageRequest pageRequest) {
+    default Page<ChapterEntity> searchInGlossary(String bookId, String searchTerm, boolean matchCase,
+                                                 boolean wholeWord, boolean regex, PageRequest pageRequest) {
         var withSort = pageRequest.withSort(Sort.by("number"));
-        var ids = searchByObjectNameFields_Native(bookId, searchTerm, withSort);
-        return page(findAllById(ids), withSort, ids.getTotalElements());
+        var ids = searchInGlossary_Native(bookId, searchTerm, matchCase, wholeWord, regex, withSort);
+        return page(findAllById(ids.getContent()), withSort, ids.getTotalElements());
     }
 
     // 3) Combined search: both Chapter fields and ObjectName JSON fields contain ignore case given string

@@ -7,6 +7,7 @@ import machinum.processor.core.ChapterWarning;
 import machinum.repository.ChapterReportRepository.ChapterReadinessItemProjection;
 import org.mapstruct.Mapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.util.List;
 
@@ -14,6 +15,7 @@ import java.util.List;
 public abstract class ChapterAnalysisMapper {
 
     @Autowired
+    @Qualifier("objectMapperHolder")
     private Holder<ObjectMapper> objectMapperHolder;
 
     public ChapterReadinessItem toDto(ChapterReadinessItemProjection projection) {

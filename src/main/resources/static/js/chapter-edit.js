@@ -157,6 +157,7 @@ export function editApp() {
                     } else {
                         this.fetchChapters(this.currentPage);
                         setTimeout(() => {
+                            this.showToast(`Changes have been saved`);
                             this.isSaving = false;
                         }, 1000);
                         if(callback) {

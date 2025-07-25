@@ -19,6 +19,12 @@ export function listApp() {
             userFilters: false,
             userFiltersList: [],
             warnings: false,
+            chapterMatchCase: false,
+            chapterWholeWord: false,
+            chapterRegex: false,
+            namesMatchCase: false,
+            namesWholeWord: false,
+            namesRegex: false,
         },
         showDeleteModal: false,
         chapterToDelete: null,
@@ -78,6 +84,7 @@ export function listApp() {
             this.activeId = newId;
             this.currentChapter = this.getById(this.chapters, this.activeId);
             this.updateContent();
+            this.loadAudioFiles();
         },
 
         changeNumberFilter(newValue) {
@@ -144,10 +151,17 @@ export function listApp() {
                     delete request.chapterNumber;
                 }
             } else if (this.activeSearchTab === 'searchBar') {
+                const { chapterMatchCase, chapterWholeWord, chapterRegex, namesMatchCase, namesWholeWord, namesRegex } = this.filters;
                 request = {
                     ...request,
                     query: this.searchQuery || undefined,
                     queryNames: this.searchNames || undefined,
+                    chapterMatchCase,
+                    chapterWholeWord,
+                    chapterRegex,
+                    namesMatchCase,
+                    namesWholeWord,
+                    namesRegex
                 };
             } else if (this.activeSearchTab === 'advancedFilters') {
                 request = {
@@ -189,6 +203,7 @@ export function listApp() {
 
             this.updateContent();
             this.fetchHistory();
+            this.loadAudioFiles();
         },
 
         addUserFilter() {

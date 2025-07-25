@@ -1,9 +1,9 @@
 package machinum.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import machinum.processor.core.GeminiClient;
-import machinum.processor.core.GeminiClient.JacksonJsonParser;
 import lombok.extern.slf4j.Slf4j;
+import machinum.processor.core.GeminiClient.JacksonJsonParser;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -21,7 +21,7 @@ public class GeminiConfig {
     }
 
     @Bean
-    public JacksonJsonParser jacksonJsonParserGenAi(Holder<ObjectMapper> mapperHolder) {
+    public JacksonJsonParser jacksonJsonParserGenAi(@Qualifier("objectMapperHolder") Holder<ObjectMapper> mapperHolder) {
         return new JacksonJsonParser(mapperHolder.copy());
     }
 

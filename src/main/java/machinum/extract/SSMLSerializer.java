@@ -26,6 +26,7 @@ import static machinum.util.TextUtil.toShortDescription;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Deprecated(forRemoval = true)
 public class SSMLSerializer implements ChunkSupport, FlowSupport {
 
     @Getter

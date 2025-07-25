@@ -15,6 +15,7 @@ import machinum.model.Book.BookState;
 import machinum.model.ObjectName;
 import machinum.repository.BookRepository;
 import machinum.repository.BookRepository.BookExportResult;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -33,7 +34,7 @@ public class BookService {
 
     private final BookRepository bookRepository;
     private final BookMapper bookMapper;
-    private final ObjectMapper mapper;
+    @Qualifier("objectMapperHolder")
     private final Holder<ObjectMapper> objectMapperHolder;
 
 
@@ -99,7 +100,7 @@ public class BookService {
     @SneakyThrows
     @Transactional
     public void changeBookState(@NonNull String id, @NonNull BookState bookState) {
-        bookRepository.changeBookState(id, mapper.writeValueAsString(bookState));
+        bookRepository.changeBookState(id, objectMapperHolder.execute(mapper -> mapper.writeValueAsString(bookState)));
     }
 
     @Transactional(readOnly = true)

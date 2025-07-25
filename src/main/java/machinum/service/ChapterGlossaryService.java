@@ -11,6 +11,7 @@ import machinum.model.ChapterGlossary;
 import machinum.model.ObjectName;
 import machinum.repository.ChapterGlossaryRepository;
 import machinum.repository.ChapterGlossaryRepository.GlossaryByQueryResult;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ import static machinum.util.JavaUtil.uniqueBy;
 public class ChapterGlossaryService {
 
     private final ChapterGlossaryRepository chapterRepository;
+    @Qualifier("objectMapperHolder")
     private final Holder<ObjectMapper> objectMapperHolder;
     private final ChapterMapper chapterMapper;
 

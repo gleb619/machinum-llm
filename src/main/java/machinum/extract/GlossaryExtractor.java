@@ -16,6 +16,7 @@ import machinum.processor.core.*;
 import machinum.tool.RawInfoTool;
 import machinum.util.CustomTypeReference;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
@@ -58,6 +59,7 @@ public class GlossaryExtractor implements JsonSupport, ObjectNameSupport, ChunkS
     @Value("classpath:prompts/custom/GlossaryExtractor.json.ST")
     private final Resource glossaryTemplate;
     private final RawInfoTool rawInfoTool;
+    @Qualifier("objectMapperHolder")
     private final Holder<ObjectMapper> objectMapperHolder;
     private final Assistant assistant;
 

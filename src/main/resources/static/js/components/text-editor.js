@@ -16,10 +16,17 @@ export function textEditorApp() {
         selectionMenuVisible: false,
         selectionMenuX: 0,
         selectionMenuY: 0,
+        editorFindText: '',
+        editorReplaceText: '',
+        editorMatchCase: false,
+        editorMatchWholeWord: false,
+        editorUseRegex: false,
+        editorShowFindReplace: false,
 
         initTextEditor() {
             this.loadState('highlightSuspicious');
             this.loadState('hideNonSuspicious');
+            this.loadState('editorShowFindReplace');
             this.configureContextMenu();
         },
 
@@ -165,6 +172,36 @@ export function textEditorApp() {
             });
           this.selectionMenuVisible = false;
         },
+
+        editorReplaceAll() {
+            if (!this.editorFindText) return;
+
+            try {
+                let find = this.editorFindText;
+                let flags = 'g'; // Global replacement
+
+                if (!this.editorMatchCase) {
+                    flags += 'i'; // Case-insensitive
+                }
+
+                if (this.editorUseRegex) {
+                    // Use the user's regex as is
+                } else {
+                    // Escape special regex characters
+                    find = find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                }
+
+                if (this.editorMatchWholeWord && !this.editorUseRegex) {
+                    find = `\\b${find}\\b`;
+                }
+
+                const regex = new RegExp(find, flags);
+                this.currentContent = this.currentContent.replace(regex, this.editorReplaceText);
+            } catch (e) {
+                console.error('Invalid Regex:', e);
+                this.showToast(`The regular expression you entered is invalid: ${error.message || error.detail}`, true);
+            }
+        }
 
     };
 }

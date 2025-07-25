@@ -24,7 +24,7 @@ class ChapterRepositorySmokeTest extends DbTest {
 
     @Test
     void testSearchByChapterInfoFields() {
-        Page<ChapterEntity> result = chapterRepository.searchByChapterInfoFields("bookId", "searchTerm", PageRequest.of(0, 1));
+        Page<ChapterEntity> result = chapterRepository.searchInText("bookId", "searchTerm", false, false, false, PageRequest.of(0, 1));
         assertThat(result)
                 .isNotNull()
                 .isEmpty();
@@ -32,7 +32,7 @@ class ChapterRepositorySmokeTest extends DbTest {
 
     @Test
     void testSearchByObjectNameFields() {
-        Page<ChapterEntity> result = chapterRepository.searchByObjectNameFields("bookId", "searchTerm", PageRequest.of(0, 1));
+        Page<ChapterEntity> result = chapterRepository.searchInGlossary("bookId", "searchTerm", false, false, false, PageRequest.of(0, 1));
         assertThat(result)
                 .isNotNull()
                 .isEmpty();

@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static machinum.flow.OneStepRunner.Window.tumbling;
-import static machinum.util.MockitoUtil.spyLambda;
+import static machinum.util.TestUtil.spyLambda;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 

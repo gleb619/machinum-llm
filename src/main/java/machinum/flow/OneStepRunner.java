@@ -509,7 +509,7 @@ public class OneStepRunner<T> implements FlowRunner<T> {
                     .map(pipe -> (WindowedPipe<T>) pipe)
                     .filter(wp -> windowId.equals(wp.getWindowId()))
                     .findFirst()
-                    .orElseThrow(() -> new AppIllegalStateException("Window for given id not found", windowId));
+                    .orElseThrow(() -> new AppIllegalStateException("Window for given id not found: %s", windowId));
         }
 
         public static <U> RunnerContext<U> of(Function<RunnerContextBuilder<U>, RunnerContextBuilder<U>> creator) {
