@@ -41,6 +41,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import static machinum.processor.core.HashSupport.hashStringWithCRC32;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/books")
@@ -107,8 +109,8 @@ public class BookController implements ControllerTrait {
     }
 
     @SneakyThrows
-    @PostMapping("/{id}/upload/translation")
-    public ResponseEntity<Void> importTranslation(@PathVariable("id") String bookId,
+    @PostMapping("/{bookId}/upload/translation")
+    public ResponseEntity<Void> importTranslation(@PathVariable("bookId") String bookId,
                                                   @RequestParam("file") MultipartFile file,
                                                   @RequestParam("fileName") String fileName) {
         log.debug("Got request to import translations for book: {}, file={}", bookId, fileName);
@@ -161,8 +163,8 @@ public class BookController implements ControllerTrait {
     }
 
     @SneakyThrows
-    @PostMapping("/{id}/upload/glossary-translation")
-    public ResponseEntity<Void> importGlossaryTranslation(@PathVariable("id") String bookId,
+    @PostMapping("/{bookId}/upload/glossary-translation")
+    public ResponseEntity<Void> importGlossaryTranslation(@PathVariable("bookId") String bookId,
                                                           @RequestParam("file") MultipartFile file,
                                                           @RequestParam("fileName") String fileName) {
         log.debug("Got request to import glossary translations for book: {}, file={}", bookId, fileName);
@@ -185,8 +187,8 @@ public class BookController implements ControllerTrait {
     }
 
     @SneakyThrows
-    @PostMapping("/{id}/upload/chapters")
-    public ResponseEntity<Void> importChapter(@PathVariable("id") String bookId,
+    @PostMapping("/{bookId}/upload/chapters")
+    public ResponseEntity<Void> importChapter(@PathVariable("bookId") String bookId,
                                               @RequestParam("file") MultipartFile file,
                                               @RequestParam("fileName") String fileName) {
         log.debug("Got request to import chapters for book: {}, file={}", bookId, fileName);
@@ -241,8 +243,8 @@ public class BookController implements ControllerTrait {
     }
 
     @SneakyThrows
-    @GetMapping("/{id}/chapters/ready")
-    public ResponseEntity<String> readyChapters(@PathVariable("id") String id,
+    @GetMapping("/{bookId}/chapters/ready")
+    public ResponseEntity<String> readyChapters(@PathVariable("bookId") String id,
                                                 @RequestParam(name = "from", required = false) Integer fromChapterNumber,
                                                 @RequestParam(name = "to", required = false) Integer toChapterNumber) {
         log.debug("Got request to return a book: {}", id);
@@ -296,6 +298,24 @@ public class BookController implements ControllerTrait {
     public ResponseEntity<Void> updateBookState(@PathVariable("id") String id, @RequestBody BookState bookState) {
         bookService.updateBookState(id, bookState);
         return ResponseEntity.noContent().build();
+    }
+
+    @SneakyThrows
+    @PostMapping("/{bookId}/audio")
+    public ResponseEntity<byte[]> bookAudio(@PathVariable("bookId") String id,
+                                            @RequestParam(name = "from") Integer fromChapterNumber,
+                                            @RequestParam(name = "to") Integer toChapterNumber,
+                                            @RequestBody byte[] data) {
+        log.debug("Got request to return a audio: {}", id);
+
+        var content = bookFacade.loadBookAudio(id, fromChapterNumber, toChapterNumber, data);
+
+        var headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("audio/mpeg"));
+        headers.setContentLength(content.length);
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"%s.mp3\"".formatted(hashStringWithCRC32(id)));
+
+        return new ResponseEntity<>(content, headers, HttpStatus.OK);
     }
 
     /* ============= */

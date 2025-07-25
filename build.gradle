@@ -103,6 +103,8 @@ dependencies {
 
     annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
 
+    implementation 'io.minio:minio:8.5.10'
+
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor "org.projectlombok:lombok"
 
@@ -111,9 +113,11 @@ dependencies {
     testImplementation 'io.github.artsok:rerunner-jupiter:2.1.6'
     testRuntimeOnly    'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.junit.platform:junit-platform-suite'
+    testImplementation 'org.awaitility:awaitility'
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:minio'
     testImplementation 'net.javacrumbs.json-unit:json-unit-assertj:3.5.0'
 }
 

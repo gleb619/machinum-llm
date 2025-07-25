@@ -134,6 +134,14 @@
                     <span>Convert to SSML format(for audio book)</span>
                 </button>
             </div>
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
+                        @click="executeOperation('synthesize')"
+                        class="w-full bg-red-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+                        title="Converts written text into spoken audio.">
+                    <span>Convert to MP3 format(audio book)</span>
+                </button>
+            </div>
         </div>
     </div>
 

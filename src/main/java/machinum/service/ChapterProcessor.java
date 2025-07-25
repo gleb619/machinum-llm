@@ -72,6 +72,7 @@ public class ChapterProcessor {
             case PROOFREAD_RU -> templateAiFacade.proofreadRu(flowContext)
                     .withState(COPYEDIT);
             case CONVERT_TO_SSML -> templateAiFacade.convertToSSML(flowContext);
+            case Operations.SYNTHESIZE -> templateAiFacade.synthesize(flowContext);
             default -> throw new AppIllegalStateException("Unknown operation: " + request.getOperationName());
         };
 
@@ -125,6 +126,8 @@ public class ChapterProcessor {
         public static final String PROOFREAD_RU = "proofreadRu";
 
         public static final String CONVERT_TO_SSML = "convertToSSML";
+
+        public static final String SYNTHESIZE = "synthesize";
 
     }
 

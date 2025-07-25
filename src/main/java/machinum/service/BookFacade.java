@@ -7,7 +7,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.converter.ChapterConverter;
 import machinum.converter.ChapterMapper;
+import machinum.exception.AppIllegalStateException;
 import machinum.listener.ChapterEntityListener;
+import machinum.model.AudioFile;
 import machinum.model.Book;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
@@ -17,8 +19,10 @@ import org.springframework.db.DbHelper;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static machinum.util.JavaUtil.toChunks;
@@ -35,6 +39,7 @@ public class BookFacade {
     private final ChapterMapper chapterMapper;
     private final ChapterEntityListener chapterEntityListener;
     private final DbHelper dbHelper;
+    private final AudioService audioService;
 
     @Value("${app.batch-size}")
     private final Integer batchSize;
@@ -153,6 +158,31 @@ public class BookFacade {
                 log.debug("Processed {}/{} chunk of chapters", i + 1, chunks.size());
             }
         });
+    }
+
+    public byte[] loadBookAudio(String bookId, Integer from, Integer to, byte[] coverArt) {
+        log.debug("Got request for combined mp3 file, for: bookId={}, from={}, to={}", bookId, from, to);
+        var chapters = chapterService.loadReadyChapters(bookId, from, to);
+        var ids = chapters.stream()
+                .collect(Collectors.toMap(Chapter::getId, Chapter::getNumber, (f, s) -> f));
+        var audioFiles = audioService.getByChapterIds(new ArrayList<>(ids.keySet()));
+
+        if (ids.size() != audioFiles.size()) {
+            throw new AppIllegalStateException("Some audio files was lost/not created for given request: \n%s\n%s",
+                    ids.keySet(), audioFiles.stream().map(AudioFile::getChapterId).toList());
+        }
+
+        audioFiles.sort(Comparator.comparingInt(o -> ids.get(o.getChapterId())));
+        byte[] bytes = audioService.joinAudioFiles(AudioService.JoinRequest.builder()
+                .audioFiles(audioFiles)
+                .outputName("tts_%s_%s_%s.mp3".formatted(bookId, from, to))
+                .enhance(Boolean.TRUE)
+                .coverArt(coverArt)
+                .build());
+
+        log.info("Combined {} files into one mp3 file: size={}", audioFiles.size(), (bytes.length / 1024));
+
+        return bytes;
     }
 
 }

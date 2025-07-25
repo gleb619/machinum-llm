@@ -29,6 +29,7 @@ public class TemplateAiFacade {
     private final Translater translater;
     private final Splitter splitter;
     private final SSMLConverter ssmlConverter;
+    private final Synthesizer synthesizer;
 
 
     public FlowContext<Chapter> rewrite(FlowContext<Chapter> context) {
@@ -114,6 +115,10 @@ public class TemplateAiFacade {
 
     public FlowContext<Chapter> convertToSSML(FlowContext<Chapter> context) {
         return ssmlConverter.convert(context);
+    }
+
+    public FlowContext<Chapter> synthesize(FlowContext<Chapter> context) {
+        return synthesizer.synthesize(context);
     }
 
     public FlowContext<Chapter> bootstrapWith(FlowContext<Chapter> context) {

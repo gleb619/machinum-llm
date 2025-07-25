@@ -83,6 +83,7 @@ export function bookReportApp() {
 
         createCompletionChart() {
             const ctx = document.getElementById('completionChart');
+            if(!ctx) return;
             if (app.completionChart) {
                 app.completionChart.destroy();
             }
@@ -121,6 +122,8 @@ export function bookReportApp() {
 
         createMissingDataChart() {
             const ctx = document.getElementById('missingDataChart');
+            if(!ctx) return;
+
             if (app.missingDataChart) {
                 app.missingDataChart.destroy();
             }

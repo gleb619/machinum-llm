@@ -7,6 +7,7 @@ import { editApp } from './chapter-edit.js';
 import { initEditorDirective } from './directive/editor-directive.js';
 import { lineListApp } from './components/line-list.js';
 import { textEditorApp } from './components/text-editor.js';
+import { audioApp } from './components/chapter-audio.js';
 
 const startTime = new Date().getTime();
 
@@ -29,6 +30,7 @@ export function app() {
             ...Object.getOwnPropertyDescriptors(editApp()),
             ...Object.getOwnPropertyDescriptors(lineListApp()),
             ...Object.getOwnPropertyDescriptors(textEditorApp()),
+            ...Object.getOwnPropertyDescriptors(audioApp()),
         });
     } catch(e) {
         debugger;

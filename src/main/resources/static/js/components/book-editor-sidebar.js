@@ -14,6 +14,7 @@ export function processorSettingsApp() {
             'TRANSLATE_TITLE',
             'TRANSLATE',
             'COPYEDIT',
+            'SYNTHESIZE',
             'FINISHED'
         ],
         bookRequestTemplate: {

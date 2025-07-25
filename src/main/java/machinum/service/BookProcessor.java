@@ -91,6 +91,7 @@ public class BookProcessor {
         TRANSLATE_TITLE,
         TRANSLATE,
         COPYEDIT,
+        SYNTHESIZE,
         FINISHED,
         ;
 
@@ -291,6 +292,10 @@ public class BookProcessor {
 //                            .comment("On %s state we use saiga"::formatted)
 //                            .pipeStateless(templateAiFacade::bootstrapWith)
 //                            .pipe(templateAiFacade::editGrammarInChunks)
+                        .onState(ProcessorState.SYNTHESIZE)
+                            .comment("On %s state we use tts"::formatted)
+                            .pipeStateless(templateAiFacade::bootstrapWith)
+                            .pipe(templateAiFacade::synthesize)
                         .onState(ProcessorState.FINISHED)
                             .comment("Cooldown on last state[%s]"::formatted)
                             .nothing()
