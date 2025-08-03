@@ -15,7 +15,7 @@ public interface AudioFileRepository extends JpaRepository<AudioFileEntity, Stri
 
     Optional<AudioFileEntity> findOneByChapterIdAndType(String chapterId, String type);
 
-    List<AudioFileEntity> findOneByChapterId(String chapterId);
+    List<AudioFileEntity> findByChapterId(String chapterId);
 
     @Query("""
             SELECT afe0 
@@ -28,6 +28,18 @@ public interface AudioFileRepository extends JpaRepository<AudioFileEntity, Stri
             """)
     List<AudioFileEntity> findAllByBookId(@Param("bookId") String bookId, Sort sort);
 
-    List<AudioFileEntity> findByChapterIdIn(@Param("chapterIds") List<String> chapterIds, Sort sort);
+    @Query("""
+            SELECT a1 FROM 
+            AudioFileEntity a1 
+            WHERE a1.chapterId IN :chapterIds 
+            AND a1.createdAt = ( 
+                SELECT MAX(a2.createdAt) 
+                FROM AudioFileEntity a2 
+                WHERE a2.chapterId = a1.chapterId 
+            ) 
+            """)
+    List<AudioFileEntity> findByChapterIdIn(@Param("chapterIds") List<String> chapterIds);
+
+    Optional<AudioFileEntity> findOneByMinioKey(String minioKey);
 
 }

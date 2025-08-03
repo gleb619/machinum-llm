@@ -19,6 +19,7 @@ import machinum.util.TextUtil;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheHelper;
+import org.springframework.cache.InMemoryCache;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,10 +29,14 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -39,6 +44,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import static machinum.model.AudioFile.AudioFileType.SPEECH;
+import static machinum.model.CheckedFunction.checked;
 
 @Slf4j
 @Service
@@ -58,6 +64,8 @@ public class AudioService {
     @Qualifier("ttsObjectMapper")
     private final Holder<ObjectMapper> objectMapper;
 
+    private final InMemoryCache<String, Object> inMemoryCache;
+
 
     @Transactional(readOnly = true)
     public List<AudioFile> getAllByBookId(String bookId) {
@@ -66,12 +74,12 @@ public class AudioService {
 
     @Transactional(readOnly = true)
     public List<AudioFile> getByChapterIds(List<String> chapterIds) {
-        return audioFileMapper.toDto(ttsFileRepository.findByChapterIdIn(chapterIds, Sort.by("createdAt")));
+        return audioFileMapper.toDto(ttsFileRepository.findByChapterIdIn(chapterIds));
     }
 
     @Transactional(readOnly = true)
     public List<AudioFile> getAllByChapterId(String chapterId) {
-        return audioFileMapper.toDto(ttsFileRepository.findOneByChapterId(chapterId));
+        return audioFileMapper.toDto(ttsFileRepository.findByChapterId(chapterId));
     }
 
     @Transactional(readOnly = true)
@@ -96,62 +104,100 @@ public class AudioService {
     @SneakyThrows
     @Transactional
     public AudioFile generate(TTSRequest request) {
-        if (request.getText() == null || request.getText().trim().isEmpty()) {
-            log.error("Text is required for TTSRequest: {}", request);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Text is required");
-        }
+        return inMemoryCache.getRaw(request.toKey(), checked(s -> {
+            if (request.getText() == null || request.getText().trim().isEmpty()) {
+                log.error("Text is required for TTSRequest: {}", request);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Text is required");
+            }
 
-        var fileId = UUID.randomUUID().toString();
-        var chapterId = request.getChapterId();
-        var minioKey = String.format("tts-%s.mp3", fileId);
+            //TODO add metadata check for minio file
 
-        var data = generateAudio(request, chapterId);
-        AudioFileEntity ttsFile = null;
-        try {
-            var fileMetadata = uploadToMinio(request, data, minioKey, fileId, chapterId);
-            ttsFile = persistToDb(request, fileId, chapterId, minioKey, fileMetadata);
-        } catch (Exception e) {
-            minioService.removeFromToMinio(minioKey);
-            ExceptionUtils.rethrow(e);
-        }
+            var fileId = UUID.randomUUID().toString();
+            var chapterId = request.getChapterId();
+            var minioKey = String.format("tts-%s.mp3", chapterId);
 
-        var audioFile = audioFileMapper.toDto(ttsFile);
-        log.info("Generated AudioFile: {}", audioFile);
+            var data = generateAudio(request);
+            AudioFileEntity ttsFile = null;
+            try {
+                var fileMetadata = uploadToMinio(request, data, minioKey, fileId, chapterId);
+                ttsFile = persistToDb(request, fileId, chapterId, minioKey, fileMetadata);
+            } catch (Exception e) {
+                minioService.removeFromToMinio(minioKey);
+                ExceptionUtils.rethrow(e);
+            }
 
-        return audioFile;
+            var audioFile = audioFileMapper.toDto(ttsFile);
+            log.info("Generated AudioFile: {}", audioFile);
+
+            return audioFile;
+        }));
     }
 
     @SneakyThrows
     public byte[] joinAudioFiles(JoinRequest joinRequest) {
-        log.debug("Joining {} audio files", joinRequest.getAudioFiles().size());
+        return inMemoryCache.getRaw(joinRequest.toKey(), checked(s -> {
+            log.debug("Joining {} audio files", joinRequest.getAudioFiles().size());
 
-        if (joinRequest.getAudioFiles().size() < 2) {
-            throw new IllegalArgumentException("At least two audio files are required for joining");
-        }
-
-        // Download all files from MinIO
-        var downloadedFiles = new HashMap<String, byte[]>();
-        var audioFiles = joinRequest.getAudioFiles();
-        for (int i = 0; i < audioFiles.size(); i++) {
-            var audioFile = audioFiles.get(i);
-            try {
-                var preSignedUrl = minioService.getPreSignedUrl(audioFile.getMinioKey());
-                var content = minioService.downloadContent(preSignedUrl);
-                downloadedFiles.put("%s_%s".formatted("%04d".formatted(i), audioFile.getMinioKey()), content);
-                log.debug("Downloaded file: {}", audioFile.getMinioKey());
-            } catch (Exception e) {
-                log.error("Failed to download file with key: {}", audioFile.getMinioKey(), e);
-                throw new IOException("Failed to download file: " + audioFile.getMinioKey(), e);
+            if (joinRequest.getAudioFiles().size() < 2) {
+                throw new IllegalArgumentException("At least two audio files are required for joining");
             }
+
+            // Download all files from MinIO
+            var downloadedFiles = new HashMap<String, byte[]>();
+            var audioFiles = joinRequest.getAudioFiles();
+            for (int i = 0; i < audioFiles.size(); i++) {
+                var audioFile = audioFiles.get(i);
+                try {
+                    var preSignedUrl = minioService.getPreSignedUrl(audioFile.getMinioKey());
+                    var content = minioService.downloadContent(preSignedUrl);
+                    downloadedFiles.put("%s_%s".formatted("%04d".formatted(i), audioFile.getMinioKey()), content);
+                    log.debug("Downloaded file: {}, size={}mb", audioFile.getMinioKey(), content.length / 1024 / 1024);
+                } catch (Exception e) {
+                    log.error("Failed to download file with key: {}", audioFile.getMinioKey(), e);
+                    throw new IOException("Failed to download file: " + audioFile.getMinioKey(), e);
+                }
+            }
+
+            // Create ZIP file
+            byte[] zipContent = createZipFile(downloadedFiles);
+            log.debug("ZIP file with chapter created: size={}mb", zipContent.length / 1024 / 1024);
+
+            // Send to TTS service for joining
+            byte[] bytes = ttsRestClient.joinMp3Files(zipContent, joinRequest.getOutputName(), joinRequest.isEnhance(),
+                    joinRequest.getCoverArt(), joinRequest.getMetadata());
+            log.debug("Successfully joined {} chapters into one file, size={}mb", joinRequest.getAudioFiles().size(),
+                    bytes.length / 1024 / 1024);
+
+            return bytes;
+        }));
+    }
+
+    @SneakyThrows
+    public Map<String, byte[]> getAudioContent(List<AudioFile> audioFiles) {
+        var downloadedFiles = new ConcurrentHashMap<String, byte[]>();
+        var executor = Executors.newFixedThreadPool(Math.min(audioFiles.size(), 10)); // adjust pool size as needed
+        var futures = new ArrayList<Future<?>>();
+
+        for (AudioFile audioFile : audioFiles) {
+            futures.add(executor.submit(() -> {
+                try {
+                    var preSignedUrl = minioService.getPreSignedUrl(audioFile.getMinioKey());
+                    var content = minioService.downloadContent(preSignedUrl);
+                    downloadedFiles.put(audioFile.getId(), content);
+                    log.debug("Downloaded file: {}, size={}mb", audioFile.getMinioKey(), content.length / 1024 / 1024);
+                } catch (Exception e) {
+                    log.error("Failed to download file with key: {}", audioFile.getMinioKey(), e);
+                    throw new RuntimeException("Failed to download file: " + audioFile.getMinioKey(), e);
+                }
+            }));
         }
 
-        // Create ZIP file
-        byte[] zipContent = createZipFile(downloadedFiles);
+        for (Future<?> future : futures) {
+            future.get(); // wait for all tasks to complete
+        }
 
-        // Send to TTS service for joining
-        var bytes = ttsRestClient.joinMp3Files(zipContent, joinRequest.getOutputName(), joinRequest.isEnhance(),
-                joinRequest.getCoverArt(), joinRequest.getMetadata());
-        return bytes;
+        executor.shutdown();
+        return downloadedFiles;
     }
 
     /* ============= */
@@ -171,14 +217,27 @@ public class AudioService {
     }
 
     private AudioFileEntity persistToDb(TTSRequest request, String fileId, String chapterId, String minioKey, FileMetadata fileMetadata) {
-        var ttsFile = new AudioFileEntity();
-        ttsFile.setId(fileId);
-        ttsFile.setChapterId(chapterId);
-        ttsFile.setName(TextUtil.toSnakeCase(request.getChapterTitle()));
-        ttsFile.setType(SPEECH.name());
-        ttsFile.setMinioKey(minioKey);
-        ttsFile.setCreatedAt(Instant.now());
-        ttsFile.setMetadata(fileMetadata);
+        var ttsFile = ttsFileRepository.findOneByMinioKey(minioKey)
+                .map(entity -> {
+                    entity.setUpdatedAt(Instant.now());
+                    entity.setMetadata(fileMetadata);
+
+                    return entity;
+                })
+                .orElseGet(() -> {
+                    var audioFile = new AudioFileEntity();
+                    audioFile.setId(fileId);
+                    audioFile.setChapterId(chapterId);
+                    audioFile.setName(TextUtil.toSnakeCase(request.getChapterTitle()));
+                    audioFile.setType(SPEECH.name());
+                    audioFile.setMinioKey(minioKey);
+                    audioFile.setCreatedAt(Instant.now());
+                    audioFile.setUpdatedAt(Instant.now());
+                    audioFile.setMetadata(fileMetadata);
+
+                    return audioFile;
+                });
+
 
         log.info("Saving AudioFileEntity: {}", ttsFile);
         ttsFileRepository.save(ttsFile);
@@ -207,14 +266,11 @@ public class AudioService {
         }
     }
 
-    private byte[] generateAudio(TTSRequest request, String chapterId) {
+    @SneakyThrows
+    private byte[] generateAudio(TTSRequest request) {
         if (minioService.isMinioEnabled()) {
             log.info("Generating MP3 data for request: {}", request);
-            var dataRaw = cacheHelper.getOrCreate("tts-%s.mp3".formatted(chapterId), () -> {
-                byte[] bytes = ttsRestClient.generate(request);
-                return Base64.getEncoder().encodeToString(bytes);
-            });
-            return Base64.getDecoder().decode(dataRaw);
+            return ttsRestClient.generate(request);
         } else {
             throw new AppIllegalStateException("Minio is not available, please connect service to proceed.");
         }
@@ -234,7 +290,7 @@ public class AudioService {
                     mp3Data = zis.readAllBytes();
                 } else if (name.endsWith(".json")) {
                     byte[] jsonData = zis.readAllBytes();
-                    log.debug("Extracted JSON metadata from zip entry: {}", new String(jsonData));
+                    log.debug("Extracted JSON metadata from zip entry: {}", new String(jsonData, StandardCharsets.UTF_8));
                     output = objectMapper.execute(mapper -> mapper.readValue(jsonData, FileMetadata.class));
                     output.setMetadata(metadata);
                 } else {

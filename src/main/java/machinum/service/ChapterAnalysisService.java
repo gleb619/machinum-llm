@@ -7,6 +7,7 @@ import machinum.model.ChapterDataSummary;
 import machinum.model.ChapterDataSummary.ChapterHeatmapData;
 import machinum.model.ChapterDataSummary.ChapterReadinessItem;
 import machinum.repository.ChapterReportRepository;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,6 +93,11 @@ public class ChapterAnalysisService {
                 .translatedNamesCompletionPercentage(translatedNamesCompletionPercentage)
                 .warningsPercentage(warningsPercentage)
                 .build();
+    }
+
+    @CacheEvict(CHAPTER_HEATMAP_DATA)
+    public void clearHeatmapCache(String bookId) {
+        log.debug("Will clean heatmap cache due user request: {}", bookId);
     }
 
     @Transactional(readOnly = true)

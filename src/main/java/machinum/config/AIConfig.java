@@ -119,11 +119,11 @@ public class AIConfig {
                 .build();
     }
 
-    public static Holder<ObjectMapper> createMapper(Jackson2ObjectMapperBuilder builder) {
-        Supplier<ObjectMapper> creator = () -> builder
+    public static Holder<ObjectMapper> createMapper(Jackson2ObjectMapperBuilder builder, Function<Jackson2ObjectMapperBuilder, Jackson2ObjectMapperBuilder> customizer) {
+        Supplier<ObjectMapper> creator = () -> customizer.apply(builder
                 .createXmlMapper(false)
                 .featuresToEnable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
-                .featuresToDisable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                        .featuresToDisable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES))
                 .build();
 
         return new Holder<>(creator.get(), mapper -> creator.get());
@@ -131,7 +131,7 @@ public class AIConfig {
 
     @Bean
     public Holder<ObjectMapper> objectMapperHolder(Jackson2ObjectMapperBuilder builder) {
-        return createMapper(builder);
+        return createMapper(builder, Function.identity());
     }
 
     @Bean
@@ -152,7 +152,10 @@ public class AIConfig {
 
     @Bean
     public Holder<HttpClient> httpClient() {
-        return of(HttpClient.newHttpClient());
+        return of(HttpClient.newBuilder()
+                //10min
+                .connectTimeout(Duration.ofSeconds(600))
+                .build());
     }
 
     @Bean
@@ -199,8 +202,6 @@ public class AIConfig {
                 .build());
     }
 
-    /* ============= */
-
     @Bean
     public Holder<WiremockRequestInterceptor> wiremockRequestInterceptor(@Qualifier("objectMapperHolder") Holder<ObjectMapper> objectMapperHolder,
                                                                          @Value("${app.http.logs-path}") String logsPath,
@@ -211,6 +212,22 @@ public class AIConfig {
 
         return of(new WiremockRequestInterceptor(logsEnabled, objectMapperHolder.get(), logsDir.toAbsolutePath(), asyncHelper));
     }
+
+    @Bean
+    public Holder<ObjectMapper> maObjectMapper(Jackson2ObjectMapperBuilder builder) {
+        return createMapper(builder, Function.identity());
+    }
+
+    @Bean
+    public Holder<HttpClient> maHttpClient() {
+        return of(HttpClient.newBuilder()
+                //10min
+                .connectTimeout(Duration.ofSeconds(600))
+                .build());
+    }
+
+
+    /* ============= */
 
     private OllamaApi createApi(OllamaConnectionDetails connectionDetails,
                                 RestClientBuilderConfigurer restClientBuilderConfigurer,

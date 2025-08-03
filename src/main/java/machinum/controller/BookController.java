@@ -74,7 +74,7 @@ public class BookController implements ControllerTrait {
             result = bookService.getAllBooks(pageRequest);
         }
 
-        return pageResponse(result);
+        return pageResponse(result.map(bookFacade::countChapters));
     }
 
     @SneakyThrows
@@ -304,16 +304,15 @@ public class BookController implements ControllerTrait {
     @PostMapping("/{bookId}/audio")
     public ResponseEntity<byte[]> bookAudio(@PathVariable("bookId") String id,
                                             @RequestParam(name = "from") Integer fromChapterNumber,
-                                            @RequestParam(name = "to") Integer toChapterNumber,
-                                            @RequestBody byte[] data) {
+                                            @RequestParam(name = "to") Integer toChapterNumber) {
         log.debug("Got request to return a audio: {}", id);
 
-        var content = bookFacade.loadBookAudio(id, fromChapterNumber, toChapterNumber, data);
+        var content = bookFacade.loadBookAudio(id, fromChapterNumber, toChapterNumber);
 
         var headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType("audio/mpeg"));
+        headers.setContentType(MediaType.parseMediaType("application/zip"));
         headers.setContentLength(content.length);
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"%s.mp3\"".formatted(hashStringWithCRC32(id)));
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"%s.zip\"".formatted(hashStringWithCRC32(id)));
 
         return new ResponseEntity<>(content, headers, HttpStatus.OK);
     }
@@ -359,7 +358,7 @@ public class BookController implements ControllerTrait {
                     .map(row -> ObjectName.builder()
                             .name(row[0])
                             .build()
-                            .ruName(row[1]))
+                            .withRuName(row[1]))
                     .collect(Collectors.toList());
         }
     }

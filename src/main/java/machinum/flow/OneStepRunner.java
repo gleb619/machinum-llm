@@ -81,8 +81,7 @@ public class OneStepRunner<T> implements FlowRunner<T> {
                 var pipe = runnerContext.getWindowPipe(windowId);
                 if (pipe != null) {
                     try {
-                        var aggregatedContext = pipe.aggregate(contexts);
-                        processSinglePipe(runnerContext, -1, -1, ctx -> aggregatedContext, state);
+                        processSinglePipe(runnerContext, -1, -1, ctx -> pipe.aggregate(contexts), state);
                     } catch (Exception e) {
                         handlePipeException(runnerContext, e);
                     }
@@ -158,10 +157,9 @@ public class OneStepRunner<T> implements FlowRunner<T> {
         // Check if window is ready for processing
         if (windowedPipe.shouldTrigger(window)) {
             var contexts = new ArrayList<>(window);
-            var aggregatedContext = windowedPipe.aggregate(contexts);
 
             // Process the aggregated result
-            processSinglePipe(runnerContext, itemIndex, pipeIndex, ctx -> aggregatedContext, state);
+            processSinglePipe(runnerContext, itemIndex, pipeIndex, ctx -> windowedPipe.aggregate(contexts), state);
 
             // Apply sliding window logic - remove elements based on slide
             int slideSize = windowedPipe.getWindow().getSlide();
@@ -182,8 +180,8 @@ public class OneStepRunner<T> implements FlowRunner<T> {
         return false;
     }
 
-    private void processSinglePipe(RunnerContext<T> runnerContext, int itemIndex, int pipeIndex,
-                                   Function<FlowContext<T>, FlowContext<T>> pipe, Flow.State state) {
+    private FlowContext<T> processSinglePipe(RunnerContext<T> runnerContext, int itemIndex, int pipeIndex,
+                                             Function<FlowContext<T>, FlowContext<T>> pipe, Flow.State state) {
 
 
         var context = runnerContext.getFlowContext().withCurrentPipeIndex(pipeIndex);
@@ -199,7 +197,8 @@ public class OneStepRunner<T> implements FlowRunner<T> {
 
         var sinkEnabled = !Boolean.TRUE.equals(eachContext.metadata(PREVENT_SINK));
         var stateUpdateEnabled = !Boolean.TRUE.equals(eachContext.metadata(PREVENT_STATE_UPDATE));
-        runnerContext.updateFlowContext(eachContext.enableChanges());
+        var output = eachContext.enableChanges();
+        runnerContext.updateFlowContext(output);
 
         if (sinkEnabled) {
             runnerContext.executeSinkAction(eachContext.copy(b -> b));
@@ -208,6 +207,8 @@ public class OneStepRunner<T> implements FlowRunner<T> {
         if (stateUpdateEnabled) {
             runnerContext.saveCurrentState(itemIndex, pipeIndex + 1, state);
         }
+
+        return output;
     }
 
     private void handlePipeException(RunnerContext<T> runnerContext, Exception e) {
@@ -468,7 +469,7 @@ public class OneStepRunner<T> implements FlowRunner<T> {
         }
 
         public FlowContext<T> executeAroundEachAction(FlowContext<T> context, Function<FlowContext<T>, FlowContext<T>> action) {
-            return Objects.requireNonNull(getFlow().getAroundEachAction().apply(context, action), "Context can't be null");
+            return Objects.requireNonNull(getFlow().getAroundEachAction().apply(context, action), "Response can't be null");
         }
 
         public boolean executeAroundEachStateAction(Supplier<Boolean> action) {

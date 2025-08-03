@@ -126,16 +126,24 @@
                                             <span x-text="audioFile.metadata.format || 'Unknown'"></span>
                                         </div>
                                         <div class="flex justify-between">
-                                            <span class="font-medium">Channels:</span>
-                                            <span x-text="audioFile.metadata.channels || 'Unknown'"></span>
+                                            <span class="font-medium">File Size:</span>
+                                            <span x-text="audioFormatFileSize(audioFile.metadata.fileSizeBytes || 0)"></span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="font-medium">Duration:</span>
                                             <span x-text="audioFormatDuration(audioFile.metadata.durationSeconds || 0)"></span>
                                         </div>
                                         <div class="flex justify-between">
-                                            <span class="font-medium">File Size:</span>
-                                            <span x-text="audioFormatFileSize(audioFile.metadata.fileSizeBytes || 0)"></span>
+                                            <span class="font-medium">Channels:</span>
+                                            <span x-text="audioFile.metadata.channels || 'Unknown'"></span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="font-medium">Bitrate (bits per second):</span>
+                                            <span x-text="audioFile.metadata.bitrateBps || 'Unknown'"></span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="font-medium">Sample Rate Hertz:</span>
+                                            <span x-text="audioFile.metadata.sampleRateHz || 'Unknown'"></span>
                                         </div>
                                     </div>
                                 </div>

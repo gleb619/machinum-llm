@@ -13,6 +13,7 @@ import machinum.util.TextUtil;
 import org.springframework.stereotype.Service;
 
 import static machinum.config.Constants.TITLE;
+import static machinum.config.Constants.TRANSLATED_TITLE;
 import static machinum.flow.FlowContextActions.*;
 import static machinum.util.TextUtil.isNotEmpty;
 
@@ -30,6 +31,7 @@ public class TemplateAiFacade {
     private final Splitter splitter;
     private final SSMLConverter ssmlConverter;
     private final Synthesizer synthesizer;
+    private final ExternalTitleTranslater externalTitleTranslater;
 
 
     public FlowContext<Chapter> rewrite(FlowContext<Chapter> context) {
@@ -60,6 +62,10 @@ public class TemplateAiFacade {
         return glossary.glossaryTranslateWithCache(context);
     }
 
+    public FlowContext<Chapter> glossaryTranslateExternal(FlowContext<Chapter> context) {
+        return glossary.glossaryTranslateWithCacheExternal(context);
+    }
+
     public FlowContext<Chapter> translate(FlowContext<Chapter> context) {
         return translater.translate(context);
     }
@@ -82,6 +88,10 @@ public class TemplateAiFacade {
 
     public FlowContext<Chapter> batchTranslateTitle(FlowContext<Chapter> context) {
         return translater.batchTranslateTitle(context);
+    }
+
+    public FlowContext<Chapter> batchTranslateTitleExternal(FlowContext<Chapter> context) {
+        return externalTitleTranslater.batchTranslate(context);
     }
 
     public FlowContext<Chapter> translateTitle(FlowContext<Chapter> context) {
@@ -130,6 +140,7 @@ public class TemplateAiFacade {
         var consolidatedContextValue = resolveConsolidatedSummary(context);
         var glossaryValue = currentItem.getNames();
         var title = currentItem.getTitle();
+        var translatedTitle = currentItem.getTranslatedTitle();
         var translatedText = resolveTranslatedText(currentItem);
         var cleanChunks = currentItem.getCleanChunks();
         var translatedChunks = resolveTranslatedChunks(currentItem);
@@ -140,6 +151,7 @@ public class TemplateAiFacade {
                 .push(FlowContext::consolidatedContextArg, consolidatedContext(consolidatedContextValue))
                 .push(FlowContext::glossaryArg, FlowContextActions.glossary(glossaryValue))
                 .push(ctx -> ctx.arg(TITLE), FlowContextActions.createArg(TITLE, title))
+                .push(ctx -> ctx.arg(TRANSLATED_TITLE), FlowContextActions.createArg(TRANSLATED_TITLE, translatedTitle))
                 .push(FlowContext::translatedTextArg, FlowContextActions.translatedText(translatedText))
                 .push(FlowContext::chunksArg, FlowContextActions.chunks(cleanChunks))
                 .push(FlowContext::translatedChunksArg, FlowContextActions.translatedChunks(translatedChunks))

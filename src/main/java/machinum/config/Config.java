@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheHelper;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.CachePlugin;
+import org.springframework.cache.InMemoryCache;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
@@ -37,6 +38,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.filter.CommonsRequestLoggingFilter;
 import org.springframework.web.filter.CustomRequestLoggingFilter;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -77,6 +79,11 @@ public class Config {
         caffeineCacheManager.setCaffeine(caffeine);
         caffeineCacheManager.setCacheNames(List.of(STORE, BOOKS_FOR_EXPORT, CHAPTER_DATA_SUMMARY, CHAPTER_HEATMAP_DATA));
         return caffeineCacheManager;
+    }
+
+    @Bean
+    public InMemoryCache<String, Object> inMemoryCache() {
+        return InMemoryCache.create(Duration.ofMinutes(60));
     }
 
     @Bean

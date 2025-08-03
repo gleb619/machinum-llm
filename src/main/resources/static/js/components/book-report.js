@@ -157,11 +157,11 @@ export function bookReportApp() {
             });
         },
 
-        async bookReportLoadHeatmapData() {
+        async bookReportLoadHeatmapData(force = false) {
             if(!this.activeId) return;
 
             try {
-                const response = await fetch(`/api/books/${this.activeId}/chapters-heatmap`);
+                const response = await fetch(`/api/books/${this.activeId}/chapters-heatmap?forceUpdate=${force}`);
                 this.heatmapData = await response.json();
             } catch (error) {
                 console.error('Error loading heatmap data:', error);
@@ -260,6 +260,40 @@ export function bookReportApp() {
                 translatedNames: chapterReadinessItem.translatedNames,
                 warnings: chapterReadinessItem.warnings
             };
+        },
+
+        setFromChap(selectedItem) {
+            this.setRuleType('range');
+            this.chapterSource.rangeRuleConfig.min = selectedItem.chapterNumber - 1;
+
+            const selectedIndex = this.heatmapData.chapters.findIndex(item => item.id === selectedItem.id);
+            const selectedReadinessIndex = selectedItem.readinessIndex;
+
+            for (let i = selectedIndex + 1; i < this.heatmapData.chapters.length; i++) {
+                if (this.heatmapData.chapters[i].readinessIndex !== selectedReadinessIndex) {
+                    this.chapterSource.rangeRuleConfig.max = this.heatmapData.chapters[i - 1].chapterNumber;
+                    return;
+                }
+            }
+
+            this.chapterSource.rangeRuleConfig.max = this.heatmapData.chapters[this.heatmapData.chapters.length - 1].chapterNumber;
+        },
+
+        setToChap(selectedItem) {
+            this.setRuleType('range');
+            this.chapterSource.rangeRuleConfig.max = selectedItem.chapterNumber;
+
+            const selectedIndex = this.heatmapData.chapters.findIndex(item => item.id === selectedItem.id);
+            const selectedReadinessIndex = selectedItem.readinessIndex;
+
+            for (let i = selectedIndex - 1; i >= 0; i--) {
+                if (this.heatmapData.chapters[i].readinessIndex !== selectedReadinessIndex) {
+                    this.chapterSource.rangeRuleConfig.min = this.heatmapData.chapters[i + 1].chapterNumber - 1;
+                    return;
+                }
+            }
+
+            this.chapterSource.rangeRuleConfig.min = this.heatmapData.chapters[0].chapterNumber;
         }
 
     };

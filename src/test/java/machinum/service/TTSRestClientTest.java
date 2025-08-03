@@ -50,7 +50,8 @@ class TTSRestClientTest {
         when(httpResponse.body())
                 .thenReturn(awaitedBytes);
 
-        byte[] result = tTSRestClient.generate(new TTSRestClient.TTSRequest("text", "voice", "outputFile", Boolean.TRUE, Boolean.TRUE, "chapterId", "chapterTitle", new byte[]{(byte) 0}, new Metadata("title", "artist", "album", "year", "genre", "language", "track", "publisher", "copyright", "comments")));
+        var metadata = new Metadata("title", "artist", "album", "year", "genre", "language", "track", "publisher", "copyright", "comments");
+        byte[] result = tTSRestClient.generate(new TTSRestClient.TTSRequest(new byte[0], "text", "voice", "outputFile", Boolean.TRUE, Boolean.TRUE, "chapterId", "chapterTitle", metadata));
         Assertions.assertArrayEquals(awaitedBytes, result);
     }
 

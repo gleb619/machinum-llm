@@ -81,8 +81,13 @@ public class ChapterController implements ControllerTrait {
     }
 
     @GetMapping("/api/books/{bookId}/chapters-heatmap")
-    public ResponseEntity<ChapterHeatmapData> getChapterHeatmap(@PathVariable("bookId") String bookId) {
+    public ResponseEntity<ChapterHeatmapData> getChapterHeatmap(@PathVariable("bookId") String bookId, @RequestParam(value = "forceUpdate", defaultValue = "false") Boolean forceUpdate) {
         log.info("Received request for chapter heatmap, bookId: {}", bookId);
+
+        if (forceUpdate) {
+            chapterAnalysisService.clearHeatmapCache(bookId);
+            chapterAnalysisService.getChapterHeatmapData(bookId);
+        }
 
         return withCacheControl(chapterAnalysisService.getChapterHeatmapData(bookId));
     }

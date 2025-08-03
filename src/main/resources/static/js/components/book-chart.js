@@ -72,7 +72,6 @@ export function bookChartApp() {
 
                     // Check if the backend responded with a success status
                     if (response.status > 199 && response.status < 300) {
-                        console.log(`Executed operation: ${operationName}`);
                         if(this.fetchBooks) {
                             this.fetchBooks();
                         }

@@ -68,6 +68,8 @@ public class Constants {
 
     public static final String ALLOW_EMPTY_TEXT = "ALLOW_EMPTY_TEXT";
 
+    public static final String BOOK_OPERATION_REQUEST = "BOOK_OPERATION_REQUEST";
+
     public static final String ID = "id";
 
     public static final String ITEM_INDEX = "itemIndex";

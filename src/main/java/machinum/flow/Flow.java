@@ -246,7 +246,7 @@ public class Flow<T> {
             if (e instanceof FlowException fe) {
                 if(fe.isShouldStopExecution()) {
                     throw new FlowException("FailFast strategy triggered", e);
-                } else {
+                } else if (Objects.nonNull(fe.getReason())) {
                     log.warn("Execution will no be stopped, due reason: {}", fe.getReason());
                     return;
                 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
+import machinum.processor.core.HashSupport;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -113,7 +114,7 @@ public class TTSRestClient {
         if (enhance) {
             addFormField(body, boundary, "enhance_preset", "podcast");
         }
-        addFormField(body, boundary, "max_file_size", "100MB");
+        addFormField(body, boundary, "max_file_size", "20mb");
         addFormField(body, boundary, "add_silent_gaps", "true");
 
         if (!Metadata.isEmpty(metadata)) {
@@ -219,6 +220,10 @@ public class TTSRestClient {
         @ToString.Include
         private String chapterTitle;
         private Metadata metadata;
+
+        public String toKey() {
+            return "ttsRequest-" + HashSupport.hashStringWithCRC32(text);
+        }
 
     }
 

@@ -68,7 +68,7 @@ public class Synthesizer {
                 return minioService.downloadContent(coverUrl);
             } else {
                 var parts = coverUrl.split("/");
-                var url = minioService.getPreSignedUrl(parts[0], parts[1]);
+                var url = minioService.getPreSignedUrl(parts[1], parts[0]);
                 return minioService.downloadContent(url);
             }
         } else {

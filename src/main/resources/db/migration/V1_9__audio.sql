@@ -5,6 +5,7 @@ CREATE TABLE audio_files (
     type VARCHAR(255) NOT NULL,
     minio_key VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     metadata JSONB DEFAULT '{}'::jsonb,
     FOREIGN KEY (chapter_id) REFERENCES chapter_info(id) ON DELETE CASCADE
 );

@@ -31,6 +31,7 @@ import java.util.function.Function;
 
 import static machinum.config.Constants.*;
 import static machinum.controller.BookOperationController.BookOperationRequest.RuleConfig.RuleType.ALL;
+import static machinum.controller.BookOperationController.BookOperationRequest.RuleConfig.RuleType.RANGE;
 import static machinum.flow.Flow.FlowPredicateResult.accept;
 import static machinum.flow.Flow.FlowPredicateResult.reject;
 import static machinum.flow.OneStepRunner.Window.tumbling;
@@ -60,7 +61,7 @@ public class BookProcessor {
 
         var book = bookFacade.get(request.getId());
 
-        if (!Objects.equals(request.getConfig().getRuleType(), ALL)) {
+        if (!List.of(ALL, RANGE).contains(request.getConfig().getRuleType())) {
             throw new AppIllegalStateException("RuleType[%s] is not supported", request.getConfig().getRuleType());
         }
 
@@ -77,7 +78,8 @@ public class BookProcessor {
         return flow.metadata(Map.of(
                 ALLOW_OVERRIDE_MODE, request.isAllowOverride(),
                 IGNORE_CACHE_MODE, request.isIgnoreCache(),
-                AVAILABLE_STATES, request.availableStates()
+                AVAILABLE_STATES, request.availableStates(),
+                BOOK_OPERATION_REQUEST, request
         ));
     }
 
@@ -153,9 +155,19 @@ public class BookProcessor {
                     .aroundEach((ctx, action) -> DurationUtil.measure("pipeFlow-%s-%s-%s".formatted(ctx.getCurrentPipeIndex(), ctx.iteration(), ctx.getState()), () -> {
                         log.info("|-- Working with pipe №%s".formatted(ctx.getCurrentPipeIndex()));
 
-                        if(ctx.getCurrentItem().getNumber() >= 801) {
-                            throw new IllegalArgumentException("Stop");
+                        var currentNumber = ctx.getCurrentItem().getNumber();
+                        var bookOperationRequest = (BookOperationRequest) ctx.getFlow().getMetadata().get(BOOK_OPERATION_REQUEST);
+                        if(bookOperationRequest.getConfig().getRuleType().equals(RANGE)) {
+                            var range = bookOperationRequest.getConfig().getRange();
+                            if(!range.supports(currentNumber)) {
+                                log.error("Action is forbidden for {} chapter, due to range rule", currentNumber);
+                                return ctx.preventSink();
+                            }
                         }
+
+//                        if(ctx.getCurrentItem().getNumber() >= 801) {
+//                            throw new IllegalArgumentException("Stop");
+//                        }
 //                        if(ctx.getCurrentItem().getNumber() >= 338) {
 //                            throw new IllegalArgumentException("Stop");
 //                        }
@@ -277,13 +289,13 @@ public class BookProcessor {
                         .onState(ProcessorState.TRANSLATE_GLOSSARY)
                             .comment("On %s state we use t-pro"::formatted)
                             .pipeStateless(templateAiFacade::bootstrapWith)
-                            .pipe(templateAiFacade::glossaryTranslate)
+                            .pipe(templateAiFacade::glossaryTranslateExternal)
                         .onState(ProcessorState.TRANSLATE_TITLE)
                             .comment("On %s state we use t-pro"::formatted)
                             .pipeStateless(templateAiFacade::bootstrapWith)
 //                            .pipe(templateAiFacade::translateTitle)
                             .window(tumbling(batchSize), Aggregation.<Chapter, String>pack(anArgument(ctx -> ctx.arg(TITLE)))
-                                .onResult(templateAiFacade::batchTranslateTitle))
+                                .onResult(templateAiFacade::batchTranslateTitleExternal))
                         .onState(ProcessorState.TRANSLATE)
                             .comment("On %s state we use t-pro"::formatted)
                             .pipeStateless(templateAiFacade::bootstrapWith)

@@ -3,6 +3,7 @@ package machinum.extract;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import machinum.extract.ExternalGlossaryTranslater.TranslationException;
 import machinum.extract.util.ProperNameExtractor;
 import machinum.flow.FlowArgument;
 import machinum.flow.FlowContext;
@@ -34,6 +35,8 @@ public class Glossary {
     private final ChapterGlossaryService chapterGlossaryService;
 
     private final ProperNameExtractor properNameExtractor;
+
+    private final ExternalGlossaryTranslater externalGlossaryTranslater;
 
 
     public FlowContext<Chapter> extractGlossaryFast(FlowContext<Chapter> flowContext) {
@@ -85,19 +88,7 @@ public class Glossary {
     }
 
     public FlowContext<Chapter> glossaryTranslateWithCache(FlowContext<Chapter> flowContext) {
-        var list = new ArrayList<ObjectName>();
-
-        var names = flowContext.glossary();
-        var translatedNames = chapterGlossaryService.findTranslations(flowContext.getCurrentItem().getBookId(), names);
-
-        for (var name : names) {
-            var translatedName = findBy(translatedNames, ObjectName::getName, name.getName());
-            if (Objects.nonNull(translatedName)) {
-                list.add(name.ruName(translatedName.ruName()));
-            } else {
-                list.add(name);
-            }
-        }
+        var list = withCache(flowContext);
 
         return glossaryJsonTranslate.translateWithCache(flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(list)));
     }
@@ -105,6 +96,17 @@ public class Glossary {
     public FlowContext<Chapter> glossaryTranslate(FlowContext<Chapter> flowContext) {
         return glossaryTranslate.translate(flowContext);
     }
+
+    public FlowContext<Chapter> glossaryTranslateWithCacheExternal(FlowContext<Chapter> flowContext) {
+        var list = withCache(flowContext);
+        try {
+            return externalGlossaryTranslater.translate(flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(list)));
+        } catch (TranslationException te) {
+            return glossaryJsonTranslate.translateWithCache(flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(te.getObjectNames())));
+        }
+    }
+
+    /* ============= */
 
     //TODO limit max length of glossary to 0.4 of current context window
     private List<ObjectName> enrichCurrentGlossaryFromDB(FlowContext<Chapter> ctx,
@@ -156,6 +158,24 @@ public class Glossary {
                 .map(FlowArgument::getValue)
                 .map(JavaUtil::parseInt)
                 .orElse(Integer.MAX_VALUE - 1);
+    }
+
+    private List<ObjectName> withCache(FlowContext<Chapter> flowContext) {
+        var list = new ArrayList<ObjectName>();
+
+        var names = flowContext.glossary();
+        var translatedNames = chapterGlossaryService.findTranslations(flowContext.getCurrentItem().getBookId(), names);
+
+        for (var name : names) {
+            var translatedName = findBy(translatedNames, ObjectName::getName, name.getName());
+            if (Objects.nonNull(translatedName)) {
+                list.add(name.withRuName(translatedName.ruName()));
+            } else {
+                list.add(name);
+            }
+        }
+
+        return list;
     }
 
 }

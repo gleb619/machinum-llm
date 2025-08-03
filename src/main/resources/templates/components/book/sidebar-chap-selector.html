@@ -40,41 +40,95 @@
         </div>
 
         <div class="space-y-4">
-            <div class="space-y-4" x-show="ruleType === 'range'" x-transition>
-                <div class="grid grid-cols-2 gap-4 items-center">
-                    <div>
-                        <label class="block text-gray-500 text-xs mb-1">Min: <span class="font-semibold text-blue-600"
-                                                                                   x-text="rangeRuleConfig.min"></span></label>
-                        <input :max="rangeRuleConfig.max - 1" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer range-thumb-blue" max="100" min="1"
-                               type="range"
-                               x-model="rangeRuleConfig.min">
-                    </div>
-                    <div>
-                        <label class="block text-gray-500 text-xs mb-1">Max: <span class="font-semibold text-blue-600"
-                                                                                   x-text="rangeRuleConfig.max"></span></label>
-                        <input :min="parseInt(rangeRuleConfig.min) + 1" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer range-thumb-blue" max="100"
-                               min="2" type="range"
-                               x-model="rangeRuleConfig.max">
+            <div class="space-y-5" x-show="chapterSource.ruleType === 'range'" x-transition>
+                <!-- Min Value Control -->
+                <div class="pb-5">
+                    <label class="block text-gray-500 text-xs font-medium mb-2">
+                        Min Value: <span class="font-semibold text-blue-600"
+                                         x-text="chapterSource.rangeRuleConfig.min"></span>
+                    </label>
+                    <div class="space-y-3">
+                        <input
+                                :max="currentBook?.chaptersCount - 1"
+                                @change="changeValue('chapterSource', chapterSource)"
+                                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-thumb-blue"
+                                max="100"
+                                min="0"
+                                type="range"
+                                x-model.number="chapterSource.rangeRuleConfig.min">
+                        <div class="flex items-center space-x-2">
+                            <input
+                                    :max="currentBook?.chaptersCount - 1"
+                                    @change="changeValue('chapterSource', chapterSource)"
+                                    class="number-input flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    min="0"
+                                    placeholder="Min"
+                                    type="number"
+                                    x-model.number="chapterSource.rangeRuleConfig.min">
+                            <span class="text-xs text-gray-400 whitespace-nowrap">to</span>
+                            <span class="text-xs text-gray-600 font-medium"
+                                  x-text="chapterSource.rangeRuleConfig.max - 1"></span>
+                        </div>
                     </div>
                 </div>
-                <div class="text-xs text-center text-gray-600 bg-gray-100 px-3 py-1.5 rounded-md">
-                    Selected <strong class="text-blue-600" x-text="rangeRuleConfig.max - rangeRuleConfig.min"></strong>
-                    items total
+
+                <!-- Max Value Control -->
+                <div>
+                    <label class="block text-gray-500 text-xs font-medium mb-2">
+                        Max Value: <span class="font-semibold text-blue-600"
+                                         x-text="chapterSource.rangeRuleConfig.max"></span>
+                    </label>
+                    <div class="space-y-3">
+                        <input
+                                :max="currentBook?.chaptersCount"
+                                :min="chapterSource.rangeRuleConfig.min + 1"
+                                @change="changeValue('chapterSource', chapterSource)"
+                                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-thumb-blue"
+                                max="100"
+                                min="1"
+                                type="range"
+                                x-model.number="chapterSource.rangeRuleConfig.max">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-gray-600 font-medium"
+                                  x-text="chapterSource.rangeRuleConfig.min + 1"></span>
+                            <span class="text-xs text-gray-400 whitespace-nowrap">to</span>
+                            <input
+                                    :max="currentBook?.chaptersCount"
+                                    :min="chapterSource.rangeRuleConfig.min + 1"
+                                    @change="changeValue('chapterSource', chapterSource)"
+                                    class="number-input flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    max="100"
+                                    placeholder="Max"
+                                    type="number"
+                                    x-model.number="chapterSource.rangeRuleConfig.max">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-4 py-3 rounded-lg">
+                    <div class="text-xs text-center">
+                        <strong class="text-blue-600"
+                                x-text="chapterSource.rangeRuleConfig.max - chapterSource.rangeRuleConfig.min"></strong>
+                        <span class="text-gray-600">items total</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="space-y-3" x-show="ruleType === 'specific'" x-transition>
+            <div class="space-y-3" x-show="chapterSource.ruleType === 'specific'" x-transition>
                 <div class="flex gap-2">
-                    <input @keydown.enter.prevent="addRuleItem()" class="flex-1 px-3 py-1.5 bg-white text-gray-800 rounded-md text-sm border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none transition" placeholder="Add item ID"
+                    <input @keydown.enter.prevent="addRuleItem()"
+                           class="flex-1 px-3 py-1.5 bg-white text-gray-800 rounded-md text-sm border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                           placeholder="Add chapter's number"
                            type="number"
-                           x-model="newRuleItem">
+                           x-model="chapterSource.newRuleItem">
                     <button @click="addRuleItem()"
                             class="bg-blue-600 text-white px-3 py-1.5 rounded-md text-sm font-semibold hover:bg-blue-700 transition">
                         +
                     </button>
                 </div>
                 <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 bg-gray-50 border rounded-md">
-                    <template :key="item" x-for="item in specificRuleConfig.items">
+                    <template :key="item" x-for="item in chapterSource.specificRuleConfig.items">
                         <span class="bg-gray-200 text-gray-800 px-2.5 py-1 rounded-full text-xs flex items-center gap-1.5">
                             <span x-text="item"></span>
                             <button @click="removeRuleItem(item)"
@@ -84,19 +138,20 @@
                 </div>
                 <div class="grid grid-cols-6 gap-1.5">
                     <template :key="i" x-for="i in 12">
-                        <button :class="specificRuleConfig.items.includes(i) ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+                        <button :class="chapterSource.specificRuleConfig.items.includes(i) ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
                                 @click="toggleQuickRuleItem(i)"
                                 class="p-1.5 rounded-md text-xs transition-colors" x-text="i"></button>
                     </template>
                 </div>
             </div>
 
-            <div class="space-y-2" x-show="ruleType === 'filter'" x-transition>
+            <div class="space-y-2" x-show="chapterSource.ruleType === 'filter'" x-transition>
                 <div class="max-h-40 overflow-y-auto space-y-1 pr-2">
-                    <template :key="filter.id" x-for="filter in availableRuleFilters">
+                    <template :key="filter.id" x-for="filter in chapterSource.availableRuleFilters">
                         <label class="flex items-start gap-3 p-2.5 rounded-md hover:bg-gray-100 cursor-pointer transition">
                             <input :value="filter.id" class="w-4 h-4 mt-0.5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-offset-white" type="checkbox"
-                                   x-model="selectedRuleFilters">
+                                   @change="changeValue('chapterSource', chapterSource)"
+                                   x-model="chapterSource.selectedRuleFilters">
                             <div>
                                 <div class="text-gray-800 text-sm font-medium" x-text="filter.name"></div>
                                 <div class="text-gray-500 text-xs" x-text="filter.description"></div>
@@ -106,7 +161,7 @@
                 </div>
             </div>
 
-            <div class="space-y-2" x-show="ruleType === 'all'" x-transition>
+            <div class="space-y-2" x-show="chapterSource.ruleType === 'all'" x-transition>
                 <p class="text-xs text-gray-600 text-center p-4">
                     Will process all items.
                 </p>

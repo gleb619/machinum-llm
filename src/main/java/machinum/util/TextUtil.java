@@ -402,4 +402,38 @@ public class TextUtil {
                 .collect(Collectors.joining("_"));
     }
 
+    /**
+     * Cleans text by removing all special symbols except spaces and apostrophes within words.
+     * Preserves letters, numbers, spaces, and apostrophes only when they're between letters.
+     *
+     * @param text the input text to clean
+     * @return cleaned text with only alphanumeric characters, spaces, and meaningful apostrophes
+     */
+    public static String cleanTerm(String text) {
+        if (text == null) {
+            return null;
+        }
+
+        StringBuilder result = new StringBuilder(text.length());
+
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+
+            if (Character.isLetterOrDigit(c) || c == ' ') {
+                result.append(c);
+            } else if (c == '\'') {
+                // Keep apostrophe only if it's between letters (like in contractions)
+                if (i > 0 && i < text.length() - 1 &&
+                        Character.isLetter(text.charAt(i - 1)) &&
+                        Character.isLetter(text.charAt(i + 1))) {
+                    result.append(c);
+                }
+                // Otherwise, skip the apostrophe (it's probably a quote)
+            }
+            // All other special characters are ignored
+        }
+
+        return result.toString();
+    }
+
 }

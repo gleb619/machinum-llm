@@ -1,5 +1,6 @@
 package machinum.controller;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import machinum.service.BookProcessor;
@@ -61,6 +62,7 @@ public class BookOperationController {
         @Builder.Default
         private Map<String, Boolean> availableStates = new HashMap<>();
         @Builder.Default
+        @JsonAlias({"ruleConfig"})
         private RuleConfig config = new RuleConfig();
 
         public BookOperationRequest copy(Function<BookOperationRequest.BookOperationRequestBuilder, BookOperationRequest.BookOperationRequestBuilder> builderFn) {
@@ -80,7 +82,7 @@ public class BookOperationController {
         public static class RuleConfig {
 
             @Builder.Default
-            private RuleType ruleType = RuleType.ALL;
+            private RuleType ruleType = RuleType.NONE;
             @Builder.Default
             private Range range = new Range();
             @Builder.Default
@@ -108,6 +110,10 @@ public class BookOperationController {
                 private int max;
                 private int count;
 
+                public boolean supports(Integer currentNumber) {
+                    return currentNumber > min && currentNumber <= max;
+                }
+
             }
 
             @Data
@@ -117,7 +123,7 @@ public class BookOperationController {
             public static class Specific {
 
                 @Builder.Default
-                private List<String> items = new ArrayList<>();
+                private List<Integer> items = new ArrayList<>();
                 private int count;
 
             }

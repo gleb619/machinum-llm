@@ -1,6 +1,7 @@
 package machinum.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import io.minio.MinioClient;
 import lombok.extern.slf4j.Slf4j;
 import machinum.converter.MetadataMapper;
@@ -13,6 +14,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.net.http.HttpClient;
+import java.time.Duration;
 import java.time.LocalDate;
 
 import static machinum.config.Holder.of;
@@ -24,17 +26,24 @@ public class AudioConfig {
 
     @Bean
     public Holder<ObjectMapper> ttsObjectMapper(Jackson2ObjectMapperBuilder builder) {
-        return AIConfig.createMapper(builder);
+        return AIConfig.createMapper(builder, b -> b
+                .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE));
     }
 
     @Bean
     public Holder<HttpClient> ttsHttpClient() {
-        return of(HttpClient.newHttpClient());
+        return of(HttpClient.newBuilder()
+                //10min
+                .connectTimeout(Duration.ofSeconds(600))
+                .build());
     }
 
     @Bean
     public Holder<HttpClient> minioHttpClient() {
-        return of(HttpClient.newHttpClient());
+        return of(HttpClient.newBuilder()
+                //10min
+                .connectTimeout(Duration.ofSeconds(600))
+                .build());
     }
 
     @Bean

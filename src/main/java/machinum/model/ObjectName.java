@@ -63,7 +63,7 @@ public class ObjectName implements StringSupport {
         return metadata;
     }
 
-    public ObjectName ruName(String value) {
+    public ObjectName withRuName(@NonNull String value) {
         var map = new HashMap<>(getMetadata());
         if (map.containsKey(RU_NAME)) {
             int index = 1;

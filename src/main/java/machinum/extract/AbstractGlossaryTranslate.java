@@ -19,6 +19,7 @@ import machinum.processor.core.AssistantContext.OutputType;
 import machinum.tool.RawInfoTool;
 import machinum.util.CustomTypeReference;
 import machinum.util.JavaUtil;
+import machinum.util.TextUtil;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -66,25 +67,29 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
 
 
     public FlowContext<Chapter> translateWithCache(FlowContext<Chapter> flowContext) {
-//        var schema = generateSchema(CustomTypeReference.of(outputClass()), DESCRIPTION_RESOLVER, TYPE_DESCRIPTION_RESOLVER);
-        var terms = flowContext.glossary().stream()
-                .filter(Predicate.not(ObjectName::hasRuName))
-                .map(ObjectName::getName)
-                .map(s -> s.replace("'", "")
-                        .replace("\"", ""))
-                .collect(Collectors.joining("\n"));
+        var termsGroupedByRuName = flowContext.glossary().stream()
+                .collect(Collectors.groupingBy(ObjectName::hasRuName,
+                        Collectors.mapping(Function.identity(), Collectors.toList())));
 
-        return doTranslate(flowContext, terms);
+        var readyTerms = termsGroupedByRuName.getOrDefault(true, List.of());
+        // false == ObjectName hasn't ruName
+        var termsToWork = termsGroupedByRuName.getOrDefault(false, List.of());
+
+        if (termsToWork.isEmpty()) {
+            log.debug("All terms have already been translated: names={}", readyTerms.size());
+            return flowContext;
+        }
+
+        var tempResult = doTranslate(flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(termsToWork)));
+        var output = new ArrayList<ObjectName>();
+        output.addAll(readyTerms);
+        output.addAll(tempResult.glossary());
+
+        return flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(output));
     }
 
     public FlowContext<Chapter> translate(FlowContext<Chapter> flowContext) {
-        var terms = flowContext.glossary().stream()
-                .map(ObjectName::getName)
-                .map(s -> s.replace("'", "")
-                        .replace("\"", ""))
-                .collect(Collectors.joining("\n"));
-
-        return doTranslate(flowContext, terms);
+        return doTranslate(flowContext);
     }
 
     /* ============= */
@@ -97,7 +102,7 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
 
     /* ============= */
 
-    private FlowContext<Chapter> doTranslate(FlowContext<Chapter> flowContext, String terms) {
+    private FlowContext<Chapter> doTranslate(FlowContext<Chapter> flowContext) {
         var names = new ArrayList<>(flowContext.glossary());
         var nameMap = names.stream()
                 .collect(Collectors.toMap(ObjectName::getName, Function.identity(), (f, s) -> f));
@@ -105,13 +110,12 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
                 .map(ObjectName::stringValue)
                 .collect(Collectors.joining("\n"));
 
-        if (terms.isEmpty()) {
-            log.debug("All terms was already translated: names={}", names.size());
-            return flowContext;
-        }
-
         log.debug("Preparing a translation for extract of given: names={}", names.size());
 
+        var terms = flowContext.glossary().stream()
+                .map(ObjectName::getName)
+                .map(TextUtil::cleanTerm)
+                .collect(Collectors.joining("\n"));
         var history = fulfillHistory(getSystemTemplate(), flowContext, HistoryItem.NONE);
         var localContext = doAction(flowContext, text, history, terms);
 
@@ -171,7 +175,7 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
         for (TranslatedName translatedName : translatedNames) {
             var objectName = nameMap.get(translatedName.enName());
             if (Objects.nonNull(objectName)) {
-                var newObjectName = objectName.ruName(translatedName.ruName());
+                var newObjectName = objectName.withRuName(translatedName.ruName());
                 newNames.add(newObjectName);
             }
         }
@@ -188,7 +192,7 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
                 for (var subObjectName : subNamesList) {
                     var objectName = nameMap.get(subObjectName.getName());
                     if (Objects.nonNull(objectName)) {
-                        var newObjectName = objectName.ruName(subObjectName.ruName());
+                        var newObjectName = objectName.withRuName(subObjectName.ruName());
                         newNames.add(newObjectName);
                     }
                 }
@@ -246,7 +250,7 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
             var objectName = nameMap.get(objectNameKey);
             var ruName = translation.get(translatedNameKey);
 
-            var newObjectName = objectName.ruName(ruName);
+            var newObjectName = objectName.withRuName(ruName);
             newNames.add(newObjectName);
         }
 

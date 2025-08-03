@@ -102,6 +102,14 @@ export function chapterDrawerApp() {
             this.targetName = JSON.parse(JSON.stringify(nameToCopy));
         },
 
+        copyNamesToClipboard() {
+            const formattedText = this.filteredNames.map(objectName =>
+                `${objectName.name} - It's a ${objectName.category}; ${objectName.description}; Translation is \`${objectName.ruName}\`;`
+            ).join('\n');
+            navigator.clipboard.writeText(formattedText);
+            this.showToast(`Copied!`);
+        },
+
         addNewWarning() {
             if(!this.currentChapter.warnings) {
                 this.currentChapter.warnings = [];

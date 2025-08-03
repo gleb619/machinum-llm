@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import machinum.converter.ChapterConverter;
 import machinum.converter.ChapterMapper;
@@ -18,14 +19,18 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.db.DbHelper;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static machinum.util.JavaUtil.toChunks;
+import static machinum.util.TextUtil.toSnakeCase;
 
 @Slf4j
 @Service
@@ -160,17 +165,17 @@ public class BookFacade {
         });
     }
 
-    public byte[] loadBookAudio(String bookId, Integer from, Integer to, byte[] coverArt) {
+    public byte[] loadBookCombinedAudio(String bookId, Integer from, Integer to, byte[] coverArt) {
         log.debug("Got request for combined mp3 file, for: bookId={}, from={}, to={}", bookId, from, to);
         var chapters = chapterService.loadReadyChapters(bookId, from, to);
         var ids = chapters.stream()
                 .collect(Collectors.toMap(Chapter::getId, Chapter::getNumber, (f, s) -> f));
         var audioFiles = audioService.getByChapterIds(new ArrayList<>(ids.keySet()));
 
-        if (ids.size() != audioFiles.size()) {
-            throw new AppIllegalStateException("Some audio files was lost/not created for given request: \n%s\n%s",
-                    ids.keySet(), audioFiles.stream().map(AudioFile::getChapterId).toList());
-        }
+//        if (ids.size() != audioFiles.size()) {
+//            throw new AppIllegalStateException("Some audio files was lost/not created for given request: \n%s\n%s",
+//                    ids.keySet(), audioFiles.stream().map(AudioFile::getChapterId).toList());
+//        }
 
         audioFiles.sort(Comparator.comparingInt(o -> ids.get(o.getChapterId())));
         byte[] bytes = audioService.joinAudioFiles(AudioService.JoinRequest.builder()
@@ -180,9 +185,61 @@ public class BookFacade {
                 .coverArt(coverArt)
                 .build());
 
-        log.info("Combined {} files into one mp3 file: size={}", audioFiles.size(), (bytes.length / 1024));
+        log.info("Combined {} files into one mp3 file: size={}mb", audioFiles.size(), (bytes.length / 1024 / 1024));
 
         return bytes;
+    }
+
+    @SneakyThrows
+    public byte[] loadBookAudio(String bookId, Integer from, Integer to) {
+        log.debug("Got request for release mp3 files, for: bookId={}, from={}, to={}", bookId, from, to);
+        var chapters = chapterService.loadReadyChapters(bookId, from, to);
+        var ids = chapters.stream()
+                .collect(Collectors.toMap(Chapter::getId, Function.identity(), (f, s) -> f));
+        var audioFiles = audioService.getByChapterIds(new ArrayList<>(ids.keySet()));
+
+        if (ids.size() != audioFiles.size()) {
+            throw new AppIllegalStateException("Some audio files was lost/not created for given request: \n%s\n%s",
+                    ids.keySet(), audioFiles.stream().map(AudioFile::getChapterId).toList());
+        }
+
+        var audioContent = audioService.getAudioContent(audioFiles);
+        var counter = new AtomicInteger(1);
+        var audioFileMap = audioFiles.stream()
+                .sorted(Comparator.comparingInt(o -> ids.get(o.getChapterId()).getNumber()))
+                .collect(Collectors.toMap(o -> {
+                            String title = toSnakeCase(ids.get(o.getChapterId()).getTitle());
+                            return "%04d_%s.mp3".formatted(counter.getAndIncrement(), title);
+                        },
+                        o -> audioContent.get(o.getId()), (f, s) -> f, LinkedHashMap::new));
+
+        byte[] bytes = createZipFile(audioFileMap);
+
+        log.info("Collected {} files into one mp3 file: size={}mb", audioFiles.size(), (bytes.length / 1024 / 1024));
+
+        return bytes;
+    }
+
+    public Book countChapters(Book book) {
+        return book.toBuilder()
+                .chaptersCount(chapterService.countByBookId(book.getId()))
+                .build();
+    }
+
+    /* ============= */
+
+    private byte[] createZipFile(Map<String, byte[]> files) throws IOException {
+        var baos = new ByteArrayOutputStream();
+        try (var zos = new ZipOutputStream(baos)) {
+            for (var entry : files.entrySet()) {
+                var zipEntry = new ZipEntry(entry.getKey());
+                zos.putNextEntry(zipEntry);
+                zos.write(entry.getValue());
+                zos.closeEntry();
+            }
+        }
+
+        return baos.toByteArray();
     }
 
 }

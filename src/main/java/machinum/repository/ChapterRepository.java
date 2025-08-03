@@ -351,6 +351,8 @@ public interface ChapterRepository extends JpaRepository<ChapterEntity, String> 
         return new PageImpl<>(entities, pageable, total);
     }
 
+    Long countByBookId(String bookId);
+
     interface ChapterTitleDto {
 
         String getId();

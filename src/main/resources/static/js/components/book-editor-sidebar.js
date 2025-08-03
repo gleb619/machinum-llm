@@ -31,6 +31,7 @@ export function processorSettingsApp() {
 
 
         initProcessorSettings() {
+            this.loadState('runnerPanelOpen');
             this.availableStates.forEach(state => this.bookRequestTemplate.availableStates[state] = false);
 
             this.loadValue('bookRequestTemplate', this.bookRequestTemplate);

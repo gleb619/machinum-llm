@@ -75,7 +75,7 @@ public class BookService {
 
     @Transactional
     public void updateStartIndex(@NonNull String id, int itemIndex, int processorIndex, @NonNull State state) {
-        log.debug("Prepare to increment read index in book: {}, processor={}, state={}", itemIndex, processorIndex, state);
+        log.debug("Prepare to increment read index in book: item={}, processor={}, state={}", itemIndex, processorIndex, state);
         String localName;
         if (state instanceof Enum<?> enum0) {
             localName = enum0.name();

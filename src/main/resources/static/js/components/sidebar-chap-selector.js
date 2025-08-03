@@ -4,31 +4,43 @@
 export function sidebarChapterSelectorApp() {
     return {
 
-        ruleType: 'all',
         ruleTypeDropdown: false,
-        newRuleItem: '',
-        rangeRuleConfig: {
-            min: 1,
-            max: 10
+        chapterSource: {
+            ruleType: 'all',
+            newRuleItem: '',
+            rangeRuleConfig: {
+                min: 0,
+                max: 10
+            },
+            specificRuleConfig: {
+                items: [1, 4, 7]
+            },
+            selectedRuleFilters: [],
+            availableRuleFilters: [
+                { id: 'odd', name: 'Odd Numbers', description: 'Only odd items' },
+                { id: 'even', name: 'Even Numbers', description: 'Only even items' },
+                { id: 'prime', name: 'Prime Numbers', description: 'Prime numbered items' },
+                { id: 'multiples_of_5', name: 'Multiples of 5', description: 'Divisible by 5' },
+                { id: 'with_problems', name: 'With Problems', description: 'Problematic items' },
+                { id: 'completed', name: 'Completed', description: 'Already processed' },
+                { id: 'pending', name: 'Pending', description: 'Awaiting processing' },
+                { id: 'high_priority', name: 'High Priority', description: 'Priority items' }
+            ],
         },
-        specificRuleConfig: {
-            items: [1, 4, 7]
+
+        initChapterSource(type) {
+            this.loadValue('chapterSource', this.chapterSource);
         },
-        selectedRuleFilters: [],
-        availableRuleFilters: [
-            { id: 'odd', name: 'Odd Numbers', description: 'Only odd items' },
-            { id: 'even', name: 'Even Numbers', description: 'Only even items' },
-            { id: 'prime', name: 'Prime Numbers', description: 'Prime numbered items' },
-            { id: 'multiples_of_5', name: 'Multiples of 5', description: 'Divisible by 5' },
-            { id: 'with_problems', name: 'With Problems', description: 'Problematic items' },
-            { id: 'completed', name: 'Completed', description: 'Already processed' },
-            { id: 'pending', name: 'Pending', description: 'Awaiting processing' },
-            { id: 'high_priority', name: 'High Priority', description: 'Priority items' }
-        ],
 
         setRuleType(type) {
-            this.ruleType = type;
+            this.chapterSource.ruleType = type;
             this.ruleTypeDropdown = false;
+
+            if(type == 'range') {
+                this.chapterSource.rangeRuleConfig.max = (this.currentBook?.chaptersCount || 100);
+            }
+
+            this.changeValue('chapterSource', this.chapterSource);
         },
 
         getRuleTypeLabel() {
@@ -39,52 +51,55 @@ export function sidebarChapterSelectorApp() {
                 'filter': 'Named Filters'
             };
 
-            return labels[this.ruleType] || 'Select Type';
+            return labels[this.chapterSource.ruleType] || 'Select Type';
         },
 
         addRuleItem() {
-            const item = parseInt(this.newRuleItem);
-            if (item && !this.specificRuleConfig.items.includes(item)) {
-                this.specificRuleConfig.items.push(item);
-                this.specificRuleConfig.items.sort((a, b) => a - b);
+            const item = parseInt(this.chapterSource.newRuleItem);
+            if (item && !this.chapterSource.specificRuleConfig.items.includes(item)) {
+                this.chapterSource.specificRuleConfig.items.push(item);
+                this.chapterSource.specificRuleConfig.items.sort((a, b) => a - b);
             }
-            this.newRuleItem = '';
+            this.chapterSource.newRuleItem = '';
+            this.changeValue('chapterSource', this.chapterSource);
         },
 
         removeRuleItem(item) {
-            this.specificRuleConfig.items = this.specificRuleConfig.items.filter(i => i !== item);
+            this.chapterSource.specificRuleConfig.items = this.chapterSource.specificRuleConfig.items.filter(i => i !== item);
+            this.changeValue('chapterSource', this.chapterSource);
         },
 
         toggleQuickRuleItem(item) {
-            if (this.specificRuleConfig.items.includes(item)) {
+            if (this.chapterSource.specificRuleConfig.items.includes(item)) {
                 this.removeRuleItem(item);
             } else {
-                this.specificRuleConfig.items.push(item);
-                this.specificRuleConfig.items.sort((a, b) => a - b);
+                this.chapterSource.specificRuleConfig.items.push(item);
+                this.chapterSource.specificRuleConfig.items.sort((a, b) => a - b);
             }
+            this.changeValue('chapterSource', this.chapterSource);
         },
 
         generateRuleConfig() {
             const config = {
-                ruleType: this.ruleType,
+                ruleType: this.chapterSource.ruleType,
             };
 
-            if (this.ruleType === 'range') {
+            if (this.chapterSource.ruleType === 'range') {
                 config.range = {
-                    min: parseInt(this.rangeRuleConfig.min),
-                    max: parseInt(this.rangeRuleConfig.max),
-                    count: parseInt(this.rangeRuleConfig.max) - parseInt(this.rangeRuleConfig.min) + 1
+                    min: parseInt(this.chapterSource.rangeRuleConfig.min),
+                    max: parseInt(this.chapterSource.rangeRuleConfig.max),
+                    count: parseInt(this.chapterSource.rangeRuleConfig.max) - parseInt(this.chapterSource.rangeRuleConfig.min) + 1
                 };
-            } else if (this.ruleType === 'specific') {
+            } else if (this.chapterSource.ruleType === 'specific') {
                 config.specific = {
-                    items: [...this.specificRuleConfig.items],
-                    count: this.specificRuleConfig.items.length
+                    items: [...this.chapterSource.specificRuleConfig.items],
+                    count: this.chapterSource.specificRuleConfig.items.length
                 };
-            } else if (this.ruleType === 'filter') {
+            } else if (this.chapterSource.ruleType === 'filter') {
                 config.filters = {
-                    selected: [...this.selectedRuleFilters],
-                    definitions: this.selectedRuleFilters.map(id =>
-                        this.availableRuleFilters.find(f => f.id === id)
+                    selected: [...this.chapterSource.selectedRuleFilters],
+                    definitions: this.chapterSource.selectedRuleFilters.map(id =>
+                        this.chapterSource.availableRuleFilters.find(f => f.id === id)
                     )
                 };
             }

@@ -1,8 +1,8 @@
 package machinum.model;
 
-import machinum.service.BookProcessor;
-import machinum.flow.Flow;
 import lombok.*;
+import machinum.flow.Flow;
+import machinum.service.BookProcessor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +25,8 @@ public class Book {
 
     @Builder.Default
     private BookState bookState = BookState.createNew();
+
+    private int chaptersCount;
 
     @Data
     @AllArgsConstructor

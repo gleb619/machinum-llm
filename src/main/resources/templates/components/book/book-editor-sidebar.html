@@ -27,7 +27,7 @@
 
             <!-- Panel Header -->
             <div :disabled="isExecuting"
-                 @click="runnerPanelOpen = !runnerPanelOpen"
+                 @click="changeState('runnerPanelOpen')"
                  class="bg-blue-600 text-white p-1 cursor-pointer flex justify-between items-center disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed">
                 <h2 class="text-xs font-semibold">Settings</h2>
                 <svg :class="runnerPanelOpen ? 'transform rotate-180' : ''"
@@ -112,8 +112,8 @@
                         </label>
 
                         <p class="text-xs text-gray-600 ml-6 mt-1">
-                            If checked, then allow to override field's value, like summary, names, etc.
-                            <span x-text="bookRequestTemplate.allowOverride ? 'Override is enabled.' : 'Override is disabled.'"></span>
+                            If checked, then allow to override field's value, like summary, names, etc. Now
+                            <span x-text="bookRequestTemplate.allowOverride ? 'override is enabled.' : 'override is disabled.'"></span>
                         </p>
                     </div>
                 </div>
@@ -160,7 +160,7 @@
                 <hr class="h-px my-8 bg-gray-200 border-0 dark:bg-gray-700">
 
                 <!-- Additional Settings -->
-                <div class="mt-8 space-y-4">
+                <div class="mt-8 space-y-4 hidden">
                     <h3 class="text-md font-medium text-gray-900 mb-2">Advanced Settings <small>(disabled)</small></h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

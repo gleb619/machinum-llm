@@ -478,7 +478,7 @@ public class ChapterService {
         for (var newObjectName : newNames) {
             var chapterName = chapter.findObjectName(newObjectName.getName());
             if (Objects.nonNull(chapterName)) {
-                chapter.replaceObjectName(chapterName, chapterName.ruName(newObjectName.ruName()));
+                chapter.replaceObjectName(chapterName, chapterName.withRuName(newObjectName.ruName()));
                 persist = true;
             }
         }
@@ -486,6 +486,11 @@ public class ChapterService {
         if (persist) {
             chapterRepository.updateGlossary(chapter.getId(), objectMapperHolder.execute(mapper -> mapper.writeValueAsString(chapter.getNames())));
         }
+    }
+
+    @Transactional(readOnly = true)
+    public int countByBookId(@NonNull String id) {
+        return Math.toIntExact(chapterRepository.countByBookId(id));
     }
 
     /* ============= */
