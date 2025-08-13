@@ -1,9 +1,10 @@
 package machinum.controller;
 
-import machinum.model.Line;
-import machinum.service.LineService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import machinum.model.Line;
+import machinum.service.LineService;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,9 +52,12 @@ public class LineController {
      * @return a list of lines for the specified book
      */
     @PostMapping("/books/{bookId}/lines/similar")
-    public List<Line> findSimilarForBook(@PathVariable("bookId") String bookId, @RequestBody FindSimilarRequest request) {
+    public List<Line> findSimilarForBook(@PathVariable("bookId") String bookId,
+                                         @RequestParam(value = "page", defaultValue = "0") Integer page,
+                                         @RequestParam(value = "size", defaultValue = "100") Integer size,
+                                         @RequestBody FindSimilarRequest request) {
         log.info("Received request to get similar lines for bookId: '{}', line={}", bookId, request.line());
-        return service.findSimilarForBook(bookId, request);
+        return service.findSimilarForBook(bookId, request, PageRequest.of(page, size));
     }
 
     /**
@@ -62,9 +66,12 @@ public class LineController {
      * @return a list of lines for the specified chapter
      */
     @PostMapping("/chapters/{chapterId}/lines/similar")
-    public List<Line> findSimilarForChapter(@PathVariable("chapterId") String chapterId, @RequestBody FindSimilarRequest request) {
+    public List<Line> findSimilarForChapter(@PathVariable("chapterId") String chapterId,
+                                            @RequestParam(value = "page", defaultValue = "0") Integer page,
+                                            @RequestParam(value = "size", defaultValue = "100") Integer size,
+                                            @RequestBody FindSimilarRequest request) {
         log.info("Received request to get similar lines for chapterId: '{}', line={}", chapterId, request.line());
-        return service.findSimilarForChapter(chapterId, request);
+        return service.findSimilarForChapter(chapterId, request, PageRequest.of(page, size));
     }
 
     /**
@@ -125,7 +132,30 @@ public class LineController {
         return ResponseEntity.ok().build();
     }
 
-    public record FindSimilarRequest(List<String> fields, String line) {
+    /**
+     * Replaces text in lines for a specific book.
+     *
+     * @param bookId  the ID of the book
+     * @param request the replacement request containing find and replace text
+     * @return a list of updated lines
+     */
+    @PostMapping("/books/{bookId}/lines/replace")
+    public ResponseEntity<Void> replaceInBookLines(
+            @PathVariable("bookId") String bookId,
+            @RequestBody ReplaceLineRequest request) {
+        log.info("Received request to replace text in book lines for bookId: '{}', find='{}', replace='{}'", bookId, request.find(), request.replace());
+        service.replaceLineContent(request);
+
+        return ResponseEntity.ok().build();
+    }
+
+    public record FindSimilarRequest(List<String> fields, String line,
+                                     Boolean matchCase, Boolean matchWholeWord, Boolean useRegex) {
+
+        public boolean isStrictSearch() {
+            return Boolean.TRUE.equals(matchCase) || Boolean.TRUE.equals(matchWholeWord) || Boolean.TRUE.equals(useRegex);
+        }
+
     }
 
     public record RemoveLineRequest(List<String> fields, List<String> ids) {
@@ -134,6 +164,9 @@ public class LineController {
             return ids().getFirst();
         }
 
+    }
+
+    public record ReplaceLineRequest(String find, String replace, List<String> ids) {
     }
 
 }

@@ -3,6 +3,7 @@ package machinum.service;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import machinum.controller.LineController;
 import machinum.controller.LineController.FindSimilarRequest;
 import machinum.controller.LineController.RemoveLineRequest;
 import machinum.converter.LineMapper;
@@ -21,14 +22,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static machinum.listener.ChapterEntityListener.ChapterInfoConstants.CLEAN_TEXT;
 import static machinum.listener.ChapterEntityListener.ChapterInfoConstants.TRANSLATED_TEXT;
+import static machinum.util.JavaUtil.md5;
 
 @Slf4j
 @Service
@@ -40,6 +39,7 @@ public class LineService {
     private final LineRepository repository;
     private final LineMapper mapper;
     private final LineDao lineDao;
+    private final LinesInfoDao linesInfoDao;
     private final ChapterService chapterService;
     private final AsyncHelper asyncHelper;
     private final DbHelper dbHelper;
@@ -55,7 +55,7 @@ public class LineService {
     }
 
     @Transactional(readOnly = true)
-    public List<Line> findSimilarForBook(String bookId, FindSimilarRequest request) {
+    public List<Line> findSimilarForBook(String bookId, FindSimilarRequest request, PageRequest pageRequest) {
         for (String field : request.fields()) {
             if (!SUPPORTED_FIELDS.contains(field)) {
                 throw new AppIllegalStateException("Unknown field: " + field);
@@ -63,11 +63,38 @@ public class LineService {
         }
 
         var ids = new HashSet<String>();
-        for (String field : request.fields()) {
-            if (CLEAN_TEXT.equals(field)) {
-                ids.addAll(lineDao.findOriginalSimilarLineForBook(bookId, request.line()));
-            } else if (TRANSLATED_TEXT.equals(field)) {
-                ids.addAll(lineDao.findTranslatedSimilarLineForBook(bookId, request.line()));
+
+        if (request.isStrictSearch()) {
+            String searchPattern = request.useRegex() != null && request.useRegex() ? request.line() : null;
+
+            for (String field : request.fields()) {
+                if (CLEAN_TEXT.equals(field)) {
+                    ids.addAll(repository.findSimilarOriginalLines(bookId,
+                            request.line(),
+                            searchPattern,
+                            request.matchCase(),
+                            request.matchWholeWord(),
+                            request.useRegex(),
+                            pageRequest
+                    ));
+                } else if (TRANSLATED_TEXT.equals(field)) {
+                    ids.addAll(repository.findSimilarTranslatedLines(bookId,
+                            request.line(),
+                            searchPattern,
+                            request.matchCase(),
+                            request.matchWholeWord(),
+                            request.useRegex(),
+                            pageRequest
+                    ));
+                }
+            }
+        } else {
+            for (String field : request.fields()) {
+                if (CLEAN_TEXT.equals(field)) {
+                    ids.addAll(lineDao.findOriginalSimilarLineForBook(bookId, request.line()));
+                } else if (TRANSLATED_TEXT.equals(field)) {
+                    ids.addAll(lineDao.findTranslatedSimilarLineForBook(bookId, request.line()));
+                }
             }
         }
 
@@ -75,7 +102,7 @@ public class LineService {
     }
 
     @Transactional(readOnly = true)
-    public List<Line> findSimilarForChapter(String chapterId, FindSimilarRequest request) {
+    public List<Line> findSimilarForChapter(String chapterId, FindSimilarRequest request, PageRequest pageRequest) {
         for (String field : request.fields()) {
             if (!SUPPORTED_FIELDS.contains(field)) {
                 throw new AppIllegalStateException("Unknown field: " + field);
@@ -83,11 +110,39 @@ public class LineService {
         }
 
         var ids = new HashSet<String>();
-        for (String field : request.fields()) {
-            if (CLEAN_TEXT.equals(field)) {
-                ids.addAll(lineDao.findOriginalSimilarLineForChapter(chapterId, request.line()));
-            } else if (TRANSLATED_TEXT.equals(field)) {
-                ids.addAll(lineDao.findTranslatedSimilarLineForChapter(chapterId, request.line()));
+
+        if (request.isStrictSearch()) {
+            String searchPattern = request.useRegex() != null && request.useRegex() ? request.line() : null;
+            String bookId = lineDao.findBookIdByChapter(chapterId);
+
+            for (String field : request.fields()) {
+                if (CLEAN_TEXT.equals(field)) {
+                    ids.addAll(repository.findSimilarOriginalLines(bookId,
+                            request.line(),
+                            searchPattern,
+                            request.matchCase(),
+                            request.matchWholeWord(),
+                            request.useRegex(),
+                            pageRequest
+                    ));
+                } else if (TRANSLATED_TEXT.equals(field)) {
+                    ids.addAll(repository.findSimilarTranslatedLines(bookId,
+                            request.line(),
+                            searchPattern,
+                            request.matchCase(),
+                            request.matchWholeWord(),
+                            request.useRegex(),
+                            pageRequest
+                    ));
+                }
+            }
+        } else {
+            for (String field : request.fields()) {
+                if (CLEAN_TEXT.equals(field)) {
+                    ids.addAll(lineDao.findOriginalSimilarLineForChapter(chapterId, request.line()));
+                } else if (TRANSLATED_TEXT.equals(field)) {
+                    ids.addAll(lineDao.findTranslatedSimilarLineForChapter(chapterId, request.line()));
+                }
             }
         }
 
@@ -132,6 +187,63 @@ public class LineService {
     @Transactional
     public void updateChapterLine(@NonNull Line updatedLine) {
         doUpdateChapterLine(updatedLine);
+    }
+
+    @Transactional
+    public void replaceLineContent(LineController.ReplaceLineRequest request) {
+        if (request.ids() == null || request.ids().isEmpty()) {
+            return;
+        }
+
+        // Get all lines to process
+        var lines = repository.findAllById(request.ids())
+                .stream()
+                .map(mapper::toDto)
+                .toList();
+
+        if (lines.isEmpty()) {
+            return;
+        }
+
+        // Group lines by chapter ID to minimize chapter updates
+        var linesByChapter = lines.stream()
+                .collect(Collectors.groupingBy(Line::getChapterId));
+
+        boolean hasChanges = false;
+
+        for (var entry : linesByChapter.entrySet()) {
+            var chapterId = entry.getKey();
+            var chapterLines = entry.getValue();
+
+            // Process each line in the chapter
+            hasChanges |= updateChapterLines(chapterId, chapterLines,
+                    (line, originalLines, translatedLines, lineIndex) -> {
+                        // Get current line content
+                        var currentOriginalLine = originalLines.get(lineIndex);
+                        var currentTranslatedLine = translatedLines.get(lineIndex);
+
+                        // Replace original line if needed
+                        if (request.find() != null && currentOriginalLine.contains(request.find())) {
+                            originalLines.set(lineIndex, currentOriginalLine.replace(request.find(), request.replace()));
+                        }
+
+                        // Replace translated line if needed
+                        if (line.getTranslatedLine() != null &&
+                                request.find() != null &&
+                                currentTranslatedLine.contains(request.find())) {
+                            translatedLines.set(lineIndex, currentTranslatedLine.replace(request.find(), request.replace()));
+                        }
+                    });
+        }
+
+        // Refresh materialized view if changes were made
+        if (hasChanges) {
+            asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(() -> {
+                lines.stream()
+                        .collect(Collectors.toMap(Line::getBookId, Line::getNumber, (existing, replacement) -> existing))
+                        .forEach(linesInfoDao::refreshView);
+            })).whenComplete((unused, throwable) -> log.debug("MatView has been updated"));
+        }
     }
 
     /* ============= */
@@ -190,7 +302,9 @@ public class LineService {
         }
 
         if(results.stream().anyMatch(b -> b)) {
-            asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(lineDao::refreshMaterializedView))
+            asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(() -> linesList.stream()
+                            .collect(Collectors.toMap(LineView::getBookId, LineView::getNumber, (existing, replacement) -> existing))
+                            .forEach(linesInfoDao::refreshView)))
                     .whenComplete((unused, throwable) -> log.debug("MatView has been updated"));
         }
     }
@@ -221,7 +335,9 @@ public class LineService {
                 });
 
         if(result) {
-            asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(lineDao::refreshMaterializedView))
+            asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(() -> {
+                        linesInfoDao.refreshView(currentLine.getBookId(), currentLine.getNumber());
+                    }))
                     .whenComplete((unused, throwable) -> log.debug("MatView has been updated"));
         }
     }
@@ -300,22 +416,9 @@ public class LineService {
         }
     }
 
-    /**
-     * Calculate MD5 hash for line content, matching the logic used in materialized view
-     */
-    private String calculateHash(String input) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] hashBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hashBytes);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Failed to calculate hash", e);
-        }
-    }
-
     private void checkHash(String newLine, String expectedLine) {
-        String newHash = calculateHash(newLine);
-        String expectedHash = calculateHash(expectedLine);
+        String newHash = md5(newLine);
+        String expectedHash = md5(expectedLine);
 
         if (!newHash.equals(expectedHash)) {
             throw new LineHashMismatchException(

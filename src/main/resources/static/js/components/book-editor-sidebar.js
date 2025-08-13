@@ -9,7 +9,7 @@ export function processorSettingsApp() {
             'CLEANING',
             'SUMMARY',
             'GLOSSARY',
-            'PROCESSING',
+            'PROOFREAD',
             'TRANSLATE_GLOSSARY',
             'TRANSLATE_TITLE',
             'TRANSLATE',

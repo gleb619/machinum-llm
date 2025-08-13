@@ -78,17 +78,32 @@
         <div class="mt-4 space-y-2">
             <div class="flex items-center justify-between">
                 <button :disabled="isExecuting"
+                        @click="executeOperation('copyEdit')"
+                        class="w-full bg-white text-red-300 px-4 py-2 rounded border-2 border-red-300 disabled:text-red-100 disabled:opacity-75 disabled:cursor-not-allowed"
+                        title="Rewrite the error-prone source text and return a clean text with corrections.">
+                    <span>Rewrite</span>
+                </button>
+            </div>
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
                         @click="executeOperation('summarize')" class="w-full bg-purple-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
                         title="Provide a brief statement and/or account of the main points of chapter's text.">
                     <span>Summarize</span>
                 </button>
             </div>
-
             <div class="flex items-center justify-between">
                 <button :disabled="isExecuting"
                         @click="executeOperation('glossaryExtract')" class="w-full bg-purple-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
                         title="Extract list of term with description from clean text.">
                     <span>Glossary extract</span>
+                </button>
+            </div>
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
+                        @click="executeOperation('proofreadEn')"
+                        class="w-full bg-purple-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+                        title="Find and correct mistakes in origin text.">
+                    <span>Proofread text</span>
                 </button>
             </div>
 

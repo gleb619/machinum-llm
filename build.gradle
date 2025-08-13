@@ -79,6 +79,7 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-pgvector-store'
     implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
 
+    implementation 'com.google.genai:google-genai:1.10.0'
     implementation 'swiss.ameri:gemini-api:1beta.0.2.7'
     implementation 'org.apache.opennlp:opennlp-tools:2.0.0'
     implementation 'org.flywaydb:flyway-core:10.10.0'

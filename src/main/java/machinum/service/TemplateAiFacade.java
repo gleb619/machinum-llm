@@ -25,8 +25,8 @@ public class TemplateAiFacade {
     private final Summarizer summarizer;
     private final CoT coT;
     private final Glossary glossary;
-    private final Rewriter rewriter;
-    private final ProofreaderEn proofreaderEn;
+    private final RewriterXml rewriter;
+    private final ProofreaderEnXml proofreaderEn;
     private final Translater translater;
     private final Splitter splitter;
     private final SSMLConverter ssmlConverter;

@@ -1,7 +1,7 @@
 package machinum.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import machinum.extract.ProofreaderEn;
+import machinum.extract.ProofreaderEnXml;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
@@ -21,7 +21,7 @@ import static machinum.util.TextProcessingTestUtil.assertCharacterCount;
 public class AbstractProofreaderTestEn extends NormalTest {
 
     @Autowired
-    ProofreaderEn proofreaderEn;
+    ProofreaderEnXml proofreaderEn;
 
     @Test
     void testProofreader() throws IOException {

@@ -1,12 +1,10 @@
 package machinum.job;
 
-import machinum.repository.LineDao;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import machinum.repository.LineDao;
 import org.springframework.async.AsyncHelper;
 import org.springframework.db.DbHelper;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
@@ -16,6 +14,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Deprecated(forRemoval = true)
 public class LineScheduler {
 
     private final AsyncHelper asyncHelper;
@@ -25,7 +24,8 @@ public class LineScheduler {
     /**
      * Refreshes the materialized view on application startup asynchronously.
      */
-    @PostConstruct
+    //@PostConstruct
+    //TODO: enable method
     public void refreshOnStartup() {
         log.info("Refreshing materialized view on application startup...");
         asyncHelper.runAsync(() -> {
@@ -41,7 +41,8 @@ public class LineScheduler {
     /**
      * Refreshes the materialized view every hour.
      */
-    @Scheduled(cron = "0 0 * * * ?") // Runs at the start of every hour
+    //@Scheduled(cron = "0 0 * * * ?") // Runs at the start of every hour
+    //TODO: enable method
     public void refreshHourly() {
         log.info("Refreshing materialized view hourly...");
         try {

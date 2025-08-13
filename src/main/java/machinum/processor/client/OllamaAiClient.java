@@ -1,4 +1,4 @@
-package machinum.processor.core;
+package machinum.processor.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
 import machinum.exception.StopException;
+import machinum.processor.core.AssistantContext;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;

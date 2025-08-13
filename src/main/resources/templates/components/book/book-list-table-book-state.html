@@ -97,7 +97,7 @@
                                             'bg-green-100 text-green-600': book.bookState.state === 'CLEANING',
                                             'bg-blue-100 text-blue-600': book.bookState.state === 'SUMMARY',
                                             'bg-yellow-100 text-yellow-600': book.bookState.state === 'GLOSSARY',
-                                            'bg-gray-100 text-gray-600': book.bookState.state === 'PROCESSING',
+                                            'bg-gray-100 text-gray-600': book.bookState.state === 'PROOFREAD',
                                             'bg-green-100 text-green-800': book.bookState.state === 'TRANSLATE_GLOSSARY',
                                             'bg-green-100 text-green-800': book.bookState.state === 'TRANSLATE_TITLE',
                                             'bg-blue-100 text-blue-800': book.bookState.state === 'TRANSLATE',
@@ -107,6 +107,10 @@
                                       }"
                                       x-text="book.bookState.state">
                                 </span>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500">Chapters Count</p>
+                                <p class="font-medium" x-text="book.chaptersCount"></p>
                             </div>
                             <div class="col-span-2">
                                 <p class="text-xs text-gray-500">Processed Chunks</p>
@@ -171,7 +175,7 @@
                                 <option value="CLEANING">CLEANING</option>
                                 <option value="SUMMARY">SUMMARY</option>
                                 <option value="GLOSSARY">GLOSSARY</option>
-                                <option value="PROCESSING">PROCESSING</option>
+                                <option value="PROOFREAD">PROOFREAD</option>
                                 <option value="TRANSLATE_GLOSSARY">TRANSLATE_GLOSSARY</option>
                                 <option value="TRANSLATE_TITLE">TRANSLATE_TITLE</option>
                                 <option value="TRANSLATE">TRANSLATE</option>

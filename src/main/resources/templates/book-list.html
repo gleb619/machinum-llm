@@ -4,6 +4,8 @@
 <!-- Layout -->
 <div th:fragment="list" th:remove="tag">
 
+    <input @change="file = $event.target.files[0]" accept=".zip,.jsonl" class="hidden" type="file" x-ref="fileInput">
+
     <!-- Breadcrumb -->
     <nav aria-label="Breadcrumb" class="flex mb-5">
         <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
@@ -76,7 +78,6 @@
                 </ul>
             </div>
         </div>
-        <!--        <button class="bg-blue-500 text-white px-4 py-2 rounded" @click="openCreatePanel()">Add Book</button>-->
     </div>
 
     <!-- Book List -->
@@ -103,7 +104,6 @@
                         class="even:bg-gray odd:bg-white hover:bg-gray-100 cursor-pointer">
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 align-text-top">
                             <a class="hover:text-blue-600"
-                               target="_blank"
                                x-bind:href="`/books?bookId=${book.id}`"
                                x-text="book.id">
                             </a>
@@ -120,7 +120,6 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium align-text-top text-center">
                             <a class="text-indigo-600 hover:text-indigo-900 mr-2"
-                               target="_blank"
                                x-bind:href="`/chapters?bookId=${book.id}`">
                                 Edit
                             </a>
@@ -129,95 +128,10 @@
                                x-bind:href="'/api/books/' + book.id + '/download'">
                                 Export
                             </a>
-                            <button @click.stop="deleteBook(chapter.id)" class="text-red-600 hover:text-red-900">
+                            <button @click.stop="deleteBook(book.id)" class="text-red-600 hover:text-red-900">
                                 Delete
                             </button>
                         </td>
-                        <!--
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium align-text-top">
-                            <div class="flex inline-block text-left">
-                                <button @click="actionDropDownOpen[book.id] = !actionDropDownOpen[book.id]"
-                                        class="text-gray-500 hover:text-blue-600 focus:outline-none">
-                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                                              stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-                                    </svg>
-                                </button>
-                                <div @click.away="actionDropDownOpen[book.id] = false"
-                                     class="absolute right-0 w-48 bg-white rounded-md shadow-lg z-10"
-                                     x-show="actionDropDownOpen[book.id]"
-                                     x-transition:enter="transition ease-out duration-100"
-                                     x-transition:enter-start="opacity-0 transform scale-95"
-                                     x-transition:enter-end="opacity-100 transform scale-100"
-                                     x-transition:leave="transition ease-in duration-75"
-                                     x-transition:leave-start="opacity-100 transform scale-100"
-                                     x-transition:leave-end="opacity-0 transform scale-95">
-                                    &lt;!&ndash;class="right-0 mt-8 w-48 bg-white rounded-lg drop-down-fix z-10 shadow">&ndash;&gt;
-                                    <ul class="divide-y divide-gray-200">
-                                        <li>
-                                            <button @click="editBook(book)"
-                                                    class="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100">Edit book chapters
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <button @click="deleteBook(book.id)"
-                                                    class="block w-full px-4 py-2 text-left text-sm text-red-600 hover:text-red-900">Delete
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <hr/>
-                                        </li>
-                                        &lt;!&ndash;<li>
-                                            <button @click="translateGlossary(book.id)"
-                                                    class="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100">Translate Glossary
-                                            </button>
-                                        </li>&ndash;&gt;
-                                        <li>
-                                            <hr/>
-                                        </li>
-                                        <li>
-                                            <button @click="handleAction('import-glossary', book.id)"
-                                                    class="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100">Import Glossary
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <button @click="handleAction('export-glossary', book.id)"
-                                                    class="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100">Export Glossary
-                                            </button>
-                                        </li>
-                                        <li><a class="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                                               href="#"
-                                               target="_blank"
-                                               x-bind:href="'/api/books/' + book.id + '/download/glossary-translation'">Export Glossary Translate</a></li>
-                                        <li>
-                                            <button :disabled="isUploading"
-                                                    @click="handleAction('import-glossary-translate', book.id, $refs.importGlossaryTranslateInput)"
-                                                    class="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100">Import Glossary Translate
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <button :disabled="isUploading"
-                                                    @click="handleAction('import-translation', book.id, $refs.importTranslationInput)"
-                                                    class="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100">Import Translation
-                                            </button>
-                                        </li>
-                                        <li><a class="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100" href="#"
-                                               target="_blank"
-                                               x-bind:href="'/api/books/' + book.id + '/translation'">Export Translation</a></li>
-                                        <li>
-                                            <hr/>
-                                        </li>
-                                        <li><a class="block w-full px-4 py-2 text-left text-sm text-green-600 hover:text-green-900"
-                                               target="_blank"
-                                               x-bind:href="'/api/books/' + book.id + '/download'">Export Book</a></li>
-                                        <li><a class="block w-full px-4 py-2 text-left text-sm text-green-600 hover:text-green-900" href="#"
-                                               target="_blank"
-                                               x-bind:href="'/api/books/' + book.id + '/chapters/ready'">Show ready chapters</a></li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </td>
-                        -->
                     </tr>
                 </template>
                 </template>

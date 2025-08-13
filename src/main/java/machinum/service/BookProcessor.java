@@ -88,7 +88,7 @@ public class BookProcessor {
         CLEANING,
         SUMMARY,
         GLOSSARY,
-        PROCESSING,
+        PROOFREAD,
         TRANSLATE_GLOSSARY,
         TRANSLATE_TITLE,
         TRANSLATE,
@@ -282,10 +282,10 @@ public class BookProcessor {
                             .pipeStateless(templateAiFacade::bootstrapWith)
                             .pipe(templateAiFacade::glossary)
                             .pipe(templateAiFacade::logicSplit)
-//                    .onState(ProcessorState.PROCESSING)
-//                        .comment("On %s state we use gemma2"::formatted)
-//                        .pipeStateless(templateAiFacade::bootstrapWith)
-//                        .pipe(templateAiFacade::proofread)
+                        .onState(ProcessorState.PROOFREAD)
+                            .comment("On %s state we use gemma2"::formatted)
+                            .pipeStateless(templateAiFacade::bootstrapWith)
+                            .pipe(templateAiFacade::proofread)
                         .onState(ProcessorState.TRANSLATE_GLOSSARY)
                             .comment("On %s state we use t-pro"::formatted)
                             .pipeStateless(templateAiFacade::bootstrapWith)

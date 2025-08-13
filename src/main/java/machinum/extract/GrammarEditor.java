@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static machinum.config.Constants.FLOW_TYPE;
 import static machinum.config.Constants.SCORE;
-import static machinum.processor.core.AiClient.Provider.parse;
+import static machinum.processor.client.AiClient.Provider.parse;
 import static machinum.processor.core.FlowSupport.HistoryItem.*;
 import static machinum.util.JavaUtil.calculatePercent;
 import static machinum.util.TextUtil.countTokens;

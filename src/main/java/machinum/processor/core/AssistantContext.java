@@ -5,6 +5,7 @@ import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
 import machinum.model.ObjectName;
 import machinum.model.core.Mergeable;
+import machinum.processor.client.AiClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.core.ParameterizedTypeReference;

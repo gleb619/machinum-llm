@@ -1,6 +1,8 @@
 package machinum.config;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -31,6 +33,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.db.DbHelper;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.retry.RetryHelper;
 import org.springframework.retry.annotation.EnableRetry;
@@ -152,6 +155,15 @@ public class Config {
                     }
                 })
                 .build();
+    }
+
+    @Bean
+    public Holder<ObjectMapper> linesMapper(Jackson2ObjectMapperBuilder builder) {
+        return Holder.of(builder
+                .createXmlMapper(false)
+                .featuresToEnable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
+                .featuresToDisable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build());
     }
 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)

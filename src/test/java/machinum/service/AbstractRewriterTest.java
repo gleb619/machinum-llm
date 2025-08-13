@@ -1,7 +1,7 @@
 package machinum.service;
 
 import io.github.artsok.RepeatedIfExceptionsTest;
-import machinum.extract.Rewriter;
+import machinum.extract.RewriterXml;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.util.DurationUtil;
@@ -20,7 +20,7 @@ import static machinum.util.TextProcessingTestUtil.assertSimilarity;
 public abstract class AbstractRewriterTest extends NormalTest {
 
     @Autowired
-    Rewriter rewriter;
+    RewriterXml rewriter;
 
     @DisplayName("Rewrite")
     @RepeatedIfExceptionsTest

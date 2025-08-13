@@ -5,7 +5,6 @@ import lombok.*;
 @Data
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class Line {
 
@@ -21,8 +20,10 @@ public class Line {
 
     private Integer lineIndex;
 
+    @ToString.Exclude
     private String originalLine;
 
+    @ToString.Exclude
     private String translatedLine;
 
 }

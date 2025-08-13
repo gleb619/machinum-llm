@@ -71,6 +71,11 @@ public interface ChapterRepository extends JpaRepository<ChapterEntity, String> 
 
     Page<ChapterEntity> findAllByBookId(String bookId, PageRequest pageRequest);
 
+    Page<ChapterEntity> findAllByBookIdAndNumberBetween(String bookId,
+                                                        @Param("startNumber") Integer startNumber,
+                                                        @Param("endNumber") Integer endNumber,
+                                                        PageRequest pageRequest);
+
     Optional<ChapterEntity> findOneByBookIdAndNumber(String bookId, Integer number);
 
     @Query("""

@@ -151,4 +151,8 @@ public class BookService {
         update(book);
     }
 
+    @Transactional(readOnly = true)
+    public List<Book> findAll() {
+        return bookMapper.toDto(bookRepository.findAll());
+    }
 }

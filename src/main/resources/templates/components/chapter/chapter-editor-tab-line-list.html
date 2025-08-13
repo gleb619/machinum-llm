@@ -7,80 +7,129 @@
     <div class="mx-auto p-4">
         <!-- Lines Content -->
         <div class="bg-white p-2 mb-2">
-            <h2 class="text-lg font-semibold mb-4 text-gray-900">Search & Replace</h2>
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-4 pb-3 border-b">
+                <h3 class="text-md font-medium text-gray-800">Search & Replace</h3>
+                <div class="flex items-center space-x-4 text-sm">
+                    <!-- Scope Selection -->
+                    <div class="flex items-center space-x-2 pr-2 border-r">
+                        <span class="text-xs text-gray-500">Scope:</span>
+                        <label class="flex items-center">
+                            <input @change="changeValue('lineObject', lineObject)" class="form-radio h-3 w-3" name="currentScope" type="radio"
+                                   value="chapter"
+                                   x-model="lineObject.currentScope">
+                            <span class="ml-1 text-xs">Chapter</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input @change="changeValue('lineObject', lineObject)" class="form-radio h-3 w-3" name="currentScope" type="radio"
+                                   value="book"
+                                   x-model="lineObject.currentScope">
+                            <span class="ml-1 text-xs">Book</span>
+                        </label>
+                    </div>
 
-            <!-- Search & Replace Panel -->
-            <div class="mb-6">
-                <div class="mb-4 flex flex-wrap gap-2">
-                    <span class="block text-sm font-medium text-gray-700">Search in:</span>
-                    <label class="inline-flex items-center mr-3">
-                        <input class="form-radio disabled" disabled name="searchField" type="radio"
-                               value="original" x-model="selectedField">
-                        <span class="ml-1 text-sm">Original</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input class="form-radio disabled" disabled name="searchField" type="radio"
-                               value="translated" x-model="selectedField">
-                        <span class="ml-1 text-sm">Translated</span>
-                    </label>
+                    <!-- Search Field Selection -->
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-500">In:</span>
+                        <label class="flex items-center">
+                            <input @change="changeValue('lineObject', lineObject)" class="form-radio h-3 w-3" name="searchField" type="radio"
+                                   value="text"
+                                   x-model="lineObject.selectedField">
+                            <span class="ml-1 text-xs">Original</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input @change="changeValue('lineObject', lineObject)" class="form-radio h-3 w-3" name="searchField" type="radio"
+                                   value="translatedText"
+                                   x-model="lineObject.selectedField">
+                            <span class="ml-1 text-xs">Translated</span>
+                        </label>
+                    </div>
                 </div>
+            </div>
 
-                <!-- Search Panel -->
-                <div class="flex flex-col sm:flex-row items-end gap-2 mb-3">
-                    <div class="w-full sm:w-4/5">
-                        <label class="text-xs text-gray-500 block" for="lineSearch">Search for similar lines</label>
+            <!-- Search & Replace Form -->
+            <div class="space-y-3">
+                <!-- Search Row -->
+                <div class="flex items-end gap-2">
+                    <div class="flex-1">
+                        <label class="text-xs text-gray-400 block mb-1" for="lineSearch">Search</label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <svg class="w-4 h-4 text-gray-500" fill="none"
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                                <svg class="w-3 h-3 text-gray-500" fill="none"
                                      stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"
                                           stroke-width="2"/>
                                 </svg>
                             </div>
                             <input
-                                    @change="changeValue('lineSearchQuery', lineSearchQuery)"
-                                    class="pl-10 p-2 w-full border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    @change="changeValue('lineObject', lineObject)"
+                                    class="pl-7 pr-2 py-1.5 w-full text-sm border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
                                     id="lineSearch"
                                     placeholder="Enter search term..."
                                     type="text"
-                                    x-model="lineSearchQuery">
+                                    x-model="lineObject.lineSearchQuery">
                         </div>
                     </div>
-                    <div class="w-full sm:w-1/5">
+
+                    <!-- Search Options -->
+                    <div class="flex items-center space-x-1 mb-1">
                         <button
-                                @click="fetchSimilarLines(lineSearchQuery, [selectedField])"
-                                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg p-2 transition duration-200"
-                                type="button">
-                            Find
+                                :class="{ 'bg-blue-500 text-white': lineObject.lineMatchCase, 'bg-gray-100 text-gray-600 hover:bg-gray-200': !lineObject.lineMatchCase }"
+                                @click="lineObject.lineMatchCase = !lineObject.lineMatchCase"
+                                class="px-2 py-1.5 text-xs font-medium rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                title="Match Case">
+                            Aa
+                        </button>
+                        <button
+                                :class="{ 'bg-blue-500 text-white': lineObject.lineMatchWholeWord, 'bg-gray-100 text-gray-600 hover:bg-gray-200': !lineObject.lineMatchWholeWord }"
+                                @click="lineObject.lineMatchWholeWord = !lineObject.lineMatchWholeWord"
+                                class="px-2 py-1.5 text-xs font-medium rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                title="Match Whole Word">
+                            W
+                        </button>
+                        <button
+                                :class="{ 'bg-blue-500 text-white': lineObject.lineUseRegex, 'bg-gray-100 text-gray-600 hover:bg-gray-200': !lineObject.lineUseRegex }"
+                                @click="lineObject.lineUseRegex = !lineObject.lineUseRegex"
+                                class="px-2 py-1.5 text-xs font-medium rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                title="Use Regular Expression">
+                            .*
                         </button>
                     </div>
+
+                    <button
+                            @click="fetchSimilarLines(lineObject.lineSearchQuery, [lineObject.selectedField]); changeValue('lineObject', lineObject)"
+                            class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded px-4 py-1.5 mb-1 transition duration-150"
+                            type="button">
+                        Find
+                    </button>
                 </div>
 
-                <!-- Replace Panel -->
-                <div class="flex flex-col sm:flex-row items-end gap-2">
-                    <div class="w-full sm:w-4/5">
-                        <label class="text-xs text-gray-500 block" for="replaceText">Replace with</label>
+                <!-- Replace Row -->
+                <div class="flex items-end gap-2">
+                    <div class="flex-1">
+                        <label class="text-xs text-gray-400 block mb-1" for="replaceText">Replace</label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <svg class="w-4 h-4 text-gray-500" fill="none"
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                                <svg class="w-3 h-3 text-gray-500" fill="none"
                                      stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"
                                           stroke-width="2"/>
                                 </svg>
                             </div>
                             <input
-                                    @change="changeValue('lineReplaceWith', lineReplaceWith)"
-                                    class="pl-10 p-2 w-full border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    @change="changeValue('lineObject', lineObject)"
+                                    class="pl-7 pr-2 py-1.5 w-full text-sm border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
                                     id="replaceText"
                                     placeholder="Replacement text"
                                     type="text"
-                                    x-model="lineReplaceWith">
+                                    x-model="lineObject.lineReplaceWith">
                         </div>
                     </div>
-                    <div class="w-full sm:w-1/5">
+
+                    <div class="flex space-x-2">
                         <button
-                                @click="performReplace()"
-                                class="w-full bg-red-300 hover:bg-red-400 text-white font-medium rounded-lg p-2 transition duration-200"
+                                @click="performReplace(); changeValue('lineObject', lineObject)"
+                                class="bg-red-300 hover:bg-red-400 text-white text-xs font-medium rounded px-4 py-1.5 mb-1 transition duration-150"
                                 type="button">
                             Replace
                         </button>
@@ -88,47 +137,49 @@
                 </div>
             </div>
 
-            <!-- Global Actions -->
-            <div class="mt-4 bg-white shadow rounded-lg p-4">
-                <h2 class="text-lg font-semibold mb-4 text-gray-900">Batch Operations</h2>
-                <div class="flex flex-wrap gap-2">
-                    <button
-                            @click="removeAllLines()"
-                            class="bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg py-2 px-4 transition duration-200">
-                        Remove All
-                    </button>
-                    <button
-                            @click="removeAllOriginalLines()"
-                            class="bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg py-2 px-4 transition duration-200">
-                        Remove All Original
-                    </button>
-                    <button
-                            @click="removeAllTranslatedLines()"
-                            class="bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg py-2 px-4 transition duration-200">
-                        Remove All Translated
-                    </button>
+            <!-- Batch Operations -->
+            <div class="mt-6 pt-4 border-t">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-sm font-medium text-gray-700">Batch Operations</h4>
+                    <div class="flex space-x-2">
+                        <button
+                                @click="removeAllLines()"
+                                class="bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded px-3 py-1.5 transition duration-150">
+                            Remove All
+                        </button>
+                        <button
+                                @click="removeAllOriginalLines()"
+                                class="bg-red-400 hover:bg-red-500 text-white text-xs font-medium rounded px-3 py-1.5 transition duration-150">
+                            Remove Original
+                        </button>
+                        <button
+                                @click="removeAllTranslatedLines()"
+                                class="bg-red-400 hover:bg-red-500 text-white text-xs font-medium rounded px-3 py-1.5 transition duration-150">
+                            Remove Translated
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="bg-white rounded-lg p-2 mb-2">
             <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
-                <h2 class="text-lg font-semibold text-gray-900">Lines</h2>
+                <h3 class="text-md font-semibold text-gray-900">Lines</h3>
 
                 <!-- Filter and Count -->
                 <div class="relative w-full md:w-1/2">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <svg class="w-4 h-4 text-gray-500" fill="none"
+                        <svg class="w-3 h-3 text-gray-500" fill="none"
                              stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" stroke-linecap="round" stroke-linejoin="round"
                                   stroke-width="2"/>
                         </svg>
                     </div>
                     <input
-                            class="pl-10 p-2 w-full border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            class="text-sm pl-8 p-1 w-full border rounded-lg focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Filter lines locally..."
                             type="text"
-                            x-model="lineFilter">
+                            x-model="lineObject.lineFilter">
                 </div>
             </div>
 
@@ -136,27 +187,28 @@
             <div class="bg-gray-50 rounded-lg p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="flex flex-col text-center">
                     <span class="text-xs text-gray-500">Total Lines</span>
-                    <span class="text-xl font-bold text-gray-900" x-text="lines.length"></span>
+                    <span class="text-xl font-bold text-gray-900" x-text="lineObject.lines.length"></span>
                 </div>
                 <div class="flex flex-col text-center">
                     <span class="text-xs text-gray-500">Missing Original</span>
                     <span class="text-xl font-bold text-red-500"
-                          x-text="lines.filter(l => !l.originalLine).length"></span>
+                          x-text="lineObject.lines.filter(l => !l.originalLine).length"></span>
                 </div>
                 <div class="flex flex-col text-center">
                     <span class="text-xs text-gray-500">Missing Translation</span>
                     <span class="text-xl font-bold text-red-500"
-                          x-text="lines.filter(l => !l.translatedLine).length"></span>
+                          x-text="lineObject.lines.filter(l => !l.translatedLine).length"></span>
                 </div>
             </div>
 
             <!-- Lines Display -->
-            <div x-show="lines && lines.length > 0">
+
+            <div x-show="lineObject.lines && lineObject.lines.length > 0">
                 <ul class="divide-y divide-gray-200" x-data="{ openLinesMenu: false, selectedLine: null }">
                     <template :key="line.id" x-for="(line, index) in filteredLines">
                         <li class="py-4 hover:bg-gray-50 transition duration-150 rounded-lg">
                             <!-- Edit Mode -->
-                            <div class="px-4" x-show="editingLineId === line.id">
+                            <div class="px-4" x-show="lineObject.editingLineId === line.id">
                                 <div class="flex items-center justify-between mb-2">
                                     <div class="flex items-center">
                                         <span class="text-sm font-medium text-gray-500 mr-2">Line #<span
@@ -170,7 +222,7 @@
                                             Save
                                         </button>
                                         <button
-                                                @click.stop="editingLineId = null"
+                                                @click.stop="lineObject.editingLineId = null"
                                                 class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-lg py-1 px-3 text-sm transition duration-200">
                                             Cancel
                                         </button>
@@ -198,7 +250,7 @@
                             </div>
 
                             <!-- View Mode -->
-                            <div class="relative px-4" x-show="editingLineId !== line.id">
+                            <div class="relative px-4" x-show="lineObject.editingLineId !== line.id">
                                 <div class="flex items-center justify-between mb-2">
                                     <div class="flex items-center">
                                     <span class="text-xs font-medium bg-gray-100 text-gray-700 px-2 py-1 rounded">
@@ -214,6 +266,18 @@
                                                  xmlns="http://www.w3.org/2000/svg">
                                                 <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke-linecap="round" stroke-linejoin="round"
                                                       stroke-width="2"></path>
+                                            </svg>
+                                        </button>
+                                        <button @click.stop="removeLineItem(line.id)"
+                                                class="text-red-500 hover:text-red-700 mr-2"
+                                                title="Exclude from changes">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                 xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M17 12C17 11.4477 16.5523 11 16 11H8C7.44772 11 7 11.4477 7 12C7 12.5523 7.44771 13 8 13H16C16.5523 13 17 12.5523 17 12Z"
+                                                      fill="currentColor"/>
+                                                <path clip-rule="evenodd" d="M12 23C18.0751 23 23 18.0751 23 12C23 5.92487 18.0751 1 12 1C5.92487 1 1 5.92487 1 12C1 18.0751 5.92487 23 12 23ZM12 20.9932C7.03321 20.9932 3.00683 16.9668 3.00683 12C3.00683 7.03321 7.03321 3.00683 12 3.00683C16.9668 3.00683 20.9932 7.03321 20.9932 12C20.9932 16.9668 16.9668 20.9932 12 20.9932Z"
+                                                      fill="currentColor"
+                                                      fill-rule="evenodd"/>
                                             </svg>
                                         </button>
                                         <button
@@ -239,10 +303,9 @@
                                             Missing
                                         </span>
                                         </div>
-                                        <p
-                                                :class="!line.originalLine ? 'border-red-300 bg-red-50 italic text-red-500' : 'border-gray-200 text-gray-700'"
+                                        <p :class="!line.originalLine ? 'border-red-300 bg-red-50 italic text-red-500' : 'border-gray-200 text-gray-700'"
                                                 class="text-sm p-2 rounded-lg border">
-                                            <span x-text="line.originalLine || 'No original text'"></span>
+                                            <span x-html="highlightLineMatch(line?.originalLine, lineObject.lineSearchQuery) || 'No original text'"></span>
                                         </p>
                                     </div>
                                     <div>
@@ -257,7 +320,7 @@
                                         <p
                                                 :class="!line.translatedLine ? 'border-red-300 bg-red-50 italic text-red-500' : 'border-gray-200 text-gray-700'"
                                                 class="text-sm p-2 rounded-lg border">
-                                            <span x-text="line.translatedLine || 'No translation'"></span>
+                                            <span x-html="highlightLineMatch(line?.translatedLine, lineObject.lineSearchQuery) || 'No translation text'"></span>
                                         </p>
                                     </div>
                                 </div>
@@ -301,7 +364,7 @@
                 <!-- No results message -->
                 <div
                         class="text-center py-8"
-                        x-show="lines.length > 0 && filteredLines.length === 0">
+                        x-show="lineObject.lines.length > 0 && filteredLines.length === 0">
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                          xmlns="http://www.w3.org/2000/svg">
                         <path d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"
@@ -322,7 +385,7 @@
             <!-- Empty state -->
             <div
                     class="text-center py-10"
-                    x-show="!lines || lines.length == 0">
+                    x-show="!lineObject.lines || lineObject.lines.length == 0">
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                      xmlns="http://www.w3.org/2000/svg">
                     <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round"

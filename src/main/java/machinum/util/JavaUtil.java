@@ -13,6 +13,8 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -371,6 +373,19 @@ public class JavaUtil {
         // If the loop finished because the condition was met, this is the cut list.
         // If the loop finished because the list became empty, this is an empty list.
         return currentList;
+    }
+
+    /**
+     * Calculate MD5 hash for line content, matching the logic used in materialized view
+     */
+    public static String md5(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] hashBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hashBytes);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Failed to calculate hash", e);
+        }
     }
 
 }

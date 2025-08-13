@@ -5,10 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
-import machinum.processor.core.Assistant;
-import machinum.processor.core.AssistantContext;
-import machinum.processor.core.FlowSupport;
-import machinum.processor.core.PreconditionSupport;
+import machinum.processor.core.*;
 import machinum.tool.RawInfoTool;
 import machinum.util.TextUtil;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -27,14 +24,14 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static machinum.config.Constants.SCORE;
-import static machinum.processor.core.AiClient.Provider.parse;
+import static machinum.processor.client.AiClient.Provider.parse;
 import static machinum.processor.core.FlowSupport.HistoryItem.*;
 import static machinum.util.JavaUtil.calculatePercent;
 import static machinum.util.TextUtil.countTokens;
 import static machinum.util.TextUtil.toShortDescription;
 
 @Slf4j
-public abstract class AbstractTranslaterBody implements FlowSupport, PreconditionSupport {
+public abstract class AbstractTranslaterBody implements FlowSupport, PreconditionSupport, XmlSupport {
 
     protected static final String USER_TEXT_TEMPLATE = """
             Provide Russian translation for next web novel's chapter text:

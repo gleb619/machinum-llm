@@ -10,8 +10,7 @@ import machinum.model.Book;
 import machinum.model.Chapter;
 import machinum.model.ChapterGlossary;
 import machinum.model.ObjectName;
-import machinum.processor.core.GeminiClient;
-import machinum.repository.LineDao;
+import machinum.processor.client.GeminiClient;
 import machinum.util.TextUtil;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.async.AsyncHelper;
@@ -39,7 +38,7 @@ public class ChapterFacade {
     private final ChapterGlossaryService chapterGlossaryService;
     private final LineService lineService;
     private final TemplateAiFacade templateAiFacade;
-    private final LineDao lineDao;
+    private final LinesInfoDao lineDao;
     private final AsyncHelper asyncHelper;
     private final DbHelper dbHelper;
 
@@ -85,7 +84,9 @@ public class ChapterFacade {
 
     public Chapter updateChapter(Chapter updatedChapter) {
         var result = chapterService.updateChapter(updatedChapter);
-        asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(lineDao::refreshMaterializedView))
+        asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(() -> {
+                    lineDao.refreshView(updatedChapter.getBookId(), updatedChapter.getNumber());
+                }))
                 .whenComplete((unused, throwable) -> log.debug("MatView has been updated"));
 
         return result;
@@ -168,7 +169,7 @@ public class ChapterFacade {
         var state = (BookProcessor.ProcessorState) ctx.getState();
 
         switch (state) {
-            case CLEANING, PROCESSING -> {
+            case CLEANING, PROOFREAD -> {
                 //TODO: This will not work
                 if (1 < 2) {
                     throw new AppIllegalStateException("Stop execution");

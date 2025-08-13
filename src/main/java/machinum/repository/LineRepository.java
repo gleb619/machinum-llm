@@ -32,6 +32,62 @@ public interface LineRepository extends JpaRepository<LineView, String> {
             nativeQuery = true)
     Page<String> findSuspiciousInTranslated(@Param("bookId") String bookId, PageRequest request);
 
+    @Query(value = """
+            SELECT l.id FROM lines_info l 
+            WHERE l.book_id = :bookId 
+            AND (
+                CASE WHEN :useRegex = true THEN 
+                    (:matchCase = true AND l.original_line ~ :searchPattern)
+                    OR (:matchCase = false AND l.original_line ~* :searchPattern)
+                ELSE 
+                    (:matchWholeWord = true AND 
+                        (:matchCase = true AND l.original_line ~ ('\\m' || :text || '\\M'))
+                        OR (:matchCase = false AND l.original_line ~* ('\\m' || :text || '\\M'))
+                    )
+                    OR (:matchWholeWord = false AND 
+                        (:matchCase = true AND l.original_line LIKE ('%' || :text || '%'))
+                        OR (:matchCase = false AND LOWER(l.original_line) LIKE ('%' || LOWER(:text) || '%'))
+                    )
+                END
+            )
+            ORDER BY l.number, l.line_index
+            """, nativeQuery = true)
+    List<String> findSimilarOriginalLines(@Param("bookId") String bookId,
+                                          @Param("text") String text,
+                                          @Param("searchPattern") String searchPattern,
+                                          @Param("matchCase") Boolean matchCase,
+                                          @Param("matchWholeWord") Boolean matchWholeWord,
+                                          @Param("useRegex") Boolean useRegex,
+                                          PageRequest request);
+
+    @Query(value = """
+            SELECT l.id FROM lines_info l 
+            WHERE l.book_id = :bookId 
+            AND (
+                CASE WHEN :useRegex = true THEN 
+                    (:matchCase = true AND l.translated_line ~ :searchPattern)
+                    OR (:matchCase = false AND l.translated_line ~* :searchPattern)
+                ELSE 
+                    (:matchWholeWord = true AND 
+                        (:matchCase = true AND l.translated_line ~ ('\\m' || :text || '\\M'))
+                        OR (:matchCase = false AND l.translated_line ~* ('\\m' || :text || '\\M'))
+                    )
+                    OR (:matchWholeWord = false AND 
+                        (:matchCase = true AND l.translated_line LIKE ('%' || :text || '%'))
+                        OR (:matchCase = false AND LOWER(l.translated_line) LIKE ('%' || LOWER(:text) || '%'))
+                    )
+                END
+            )
+            ORDER BY l.number, l.line_index
+            """, nativeQuery = true)
+    List<String> findSimilarTranslatedLines(@Param("bookId") String bookId,
+                                            @Param("text") String text,
+                                            @Param("searchPattern") String searchPattern,
+                                            @Param("matchCase") Boolean matchCase,
+                                            @Param("matchWholeWord") Boolean matchWholeWord,
+                                            @Param("useRegex") Boolean useRegex,
+                                            PageRequest request);
+
     class Queries {
 
         public static final String ENGLISH_IN_TRANSLATED_SQL = //language=sql

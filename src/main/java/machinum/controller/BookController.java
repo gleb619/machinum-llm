@@ -194,7 +194,10 @@ public class BookController implements ControllerTrait {
         log.debug("Got request to import chapters for book: {}, file={}", bookId, fileName);
 
         List<Chapter> chapters;
-        if (file.getOriginalFilename().toLowerCase().endsWith(".json")) {
+        if (file.getOriginalFilename().toLowerCase().endsWith(".zip")) {
+            // Handle ZIP file
+            chapters = processZipFile(file.getInputStream());
+        } else if (file.getOriginalFilename().toLowerCase().endsWith(".json")) {
             // Handle JSON file directly
             chapters = List.of(mapper.readValue(file.getInputStream(), Chapter[].class));
         } else if (file.getOriginalFilename().toLowerCase().endsWith(".jsonl")) {
@@ -212,10 +215,18 @@ public class BookController implements ControllerTrait {
     }
 
     @GetMapping("/{bookId}/download")
-    public ResponseEntity<byte[]> exportChapters(@PathVariable("bookId") String bookId) {
+    public ResponseEntity<byte[]> exportChapters(@PathVariable("bookId") String bookId,
+                                                 @RequestParam(name = "from", required = false) Integer fromChapterNumber,
+                                                 @RequestParam(name = "to", required = false) Integer toChapterNumber) {
         try {
             // Create JSONL content
-            var chapters = bookFacade.loadBookChapters(bookId);
+            List<Chapter> chapters;
+            if (Objects.nonNull(fromChapterNumber) && Objects.nonNull(toChapterNumber)) {
+                chapters = bookFacade.loadBookChapters(bookId, fromChapterNumber, toChapterNumber);
+            } else {
+                chapters = bookFacade.loadBookChapters(bookId);
+            }
+
             if (chapters.isEmpty()) {
                 return ResponseEntity.badRequest().build();
             }

@@ -1,5 +1,6 @@
-package machinum.processor.core;
+package machinum.processor.client;
 
+import machinum.processor.core.AssistantContext;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 
@@ -14,6 +15,9 @@ public interface AiClient {
         OLLAMA,
 
         GEMINI,
+
+        GEMINI_AI,
+
         ;
 
         public static Provider parse(String name) {

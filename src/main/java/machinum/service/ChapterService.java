@@ -37,7 +37,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static machinum.config.Constants.TRANSLATED_TITLE;
-import static machinum.listener.ChapterEntityListener.ChapterInfoConstants.*;
+import static machinum.listener.ChapterEntityListener.ChapterInfoConstants.CLEAN_TEXT;
+import static machinum.listener.ChapterEntityListener.ChapterInfoConstants.TRANSLATED_TEXT;
 import static machinum.util.LanguageDetectorUtil.Lang.RUSSIAN;
 import static machinum.util.TextUtil.isNotEmpty;
 
@@ -185,6 +186,14 @@ public class ChapterService {
     }
 
     @Transactional(readOnly = true)
+    public Page<Chapter> loadBookChapters(String bookId, Integer startNumber, Integer endNumber, PageRequest pageRequest) {
+        log.debug("Loading specific chapters from db: {}, start={}, end={}", bookId, startNumber, endNumber);
+        var chapters = chapterRepository.findAllByBookIdAndNumberBetween(bookId, startNumber, endNumber,
+                pageRequest.withSort(Sort.by("number")));
+        return chapters.map(chapterMapper::toDto);
+    }
+
+    @Transactional(readOnly = true)
     public Optional<Chapter> findByNumber(String bookId, Integer chapterNumber) {
         if (chapterNumber <= 0) {
             return Optional.empty();
@@ -239,12 +248,12 @@ public class ChapterService {
                             chapterRepository.updateCleanChunks(chapterInfo.getId(), chunksText);
                         });
             }
-            case PROCESSING -> {
+            case PROOFREAD -> {
                 ctx.optionalValue(FlowContext::proofreadArg)
                         .ifPresent(proofreadText -> {
-                            ctx.getCurrentItem().setProofreadText(proofreadText);
-                            chapterEntityListener.trackChange(chapterMapper.toEntity(ctx.getCurrentItem()), PROOFREAD_TEXT);
-                            chapterRepository.updateProofreadText(chapterInfo.getId(), proofreadText);
+                            ctx.getCurrentItem().setText(proofreadText);
+                            chapterEntityListener.trackChange(chapterMapper.toEntity(ctx.getCurrentItem()), CLEAN_TEXT);
+                            chapterRepository.updateCleanText(chapterInfo.getId(), proofreadText);
                         });
             }
             case TRANSLATE_GLOSSARY -> {

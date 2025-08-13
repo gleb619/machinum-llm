@@ -23,12 +23,20 @@ public class LineDao {
 
     private final JdbcTemplate jdbcTemplate;
 
+    @Deprecated(forRemoval = true)
     public void refreshMaterializedView() {
-        jdbcTemplate.execute(Query.REFRESH_SQL);
+        //TODO: Fix next line
+//        jdbcTemplate.execute(Query.REFRESH_SQL);
     }
 
+    @Deprecated(forRemoval = true)
     public void vacuumMaterializedView() {
-        jdbcTemplate.execute(Query.VACUUM_SQL);
+        //TODO: Fix next line
+//        jdbcTemplate.execute(Query.VACUUM_SQL);
+    }
+
+    public String findBookIdByChapter(String chapterId) {
+        return jdbcTemplate.queryForObject("SELECT book_id FROM lines_info WHERE chapter_id = ?", String.class, chapterId);
     }
 
     public List<String> findTranslatedSimilarLineForChapter(String chapterId, String line) {
@@ -90,13 +98,6 @@ public class LineDao {
     /* ============= */
 
     static class Query {
-
-        /**
-         * SQL command to refresh the materialized view concurrently.
-         */
-        public static final String REFRESH_SQL = "REFRESH MATERIALIZED VIEW CONCURRENTLY lines_info";
-
-        public static final String VACUUM_SQL = "VACUUM ANALYZE lines_info;";
 
         public static final String SELECT_TEXT_FOR_BOOK = //language=sql
                 """

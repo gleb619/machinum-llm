@@ -45,6 +45,7 @@ public class BookFacade {
     private final ChapterEntityListener chapterEntityListener;
     private final DbHelper dbHelper;
     private final AudioService audioService;
+    private final LinesInfoService linesInfoService;
 
     @Value("${app.batch-size}")
     private final Integer batchSize;
@@ -106,6 +107,11 @@ public class BookFacade {
                 .getContent();
     }
 
+    public List<Chapter> loadBookChapters(String bookId, Integer startNumber, Integer endNumber) {
+        return chapterService.loadBookChapters(bookId, startNumber, endNumber, PageRequest.of(0, 10_000))
+                .getContent();
+    }
+
     public List<Chapter> loadReadyChapters(String bookId, Integer from, Integer to) {
         return chapterService.loadReadyChapters(bookId, from, to);
     }
@@ -163,6 +169,8 @@ public class BookFacade {
                 log.debug("Processed {}/{} chunk of chapters", i + 1, chunks.size());
             }
         });
+
+        linesInfoService.recreate(bookId);
     }
 
     public byte[] loadBookCombinedAudio(String bookId, Integer from, Integer to, byte[] coverArt) {

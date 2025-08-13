@@ -3,6 +3,7 @@ package machinum.processor.core;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
+import machinum.processor.client.AiClient;
 import machinum.util.JavaUtil;
 import org.springframework.ai.autoconfigure.ollama.OllamaTransformProperties;
 import org.springframework.ai.chat.messages.AssistantMessage;

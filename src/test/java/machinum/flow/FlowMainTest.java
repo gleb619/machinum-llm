@@ -33,7 +33,7 @@ public class FlowMainTest {
 
     @Test
     public void customFlowTest() {
-        var currentState = PROCESSING;
+        var currentState = PROOFREAD;
         var flow = Flow
                 .from(aSomeCollectionOrFiles())
                 .beforeAll(ctx -> log.info("Started: {}", ctx.getState()))
@@ -47,7 +47,7 @@ public class FlowMainTest {
                     var ctx2 = printHashCode(ctx);
                     return ctx2.copy(Function.identity());
                 })
-                .onState(PROCESSING)
+                .onState(PROOFREAD)
                 .pipe(ctx -> {
                     var ctx2 = printCurrentItem(ctx, ctx.getCurrentItem());
                     return ctx2.copy(Function.identity());

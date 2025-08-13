@@ -1,4 +1,4 @@
-package machinum.processor.core;
+package machinum.processor.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Builder;
@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowContextArgs;
 import machinum.flow.FlowException;
+import machinum.processor.core.AssistantContext;
+import machinum.processor.core.ChapterWarning;
 import machinum.util.TextUtil;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -27,9 +29,11 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import static machinum.flow.FlowContextActions.warning;
 import static machinum.processor.core.ChapterWarning.createNew;
@@ -43,6 +47,10 @@ import static machinum.processor.core.ChapterWarning.createNew;
 @ConditionalOnProperty(name = "app.mode", havingValue = "production")
 public class GeminiClient implements AiClient {
 
+    public static final String PROHIBITED_CONTENT = "PROHIBITED_CONTENT";
+    private static final Pattern RETRY_PATTERN = Pattern.compile("\"retryDelay\": \"(\\d+).\"");
+    private static final String QUOTA_ID = "GenerateRequestsPerDayPerProjectPerModel-FreeTie";
+
     private final GenAi genAi;
 
     @Value("${spring.ai.gemini.chat.options.model}")
@@ -50,6 +58,23 @@ public class GeminiClient implements AiClient {
 
     @Value("${spring.ai.ollama.init.timeout}")
     private final Duration timeout;
+
+    @SneakyThrows
+    private static void waitSomeTime(Throwable ex) {
+        var matcher = RETRY_PATTERN.matcher(ex.getMessage());
+        int retry;
+        if (matcher.find()) {
+            try {
+                retry = Integer.parseInt(matcher.group(1).trim());
+            } catch (NumberFormatException e) {
+                retry = 10;
+            }
+        } else {
+            retry = 10;
+        }
+
+        TimeUnit.SECONDS.sleep(retry);
+    }
 
     /**
      * Calls the Gemini AI service with the provided context and prompt to generate an assistant message.
@@ -68,11 +93,18 @@ public class GeminiClient implements AiClient {
         try {
             content = execute(model, assistantContext)
                     .get(timeout.toSeconds(), TimeUnit.SECONDS);
-        } catch (ExecutionException e) {
-            if(e.getCause() instanceof FlowException) {
-                ExceptionUtils.rethrow(e.getCause());
+        } catch (Exception e) {
+            var ex = parseThrowable(e);
+            boolean quotaLimit = ex.getMessage().contains(QUOTA_ID);
+            if (quotaLimit) {
+                //TODO recreate genAi bean with another token
+                System.out.println("GeminiClient.call");
+            }
+
+            if (ex.getCause() instanceof FlowException fe) {
+                ExceptionUtils.rethrow(fe);
             } else {
-                ExceptionUtils.rethrow(e);
+                ExceptionUtils.rethrow(ex);
             }
         }
 
@@ -88,16 +120,22 @@ public class GeminiClient implements AiClient {
      */
     private CompletableFuture<GenAi.GeneratedContent> execute(GenerativeModel model, AssistantContext ctx) {
         return genAi.generateContent(model)
-                .exceptionally(ex -> {
+                .exceptionally(e -> {
+                    var ex = parseThrowable(e);
+                    if (ex.getMessage().contains("RESOURCE_EXHAUSTED")) {
+                        waitSomeTime(ex);
+                    }
+
                     handleException(ctx, ex);
 
                     return null;
                 })
                 .whenComplete((result, e) -> {
                     if (Objects.nonNull(e)) {
-                        log.error("Error during Gemini execution: {}|{}", e.getClass(), e.getMessage());
+                        Throwable ex = parseThrowable(e);
+                        log.error("|X-- Error during Gemini execution: {}|{}", ex.getClass(), ex.getMessage());
                     } else {
-                        log.info("Successfully executed Gemini request: {}", TextUtil.toShortDescription(result.text()));
+                        log.info("|<<-- Successfully executed Gemini request: {}", TextUtil.toShortDescription(result.text()));
                     }
                 });
     }
@@ -148,7 +186,7 @@ public class GeminiClient implements AiClient {
     private ModelVariant parseModel(@NonNull String modelName) {
         var localModelName = modelName.toLowerCase();
         for (var modelVariant : ModelVariant.values()) {
-            if (modelVariant.variant().toLowerCase().contains(localModelName)) {
+            if (modelVariant.variant().toUpperCase().contains(localModelName)) {
                 return modelVariant;
             }
         }
@@ -158,14 +196,8 @@ public class GeminiClient implements AiClient {
     }
 
     private void handleException(AssistantContext ctx, Throwable ex) {
-        Throwable e;
-        if (ex instanceof ExecutionException ee) {
-            e = ee.getCause();
-        } else {
-            e = ex;
-        }
-
-        boolean isCSAM = ex.getMessage().contains("PROHIBITED_CONTENT");
+        var e = parseThrowable(ex);
+        boolean isCSAM = e.getMessage().contains(PROHIBITED_CONTENT);
 
         if(isCSAM) {
             String reason = """
@@ -192,9 +224,19 @@ public class GeminiClient implements AiClient {
         } else {
             throw BusinessGeminiException.createNew(b -> b
                     .message("Business error: " + e.getMessage())
+                    .shouldStopExecution(true)
                     .cause(e));
         }
+    }
 
+    private Throwable parseThrowable(Throwable e) {
+        if (e instanceof ExecutionException ee) {
+            return ee.getCause();
+        } else if (e instanceof CompletionException ce) {
+            return ce.getCause();
+        } else {
+            return e;
+        }
     }
 
     /**

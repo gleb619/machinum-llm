@@ -20,8 +20,8 @@ import java.util.concurrent.CompletableFuture;
 
 import static machinum.flow.FlowContextActions.iteration;
 import static machinum.service.BookProcessor.ProcessorState.*;
-import static machinum.service.ChapterProcessor.Operations.TRANSLATE;
 import static machinum.service.ChapterProcessor.Operations.*;
+import static machinum.service.ChapterProcessor.Operations.TRANSLATE;
 
 @Slf4j
 @Service
@@ -54,6 +54,8 @@ public class ChapterProcessor {
         var flowContext = prepareContext(request);
 
         var result = switch (request.getOperationName()) {
+            case COPY_EDIT_EN -> templateAiFacade.rewrite(flowContext)
+                    .withState(CLEANING);
             case SUMMARIZE -> templateAiFacade.summary(flowContext)
                     .withState(SUMMARY);
             case TRANSLATE -> templateAiFacade.translateAll(flowContext)
@@ -67,6 +69,8 @@ public class ChapterProcessor {
 //            case FIX_GRAMMAR -> templateAiFacade.editGrammarInChunks(flowContext)
             case FIX_GRAMMAR -> templateAiFacade.editWithGlossary(flowContext)
                     .withState(COPYEDIT);
+            case PROOFREAD_EN -> templateAiFacade.proofread(flowContext)
+                    .withState(PROOFREAD);
             case GLOSSARY_EXTRACT -> templateAiFacade.glossary(flowContext)
                     .withState(GLOSSARY);
             case PROOFREAD_RU -> templateAiFacade.proofreadRu(flowContext)
@@ -111,6 +115,8 @@ public class ChapterProcessor {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Operations {
 
+        public static final String COPY_EDIT_EN = "copyEdit";
+
         public static final String SUMMARIZE = "summarize";
 
         public static final String TRANSLATE = "translate";
@@ -122,6 +128,8 @@ public class ChapterProcessor {
         public static final String FIX_GRAMMAR = "fixGrammar";
 
         public static final String GLOSSARY_EXTRACT = "glossaryExtract";
+
+        public static final String PROOFREAD_EN = "proofreadEn";
 
         public static final String PROOFREAD_RU = "proofreadRu";
 
