@@ -3,6 +3,7 @@ package machinum.extract;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import machinum.exception.AppIllegalStateException;
 import machinum.extract.ExternalGlossaryTranslater.TranslationException;
 import machinum.extract.util.ProperNameExtractor;
 import machinum.flow.FlowArgument;
@@ -103,6 +104,8 @@ public class Glossary {
             return externalGlossaryTranslater.translate(flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(list)));
         } catch (TranslationException te) {
             return glossaryJsonTranslate.translateWithCache(flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(te.getObjectNames())));
+        } catch (AppIllegalStateException aese) {
+            return glossaryTranslateWithCache(flowContext);
         }
     }
 

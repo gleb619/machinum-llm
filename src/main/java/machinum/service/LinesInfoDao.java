@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
 import machinum.model.Book;
 import machinum.model.CheckedFunction;
+import org.springframework.async.AsyncHelper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -16,9 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import static machinum.model.CheckedConsumer.checked;
 import static machinum.util.JavaUtil.md5;
@@ -32,6 +35,7 @@ public class LinesInfoDao {
     public static final int SMALL_BOOK_SIZE = 500;
 
     private final JdbcTemplate jdbcTemplate;
+    private final AsyncHelper asyncHelper;
 
     @Qualifier("linesMapper")
     private final Holder<ObjectMapper> objectMapper;
@@ -148,18 +152,50 @@ public class LinesInfoDao {
 
     @Transactional
     public boolean refreshView(String bookId, Integer chapterNumber) {
-        log.trace("Refreshing view for: bookId={}, chapterNumber={}", bookId, chapterNumber);
+        return refreshView(bookId, List.of(chapterNumber));
+    }
+
+    @Transactional
+    public boolean refreshView(String bookId, List<Integer> chapterNumbers) {
+        log.debug("Refreshing view for: bookId={}, chapterNumbers={}", bookId, chapterNumbers.size());
 
         // Get current book settings
         var settings = getBookSettings(bookId);
-        var targetViewName = parseViewName(bookId, chapterNumber, settings);
 
-        // Refresh the found view
-        if (targetViewName != null) {
-            return refreshSingleView(targetViewName);
+        // Parse view names to refresh and make them unique
+        var uniqueViewNames = chapterNumbers.stream()
+                .map(chapterNumber -> parseViewName(bookId, chapterNumber, settings))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        if (uniqueViewNames.isEmpty()) {
+            log.warn("Can't find any views to refresh: bookId={}, chapterNumbers={}", bookId, chapterNumbers);
+            return false;
         }
 
-        return false;
+        if (uniqueViewNames.size() > 1) {
+            // Refresh all unique views in parallel
+            var futures = uniqueViewNames.stream()
+                    .map(viewName -> asyncHelper.inNewTransaction(() -> refreshSingleViewConcurrently(viewName)))
+                    .toList();
+            log.trace("Refreshing {} views, awaiting result", futures.size());
+
+            // Wait for all to complete and check if all succeeded
+            boolean result = futures.stream()
+                    .map(CompletableFuture::join)
+                    .reduce(true, (a, b) -> a && b);
+
+            // Call refreshSingleView for each viewName asynchronously
+            uniqueViewNames.forEach(viewName -> asyncHelper.inNewTransaction(() -> refreshSingleView(viewName)));
+
+            return result;
+        } else {
+            String viewName = uniqueViewNames.iterator().next();
+            boolean result = refreshSingleViewConcurrently(viewName);
+            // Call refreshSingleView for the viewName asynchronously
+            asyncHelper.inNewTransaction(() -> refreshSingleView(viewName));
+            return result;
+        }
     }
 
     @Transactional
@@ -234,6 +270,16 @@ public class LinesInfoDao {
         }
 
         return false;
+    }
+
+    private boolean refreshSingleViewConcurrently(String viewName) {
+        log.trace("Refreshing single view async: {}", viewName);
+
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+                "SELECT refresh_single_view_concurrently(?)",
+                Boolean.class,
+                viewName
+        ));
     }
 
     private boolean refreshSingleView(String viewName) {
@@ -325,7 +371,7 @@ public class LinesInfoDao {
         // Find which view contains the chapter
         for (var viewName : settings.getViewNames()) {
             // Extract chapter range from view name
-            if (viewName.contains("lines_info_%s_part_".formatted(bookId))) {
+            if (viewName.contains("lines_info_%s_part_".formatted(settings.getTemplateName()))) {
                 // Parse part number to determine chapter range
                 int startIndex = viewName.lastIndexOf("_part_") + 6;
                 int endIndex = viewName.length();
@@ -343,7 +389,7 @@ public class LinesInfoDao {
                 } catch (NumberFormatException e) {
                     // Continue to next view
                 }
-            } else if (viewName.equals("lines_info_" + bookId)) {
+            } else if (viewName.equals("lines_info_" + settings.getTemplateName())) {
                 // Single view for small books
                 return viewName;
             }

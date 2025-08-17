@@ -40,6 +40,7 @@ export function listApp() {
             const qBookId = params.get('bookId');
             const chapterId = params.get('chapterId');
             const chapterNumber = params.get('chapterNumber');
+            const lineNumber = params.get('lineNumber');
             if(qBookId) {
                 this.filters.bookId = qBookId;
                 this.saveFiltersToLocalStorage(false);
@@ -58,7 +59,14 @@ export function listApp() {
                 this.activeSearchTab = 'filters';
             }
 
-            this.fetchChapters(this.currentPage, () => this.afterInit());
+            this.fetchChapters(this.currentPage, () => {
+                this.afterInit();
+
+                if(lineNumber) {
+                    this.selectTab('editor');
+                    scrollToLineNumber(lineNumber);
+                }
+            });
             this.registerHotkeys(this);
         },
 
@@ -326,4 +334,19 @@ function doFetchChapters(app, page, params, callback) {
              console.error('Error fetching lines:', error)
              app.showToast(`Error: ${error.message || error.code}`, true);
          });
+}
+
+function scrollToLineNumber(targetLine) {
+    setTimeout(() => {
+        const lineNumberElements = document.querySelectorAll('.CodeMirror-linenumber.CodeMirror-gutter-elt');
+        if(lineNumberElements && lineNumberElements[targetLine]) {
+            lineNumberElements[targetLine].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        const lineElements = document.querySelectorAll('.CodeMirror-line');
+        if(lineElements && lineElements[targetLine - 1]) {
+            lineElements[targetLine - 1].style.color = 'white';
+            lineElements[targetLine - 1].style.backgroundColor = 'black';
+        }
+    }, 300);
 }

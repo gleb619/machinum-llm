@@ -6,8 +6,8 @@ export function processorSettingsApp() {
         runnerPanelOpen: false,
         selectAllStates: false,
         availableStates: [
-            'CLEANING',
             'SUMMARY',
+            'CLEANING',
             'GLOSSARY',
             'PROOFREAD',
             'TRANSLATE_GLOSSARY',

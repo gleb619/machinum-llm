@@ -163,7 +163,7 @@
                         ></div>
 
                         <div :style="`left: ${contextMenuX}px; top: ${contextMenuY}px;`"
-                             @click.away="contextMenuVisible = false"
+                             @click.away="contextMenuVisible = false; relText = ''"
                              class="absolute z-10 bg-white border border-gray-200 rounded-lg shadow-lg"
                              data-content-menu="line-numbers"
                              x-show="contextMenuVisible">
@@ -191,6 +191,16 @@
                                 </li>
                                 <li @click="insertLineBelow()" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Insert
                                     line below
+                                </li>
+                                <hr class="h-px my-1 bg-gray-200 border-0">
+                                <li @click="showOriginContent()"
+                                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                    x-show="selectedField === 'translatedText'">
+                                    <div class="min-h-24" x-text="relText">
+                                        Press to view the origin line text
+                                    </div>
+                                    <span class="block text-sm italic text-gray-300 hover:text-gray-400"
+                                          x-show="!relText">Press to view the origin line text</span>
                                 </li>
                             </ul>
                         </div>

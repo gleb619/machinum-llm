@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.difflib.text.DiffRow;
 import com.github.difflib.text.DiffRowGenerator;
 import lombok.SneakyThrows;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import machinum.util.TextReportUtil;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 import static machinum.processor.core.AssistantClient.State.state;
-import static machinum.util.DurationUtil.DurationConfig.humanReadableDuration;
+import static machinum.util.DurationMeasureUtil.DurationConfig.humanReadableDuration;
 
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
@@ -256,20 +256,20 @@ public class NormalTest {
             return new ReportInput(prefix, oldText, newText, Duration.ZERO, "Test Report", Map.of());
         }
 
-        public static ReportInput data(String prefix, String oldText, DurationUtil.TimedResponse<String> response) {
+        public static ReportInput data(String prefix, String oldText, DurationMeasureUtil.TimedResponse<String> response) {
             return data(prefix, oldText, response, Map.of());
         }
 
-        public static ReportInput data(String prefix, String oldText, DurationUtil.TimedResponse<String> response,
+        public static ReportInput data(String prefix, String oldText, DurationMeasureUtil.TimedResponse<String> response,
                                        Map<String, Object> metadata) {
             return new ReportInput(prefix, oldText, response.result(), response.duration(), "Test Report", metadata);
         }
 
-        public static <T> ReportInput onlyNewText(String prefix, DurationUtil.TimedResponse<T> response) {
+        public static <T> ReportInput onlyNewText(String prefix, DurationMeasureUtil.TimedResponse<T> response) {
             return new ReportInput(prefix, "", response.stringResult(), response.duration(), "Test Report", Map.of());
         }
 
-        public static <T> ReportInput jsonText(String prefix, DurationUtil.TimedResponse<T> response) {
+        public static <T> ReportInput jsonText(String prefix, DurationMeasureUtil.TimedResponse<T> response) {
             return new ReportInput(prefix, "", response.stringResult(), response.duration(), "Test Report", Map.of(
                     FORMAT, JSON_FORMAT
             ));

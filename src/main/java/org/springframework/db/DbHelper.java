@@ -1,27 +1,18 @@
 package org.springframework.db;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.context.ApplicationContext;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 @RequiredArgsConstructor
 public class DbHelper {
 
-    private final VectorStore vectorStore;
     private final ApplicationContext context;
 
-    @Deprecated
-    @Transactional
-    public void add(List<Document> documents) {
-        vectorStore.add(documents);
-    }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void noTransaction(Runnable runnable) {

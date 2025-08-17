@@ -4,7 +4,7 @@ import machinum.TestApplication;
 import machinum.extract.SummaryExtractor;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,7 +40,7 @@ class SummaryExtractorTest extends NormalTest {
     @Test
     void testSummarize() throws IOException {
         String chapterText = Files.readString(chapterPath);
-        var summary = DurationUtil.measure("summary", () -> {
+        var summary = DurationMeasureUtil.measure("summary", () -> {
             return summarizer.extractSummary(FlowContextActions.of(text(chapterText)));
         }).mutate(FlowContext::context);
 

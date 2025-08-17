@@ -321,6 +321,7 @@ public interface ChapterRepository extends JpaRepository<ChapterEntity, String> 
              OR length(translated_text) < 2
              OR length(summary) < 2
              OR json_array_length(names) < 1
+             OR (length(translated_text) - length(replace(translated_text, '\\n', ''))) < 2
             )
             """, nativeQuery = true)
     Page<String> findChaptersWithWarningsByBookId_Native(@Param("bookId") String bookId, PageRequest pageRequest);

@@ -5,7 +5,7 @@ import machinum.TestApplication;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.repository.BookRepository;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,7 +67,7 @@ class ChapterServiceTest extends NormalTest {
                 .sourceKey("https://www.my-site.ai/novel/gnrc-1143/chapter-2")
                 .build();
 
-        var chapterId = DurationUtil.measure("chapterService", () -> {
+        var chapterId = DurationMeasureUtil.measure("chapterService", () -> {
             return chapterService.save(chapterInfo);
         });
 

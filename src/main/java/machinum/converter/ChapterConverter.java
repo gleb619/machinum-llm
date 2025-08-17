@@ -1,12 +1,12 @@
 package machinum.converter;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.service.ChapterService;
 import machinum.service.TemplateAiFacade;
-import machinum.util.DurationUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import machinum.util.DurationMeasureUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheHelper;
 import org.springframework.stereotype.Component;
@@ -80,7 +80,7 @@ public class ChapterConverter {
 //        var text = source.getRawText();
         var state = flowContext.getState();
 
-        return DurationUtil.measure("acquireChapterInfo", () -> {
+        return DurationMeasureUtil.measure("acquireChapterInfo", () -> {
 
             var chapterContext = flowContext;
 
@@ -124,7 +124,7 @@ public class ChapterConverter {
     }
 
     private FlowContext toMin(FlowContext flowContext) {
-        return DurationUtil.measure("minInfo", () -> {
+        return DurationMeasureUtil.measure("minInfo", () -> {
 //            String summaryAlternative = templateAiFacade.retell(text);
 
 

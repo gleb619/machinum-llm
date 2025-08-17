@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
+import machinum.exception.AppIllegalStateException;
+import machinum.util.JavaUtil;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class MachinumAutomataRestClient {
 
+    public static final int MAX_RETRIES = 3;
+    public static final int DEFAULT_BACKOFF_TIME = 1000;
     @Value("${app.ma-service.url}")
     private final String maServiceUrl;
 
@@ -36,29 +40,66 @@ public class MachinumAutomataRestClient {
     public TranslateResponse translateScript(String sourceText) {
         log.debug("Sending text to translate via external service");
         URI uri = URI.create("%s/api/scripts/%s/execute".formatted(maServiceUrl, maServiceScript));
-        var request = createHttpRequest(sourceText, uri);
+        HttpRequest request = createHttpRequest(sourceText, uri);
 
-        HttpResponse<String> response = null;
-        try {
-            response = httpClient.execute(client -> client.send(request, HttpResponse.BodyHandlers.ofString()));
-        } finally {
-            if (Objects.nonNull(response)) {
-                log.debug("<< POST {} {}", uri, response.statusCode());
-            } else {
-                log.debug("<< POST {} -1", uri);
-            }
+        var response = executeWithRetry(request, uri);
+        var maResponse = parseResponse(response);
+
+        if (!maResponse.isSuccess()) {
+            throw new AppIllegalStateException("Translation failed");
         }
-
-        if (response.statusCode() != 200) {
-            throw new RuntimeException("HTTP %d: %s".formatted(response.statusCode(), response.body()));
-        }
-
-        var finalResponse = response;
-        var maResponse = objectMapper.execute(mapper -> mapper.readValue(finalResponse.body(), MachinumAutomataResponse.class));
 
         log.debug("Successfully translated via external service: {}", maResponse);
+        return Objects.requireNonNull(maResponse.getData(), "Response data cannot be null");
+    }
 
-        return Objects.requireNonNull(maResponse.getData(), "Response can't be null or empty");
+    private HttpResponse<String> executeWithRetry(HttpRequest request, URI uri) {
+        int retryCount = 0;
+        long backoffTime = DEFAULT_BACKOFF_TIME;
+
+        while (retryCount <= MAX_RETRIES) {
+            try {
+                var response = httpClient.execute(client ->
+                        client.send(request, HttpResponse.BodyHandlers.ofString()));
+
+                if (response != null) {
+                    log.debug("<< POST {} {}", uri, response.statusCode());
+                } else {
+                    log.debug("<< POST {} -1", uri);
+                }
+
+                if (response != null && response.statusCode() == 200) {
+                    return response;
+                }
+
+                if (retryCount >= MAX_RETRIES) {
+                    throwMaxRetriesException(response);
+                }
+
+                backoffTime = sleep(backoffTime);
+            } catch (Exception e) {
+                if (retryCount >= MAX_RETRIES) {
+                    throw new RuntimeException("Failed after " + MAX_RETRIES + " retries", e);
+                }
+                backoffTime = sleep(backoffTime);
+            }
+            retryCount++;
+        }
+
+        throw new RuntimeException("Unexpected error: exceeded retry loop without return");
+    }
+
+    private void throwMaxRetriesException(HttpResponse<String> response) {
+        if (response != null) {
+            throw new RuntimeException("HTTP %d: %s".formatted(response.statusCode(), response.body()));
+        } else {
+            throw new RuntimeException("Failed to get response after " + MAX_RETRIES + " retries");
+        }
+    }
+
+    private MachinumAutomataResponse parseResponse(HttpResponse<String> response) {
+        return objectMapper.execute(mapper ->
+                mapper.readValue(response.body(), MachinumAutomataResponse.class));
     }
 
     private HttpRequest createHttpRequest(String sourceText, URI uri) {
@@ -79,6 +120,12 @@ public class MachinumAutomataRestClient {
                 //10min
                 .timeout(Duration.ofSeconds(600))
                 .build();
+    }
+
+    private long sleep(long backoffTime) {
+        // Wait before retrying with incremental backoff
+        JavaUtil.sleep(backoffTime);
+        return backoffTime * 2;
     }
 
     @Data

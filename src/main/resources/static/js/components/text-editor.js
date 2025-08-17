@@ -22,6 +22,7 @@ export function textEditorApp() {
         editorMatchWholeWord: false,
         editorUseRegex: false,
         editorShowFindReplace: false,
+        relText: '',
 
         initTextEditor() {
             this.loadState('highlightSuspicious');
@@ -201,7 +202,34 @@ export function textEditorApp() {
                 console.error('Invalid Regex:', e);
                 this.showToast(`The regular expression you entered is invalid: ${error.message || error.detail}`, true);
             }
-        }
+        },
+
+        showOriginContent() {
+            const lines = this.currentChapter.text.split(/\r?\n|\r|\n/g);
+            if(!lines) {
+                return;
+            }
+
+            const currentLineIndex = this.currentLineNumber - 1;
+            const nextLineIndex = this.currentLineNumber;
+            const afterNextLineIndex = this.currentLineNumber + 1;
+
+            let combinedLines = '';
+
+            if (currentLineIndex >= 0 && currentLineIndex < lines.length) {
+                combinedLines += lines[currentLineIndex];
+            }
+
+            if (nextLineIndex >= 0 && nextLineIndex < lines.length) {
+                combinedLines += lines[nextLineIndex];
+            }
+
+            if (afterNextLineIndex >= 0 && afterNextLineIndex < lines.length) {
+                combinedLines += lines[afterNextLineIndex];
+            }
+
+            this.relText = combinedLines;
+        },
 
     };
 }

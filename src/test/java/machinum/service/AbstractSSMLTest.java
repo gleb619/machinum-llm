@@ -6,7 +6,7 @@ import machinum.flow.FlowArgument;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -32,7 +32,7 @@ public class AbstractSSMLTest extends NormalTest {
         var glossary = readJson(glossaryPath, new TypeReference<List<ObjectName>>() {
         });
 
-        var ssml = DurationUtil.measure("proofread", () -> {
+        var ssml = DurationMeasureUtil.measure("proofread", () -> {
                     return converter.convert((FlowContext<Chapter>)
                             of(text(chapterText),
                                     iteration(1),

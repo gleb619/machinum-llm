@@ -24,7 +24,7 @@ import static machinum.config.Constants.ARGUMENT;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class DurationUtil {
+public class DurationMeasureUtil {
 
     private static final DurationConfig INSTANCE = new DurationConfig(List.of());
 

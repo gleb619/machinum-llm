@@ -4,7 +4,7 @@ import io.github.artsok.RepeatedIfExceptionsTest;
 import machinum.extract.GlossaryExtractor;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -27,7 +27,7 @@ public abstract class AbstractGlossaryExtractorTest extends NormalTest {
         String chapterText = Files.readString(rewrittenChapterPath);
         String contextText = Files.readString(summaryPath);
 
-        var glossary = DurationUtil.measure("glossaryExtractor", () -> {
+        var glossary = DurationMeasureUtil.measure("glossaryExtractor", () -> {
             return this.glossaryExtractor.firstExtract((FlowContext<Chapter>) of(text(chapterText), context(contextText)));
         }).mutate(FlowContext::glossary);
 

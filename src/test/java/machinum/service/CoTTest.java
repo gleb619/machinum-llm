@@ -5,7 +5,7 @@ import machinum.extract.CoT;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -45,7 +45,7 @@ class CoTTest extends NormalTest {
         var chapterText = Files.readString(chapterPath);
         var contextText = Files.readString(contextPath);
 
-        var cot = DurationUtil.measure("CoT", () -> {
+        var cot = DurationMeasureUtil.measure("CoT", () -> {
             return coT.createCoT((FlowContext<Chapter>) FlowContextActions.of(
                     text(chapterText),
                     context(chapterText)

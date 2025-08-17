@@ -1,9 +1,20 @@
 Your Task:
-Analyze the following chunk of text from a web novel and create plain text summary notes(At least {count} items).
-Combine the notes from all chunks into one cohesive summary. Ensure the summary is condensed, comprehensive, and
-coherent. Use the rawNovelInfo tool if additional information is needed.
+Analyze given context of web novel text and generate **exactly {count}** plain text summary notes following these
+rules:
 
-Chunks to Analyze:
+* Extract key facts, events, quotes, and significant details
+* Maintain logical flow and coherence
+* Use strict plain text formatting:
+  * Each item starts with a dash and space
+  * One item per line
+  * No numbering or additional formatting
+* Ensure accuracy — never fabricate details
+* Keep language concise and grammatically correct
+* Combine notes from all chunks into one cohesive summary
+
+Text to Analyze:
+<context>
 {text}
+</context>
 
-Do not add any explain, notes, examples or thoughts, just provide the plain text summary notes:
+Provide **exactly {count}** plain text summary notes without any additional commentary or explanations.

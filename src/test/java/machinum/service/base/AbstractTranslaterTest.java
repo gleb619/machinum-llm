@@ -7,7 +7,7 @@ import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.service.NormalTest;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +35,7 @@ public abstract class AbstractTranslaterTest extends NormalTest {
         var glossary = readJson(glossaryPath, new TypeReference<List<ObjectName>>() {
         });
 
-        var translate = DurationUtil.measure("translate", () -> {
+        var translate = DurationMeasureUtil.measure("translate", () -> {
             return translater.translateAll((FlowContext<Chapter>) of(
                     text(chapterText),
                     context(contextText),
@@ -57,7 +57,7 @@ public abstract class AbstractTranslaterTest extends NormalTest {
         var glossary = readJson(glossaryPath, new TypeReference<List<ObjectName>>() {
         });
 
-        var translate = DurationUtil.measure("translate", () -> {
+        var translate = DurationMeasureUtil.measure("translate", () -> {
             return translater.translateWithScoringLoop((FlowContext<Chapter>) of(
                     text(chapterText),
                     context(contextText),
@@ -79,7 +79,7 @@ public abstract class AbstractTranslaterTest extends NormalTest {
         var glossary = readJson(glossaryPath, new TypeReference<List<ObjectName>>() {
         });
 
-        var translate = DurationUtil.measure("translate", () -> {
+        var translate = DurationMeasureUtil.measure("translate", () -> {
             return translater.translateWithScoring((FlowContext<Chapter>) of(
                     iteration(1),
                     text(chapterText),
@@ -103,7 +103,7 @@ public abstract class AbstractTranslaterTest extends NormalTest {
         var glossary = readJson(glossaryPath, new TypeReference<List<ObjectName>>() {
         });
 
-        var translate = DurationUtil.measure("translate", () -> {
+        var translate = DurationMeasureUtil.measure("translate", () -> {
             return translater.scoreAndFix((FlowContext<Chapter>) of(
                     iteration(1),
                     text(chapterText),

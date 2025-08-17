@@ -2,6 +2,7 @@ package machinum.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import machinum.controller.core.ControllerTrait;
 import machinum.model.Line;
 import machinum.service.LineService;
 import org.springframework.data.domain.PageRequest;
@@ -19,20 +20,10 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
-public class LineController {
+public class LineController implements ControllerTrait {
 
     private final LineService service;
 
-    /**
-     * Retrieves all lines from the database.
-     *
-     * @return a list of all lines
-     */
-    @GetMapping("/lines")
-    public List<Line> getAllLines() {
-        log.info("Received request to get all lines");
-        return service.getAllLines();
-    }
 
     /**
      * Retrieves lines associated with a specific book by its ID.
@@ -41,9 +32,12 @@ public class LineController {
      * @return a list of lines for the specified book
      */
     @GetMapping("/books/{bookId}/lines")
-    public List<Line> getLinesByBookId(@PathVariable("bookId") String bookId) {
+    public ResponseEntity<List<Line>> getLinesByBookId(@PathVariable("bookId") String bookId,
+                                                       @RequestParam(value = "page", defaultValue = "0") Integer page,
+                                                       @RequestParam(value = "size", defaultValue = "100") Integer size) {
         log.info("Received request to get lines by book ID: {}", bookId);
-        return service.getLinesByBookId(bookId);
+        var result = service.getLinesByBookId(bookId, PageRequest.of(page, size));
+        return pageResponse(result);
     }
 
     /**
@@ -52,12 +46,13 @@ public class LineController {
      * @return a list of lines for the specified book
      */
     @PostMapping("/books/{bookId}/lines/similar")
-    public List<Line> findSimilarForBook(@PathVariable("bookId") String bookId,
+    public ResponseEntity<List<Line>> findSimilarForBook(@PathVariable("bookId") String bookId,
                                          @RequestParam(value = "page", defaultValue = "0") Integer page,
                                          @RequestParam(value = "size", defaultValue = "100") Integer size,
                                          @RequestBody FindSimilarRequest request) {
         log.info("Received request to get similar lines for bookId: '{}', line={}", bookId, request.line());
-        return service.findSimilarForBook(bookId, request, PageRequest.of(page, size));
+        var result = service.findSimilarForBook(bookId, request, PageRequest.of(page, size));
+        return pageResponse(result);
     }
 
     /**
@@ -66,12 +61,13 @@ public class LineController {
      * @return a list of lines for the specified chapter
      */
     @PostMapping("/chapters/{chapterId}/lines/similar")
-    public List<Line> findSimilarForChapter(@PathVariable("chapterId") String chapterId,
+    public ResponseEntity<List<Line>> findSimilarForChapter(@PathVariable("chapterId") String chapterId,
                                             @RequestParam(value = "page", defaultValue = "0") Integer page,
                                             @RequestParam(value = "size", defaultValue = "100") Integer size,
                                             @RequestBody FindSimilarRequest request) {
         log.info("Received request to get similar lines for chapterId: '{}', line={}", chapterId, request.line());
-        return service.findSimilarForChapter(chapterId, request, PageRequest.of(page, size));
+        var result = service.findSimilarForChapter(chapterId, request, PageRequest.of(page, size));
+        return pageResponse(result);
     }
 
     /**
@@ -81,9 +77,9 @@ public class LineController {
      * @return a list of lines for the specified chapter
      */
     @GetMapping("/chapters/{chapterId}/lines")
-    public List<Line> getLinesByChapterId(@PathVariable("chapterId") String chapterId) {
+    public ResponseEntity<List<Line>> getLinesByChapterId(@PathVariable("chapterId") String chapterId) {
         log.info("Received request to get lines by chapter ID: {}", chapterId);
-        return service.getLinesByChapterId(chapterId);
+        return ResponseEntity.ok(service.getLinesByChapterId(chapterId));
     }
 
     /**

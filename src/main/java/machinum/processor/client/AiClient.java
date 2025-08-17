@@ -18,6 +18,8 @@ public interface AiClient {
 
         GEMINI_AI,
 
+        OPENROUTER,
+
         ;
 
         public static Provider parse(String name) {

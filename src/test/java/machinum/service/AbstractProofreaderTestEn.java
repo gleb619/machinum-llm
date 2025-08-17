@@ -5,7 +5,7 @@ import machinum.extract.ProofreaderEnXml;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -30,7 +30,7 @@ public class AbstractProofreaderTestEn extends NormalTest {
         var glossary = readJson(glossaryPath, new TypeReference<List<ObjectName>>() {
         });
 
-        var proofread = DurationUtil.measure("proofread", () -> {
+        var proofread = DurationMeasureUtil.measure("proofread", () -> {
             return proofreaderEn.proofread((FlowContext<Chapter>)
                     of(text(chapterText),
                             context(contextText),

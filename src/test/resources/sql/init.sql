@@ -1,7 +1,7 @@
 INSERT INTO books (id, title, book_state)
 VALUES('00000000-0000-0000-0000-000000000001',
        'novel_en_min',
-       '{ "itemIndex": 2, "promptIndex": 0, "state": "CLEANING" }'::json)
+       '{ "itemIndex": 2, "promptIndex": 0, "state": "SUMMARY" }'::json)
        ON CONFLICT (id) DO NOTHING;
 
 --SEPARATOR--

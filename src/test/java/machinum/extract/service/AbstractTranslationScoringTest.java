@@ -7,7 +7,7 @@ import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.service.NormalTest;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -38,7 +38,7 @@ public abstract class AbstractTranslationScoringTest extends NormalTest {
         var glossary = readJson(glossaryPath, new TypeReference<List<ObjectName>>() {
         });
 
-        var translationScore = DurationUtil.measure("translationScore", () -> {
+        var translationScore = DurationMeasureUtil.measure("translationScore", () -> {
             return translationScoring.scoreTranslate((FlowContext<Chapter>) of(
                     translatedText(oldTranslatedText).asObsolete(),
                     translatedText(translatedText),

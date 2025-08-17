@@ -140,6 +140,18 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION refresh_single_view(p_view_name TEXT)
 RETURNS boolean AS $$
 BEGIN
+    EXECUTE format('REFRESH MATERIALIZED VIEW %I', p_view_name);
+    RETURN TRUE;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN FALSE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to refresh single materialized view in async flow
+CREATE OR REPLACE FUNCTION refresh_single_view_concurrently(p_view_name TEXT)
+RETURNS boolean AS $$
+BEGIN
     EXECUTE format('REFRESH MATERIALIZED VIEW CONCURRENTLY %I', p_view_name);
     RETURN TRUE;
 EXCEPTION

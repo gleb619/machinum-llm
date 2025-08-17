@@ -277,6 +277,7 @@ export function bookReportApp() {
             }
 
             this.chapterSource.rangeRuleConfig.max = this.heatmapData.chapters[this.heatmapData.chapters.length - 1].chapterNumber;
+            this.changeValue('chapterSource', this.chapterSource);
         },
 
         setToChap(selectedItem) {
@@ -294,6 +295,7 @@ export function bookReportApp() {
             }
 
             this.chapterSource.rangeRuleConfig.min = this.heatmapData.chapters[0].chapterNumber;
+            this.changeValue('chapterSource', this.chapterSource);
         }
 
     };

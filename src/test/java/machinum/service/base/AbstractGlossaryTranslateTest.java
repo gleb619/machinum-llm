@@ -8,7 +8,7 @@ import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.service.NormalTest;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,7 +52,7 @@ public abstract class AbstractGlossaryTranslateTest extends NormalTest {
         var glossaryJson = readJson(glossaryPath, new TypeReference<List<ObjectName>>() {
         });
 
-        var glossary = DurationUtil.measure("glossaryTranslate", () -> {
+        var glossary = DurationMeasureUtil.measure("glossaryTranslate", () -> {
             return fn.apply((FlowContext<Chapter>) of(
                     iteration(1),
                     text(cleanText),

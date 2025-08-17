@@ -6,9 +6,9 @@ import machinum.model.Statistic;
 import machinum.model.Statistic.StatisticMessage;
 import machinum.processor.core.AssistantContext;
 import machinum.service.StatisticService;
-import machinum.util.DurationUtil;
-import machinum.util.DurationUtil.DurationContext;
-import machinum.util.DurationUtil.DurationPlugin;
+import machinum.util.DurationMeasureUtil;
+import machinum.util.DurationMeasureUtil.DurationContext;
+import machinum.util.DurationMeasureUtil.DurationPlugin;
 import machinum.util.TextUtil;
 import machinum.util.TraceUtil;
 import org.springframework.async.AsyncHelper;
@@ -89,7 +89,7 @@ public class StatisticPlugin implements DurationPlugin {
             var percent = round(calculatePercent(outputHistoryTokens, options.getNumCtx()), 2);
             int left = options.getNumCtx() - outputHistoryTokens;
             var duration = response.duration();
-            var report = DurationUtil.DurationConfig.humanReadableDuration(duration);
+            var report = DurationMeasureUtil.DurationConfig.humanReadableDuration(duration);
 
             var statistic = Statistic.builder()
                     .date(LocalDate.now())

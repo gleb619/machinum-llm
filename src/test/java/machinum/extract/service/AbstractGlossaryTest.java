@@ -7,7 +7,7 @@ import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.service.DbTest;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -36,7 +36,7 @@ public abstract class AbstractGlossaryTest extends DbTest {
         String contextText = Files.readString(summaryPath);
 
         //TODO add to FlowContext a Chapter#number & consolidatedGlossary
-        var glossary = DurationUtil.measure("glossaryExtractor", () -> {
+        var glossary = DurationMeasureUtil.measure("glossaryExtractor", () -> {
             return this.glossary.extractGlossary((FlowContext<Chapter>) of(
                     context(previousContext).asObsolete(),
                             glossary(previousGlossary),

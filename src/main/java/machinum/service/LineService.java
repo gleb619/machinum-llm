@@ -2,6 +2,7 @@ package machinum.service;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import machinum.controller.LineController;
 import machinum.controller.LineController.FindSimilarRequest;
@@ -13,8 +14,10 @@ import machinum.model.Chapter;
 import machinum.model.Line;
 import machinum.repository.LineDao;
 import machinum.repository.LineRepository;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.async.AsyncHelper;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.db.DbHelper;
 import org.springframework.http.HttpStatus;
@@ -23,6 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static machinum.listener.ChapterEntityListener.ChapterInfoConstants.CLEAN_TEXT;
@@ -44,18 +50,14 @@ public class LineService {
     private final AsyncHelper asyncHelper;
     private final DbHelper dbHelper;
 
+
     @Transactional(readOnly = true)
-    public List<Line> getAllLines() {
-        return mapper.toDto(repository.findAll());
+    public Page<Line> getLinesByBookId(@NonNull String bookId, PageRequest pageRequest) {
+        return repository.findByBookId(bookId, pageRequest).map(mapper::toDto);
     }
 
     @Transactional(readOnly = true)
-    public List<Line> getLinesByBookId(@NonNull String bookId) {
-        return mapper.toDto(repository.findByBookId(bookId));
-    }
-
-    @Transactional(readOnly = true)
-    public List<Line> findSimilarForBook(String bookId, FindSimilarRequest request, PageRequest pageRequest) {
+    public Page<Line> findSimilarForBook(String bookId, FindSimilarRequest request, PageRequest pageRequest) {
         for (String field : request.fields()) {
             if (!SUPPORTED_FIELDS.contains(field)) {
                 throw new AppIllegalStateException("Unknown field: " + field);
@@ -63,29 +65,35 @@ public class LineService {
         }
 
         var ids = new HashSet<String>();
+        long textTotal = 0;
+        long translatedTextTotal = 0;
 
         if (request.isStrictSearch()) {
             String searchPattern = request.useRegex() != null && request.useRegex() ? request.line() : null;
 
             for (String field : request.fields()) {
                 if (CLEAN_TEXT.equals(field)) {
-                    ids.addAll(repository.findSimilarOriginalLines(bookId,
+                    Page<String> page = repository.findSimilarOriginalLines(bookId,
                             request.line(),
                             searchPattern,
                             request.matchCase(),
                             request.matchWholeWord(),
                             request.useRegex(),
                             pageRequest
-                    ));
+                    );
+                    textTotal = page.getTotalElements();
+                    ids.addAll(page.getContent());
                 } else if (TRANSLATED_TEXT.equals(field)) {
-                    ids.addAll(repository.findSimilarTranslatedLines(bookId,
+                    Page<String> page = repository.findSimilarTranslatedLines(bookId,
                             request.line(),
                             searchPattern,
                             request.matchCase(),
                             request.matchWholeWord(),
                             request.useRegex(),
                             pageRequest
-                    ));
+                    );
+                    translatedTextTotal = page.getTotalElements();
+                    ids.addAll(page.getContent());
                 }
             }
         } else {
@@ -98,11 +106,12 @@ public class LineService {
             }
         }
 
-        return mapper.toDto(repository.findAllById(ids));
+        long totalItems = Math.max(textTotal, translatedTextTotal);
+        return new PageImpl<>(mapper.toDto(repository.findAllById(ids)), pageRequest, totalItems);
     }
 
     @Transactional(readOnly = true)
-    public List<Line> findSimilarForChapter(String chapterId, FindSimilarRequest request, PageRequest pageRequest) {
+    public Page<Line> findSimilarForChapter(String chapterId, FindSimilarRequest request, PageRequest pageRequest) {
         for (String field : request.fields()) {
             if (!SUPPORTED_FIELDS.contains(field)) {
                 throw new AppIllegalStateException("Unknown field: " + field);
@@ -110,6 +119,8 @@ public class LineService {
         }
 
         var ids = new HashSet<String>();
+        long textTotal = 0;
+        long translatedTextTotal = 0;
 
         if (request.isStrictSearch()) {
             String searchPattern = request.useRegex() != null && request.useRegex() ? request.line() : null;
@@ -117,23 +128,27 @@ public class LineService {
 
             for (String field : request.fields()) {
                 if (CLEAN_TEXT.equals(field)) {
-                    ids.addAll(repository.findSimilarOriginalLines(bookId,
+                    Page<String> page = repository.findSimilarOriginalLines(bookId,
                             request.line(),
                             searchPattern,
                             request.matchCase(),
                             request.matchWholeWord(),
                             request.useRegex(),
                             pageRequest
-                    ));
+                    );
+                    textTotal = page.getTotalElements();
+                    ids.addAll(page.getContent());
                 } else if (TRANSLATED_TEXT.equals(field)) {
-                    ids.addAll(repository.findSimilarTranslatedLines(bookId,
+                    Page<String> page = repository.findSimilarTranslatedLines(bookId,
                             request.line(),
                             searchPattern,
                             request.matchCase(),
                             request.matchWholeWord(),
                             request.useRegex(),
                             pageRequest
-                    ));
+                    );
+                    translatedTextTotal = page.getTotalElements();
+                    ids.addAll(page.getContent());
                 }
             }
         } else {
@@ -146,7 +161,8 @@ public class LineService {
             }
         }
 
-        return mapper.toDto(repository.findAllById(ids));
+        long totalItems = Math.max(textTotal, translatedTextTotal);
+        return new PageImpl<>(mapper.toDto(repository.findAllById(ids)), pageRequest, totalItems);
     }
 
     @Transactional(readOnly = true)
@@ -189,60 +205,70 @@ public class LineService {
         doUpdateChapterLine(updatedLine);
     }
 
-    @Transactional
+    @SneakyThrows
     public void replaceLineContent(LineController.ReplaceLineRequest request) {
         if (request.ids() == null || request.ids().isEmpty()) {
             return;
         }
 
-        // Get all lines to process
-        var lines = repository.findAllById(request.ids())
-                .stream()
-                .map(mapper::toDto)
-                .toList();
+        var hasChanges = new AtomicBoolean(false);
+        var lines = new AtomicReference<List<Line>>();
 
-        if (lines.isEmpty()) {
-            return;
-        }
+        dbHelper.doInNewTransaction(() -> {
+            // Get all lines to process
+            lines.set(repository.findAllById(request.ids())
+                    .stream()
+                    .map(mapper::toDto)
+                    .toList());
 
-        // Group lines by chapter ID to minimize chapter updates
-        var linesByChapter = lines.stream()
-                .collect(Collectors.groupingBy(Line::getChapterId));
+            if (lines.get().isEmpty()) {
+                return;
+            }
 
-        boolean hasChanges = false;
+            // Group lines by chapter ID to minimize chapter updates
+            var linesByChapter = lines.get().stream()
+                    .sorted(Comparator.comparing(Line::getNumber))
+                    .collect(Collectors.groupingBy(Line::getChapterId, LinkedHashMap::new, Collectors.toList()));
 
-        for (var entry : linesByChapter.entrySet()) {
-            var chapterId = entry.getKey();
-            var chapterLines = entry.getValue();
 
-            // Process each line in the chapter
-            hasChanges |= updateChapterLines(chapterId, chapterLines,
-                    (line, originalLines, translatedLines, lineIndex) -> {
-                        // Get current line content
-                        var currentOriginalLine = originalLines.get(lineIndex);
-                        var currentTranslatedLine = translatedLines.get(lineIndex);
+            for (var entry : linesByChapter.entrySet()) {
+                var chapterId = entry.getKey();
+                var chapterLines = entry.getValue();
+                // Sort lines within each chapter by lineIndex
+                chapterLines.sort(Comparator.comparing(Line::getLineIndex));
 
-                        // Replace original line if needed
-                        if (request.find() != null && currentOriginalLine.contains(request.find())) {
-                            originalLines.set(lineIndex, currentOriginalLine.replace(request.find(), request.replace()));
-                        }
+                // Process each line in the chapter
+                hasChanges.set(hasChanges.get() | updateChapterLines(chapterId, chapterLines,
+                        (line, originalLines, translatedLines, lineIndex) -> {
+                            // Get current line content
+                            var currentOriginalLine = originalLines.get(lineIndex);
+                            var currentTranslatedLine = translatedLines.get(lineIndex);
 
-                        // Replace translated line if needed
-                        if (line.getTranslatedLine() != null &&
-                                request.find() != null &&
-                                currentTranslatedLine.contains(request.find())) {
-                            translatedLines.set(lineIndex, currentTranslatedLine.replace(request.find(), request.replace()));
-                        }
-                    });
-        }
+                            // Replace original line if needed
+                            if (request.find() != null && currentOriginalLine.contains(request.find())) {
+                                originalLines.set(lineIndex, currentOriginalLine.replace(request.find(), request.replace()));
+                            }
+
+                            // Replace translated line if needed
+                            if (line.getTranslatedLine() != null &&
+                                    request.find() != null &&
+                                    currentTranslatedLine.contains(request.find())) {
+                                translatedLines.set(lineIndex, currentTranslatedLine.replace(request.find(), request.replace()));
+                            }
+                        }));
+            }
+        });
 
         // Refresh materialized view if changes were made
-        if (hasChanges) {
-            asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(() -> {
-                lines.stream()
-                        .collect(Collectors.toMap(Line::getBookId, Line::getNumber, (existing, replacement) -> existing))
-                        .forEach(linesInfoDao::refreshView);
-            })).whenComplete((unused, throwable) -> log.debug("MatView has been updated"));
+        if (hasChanges.get()) {
+            log.debug("Perform material view refresh");
+            asyncHelper.inNewTransaction(() -> lines.get().stream()
+                                    .collect(Collectors.groupingBy(Line::getBookId)).entrySet().stream()
+                                    .allMatch(entry -> linesInfoDao.refreshView(entry.getKey(), entry.getValue().stream()
+                                            .map(Line::getNumber)
+                                            .collect(Collectors.toList()))),
+                            (r, throwable) -> log.debug("MatView update status: {}", r ? "success" : "failed"))
+                    .get(1, TimeUnit.HOURS);
         }
     }
 
@@ -256,6 +282,7 @@ public class LineService {
      * @param fields  fields to erase
      * @return map containing the results of the operation for each lineId
      */
+    @SneakyThrows
     private void eraseAllLines(List<String> lineIds, List<String> fields) {
         if (lineIds == null || lineIds.isEmpty() || fields == null || fields.isEmpty()) {
             log.warn("No data provided for erasure");
@@ -271,18 +298,19 @@ public class LineService {
         List<LineView> linesList = repository.findAllById(lineIds);
 
         // Group line IDs by chapter ID to optimize database operations
-        Map<String, List<Line>> chapterLineMap = new HashMap<>();
-        linesList.forEach(lineView -> {
-            Line line = mapper.toDto(lineView);
-            chapterLineMap.computeIfAbsent(line.getChapterId(), k -> new ArrayList<>()).add(line);
-        });
+        var linesByChapter = linesList.stream()
+                .map(mapper::toDto)
+                .sorted(Comparator.comparing(Line::getNumber))
+                .collect(Collectors.groupingBy(Line::getChapterId, LinkedHashMap::new, Collectors.toList()));
 
         var results = new ArrayList<Boolean>();
 
         // Process each chapter's lines
-        for (var entry : chapterLineMap.entrySet()) {
+        for (var entry : linesByChapter.entrySet()) {
             String chapterId = entry.getKey();
             List<Line> lines = entry.getValue();
+            // Sort lines within each chapter by lineIndex
+            lines.sort(Comparator.comparing(Line::getLineIndex));
 
             results.add(updateChapterLines(chapterId, lines, (line, originalLines, translatedLines, lineIndex) -> {
                 // Verify hash before modifying
@@ -302,13 +330,17 @@ public class LineService {
         }
 
         if(results.stream().anyMatch(b -> b)) {
-            asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(() -> linesList.stream()
-                            .collect(Collectors.toMap(LineView::getBookId, LineView::getNumber, (existing, replacement) -> existing))
-                            .forEach(linesInfoDao::refreshView)))
-                    .whenComplete((unused, throwable) -> log.debug("MatView has been updated"));
+            asyncHelper.inNewTransaction(() -> linesList.stream()
+                                    .collect(Collectors.groupingBy(LineView::getBookId)).entrySet().stream()
+                                    .allMatch(entry -> linesInfoDao.refreshView(entry.getKey(), entry.getValue().stream()
+                                            .map(LineView::getNumber)
+                                            .collect(Collectors.toList()))),
+                            (r, throwable) -> log.debug("MatView update status: {}", r ? "success" : "failed"))
+                    .get(1, TimeUnit.HOURS);
         }
     }
 
+    @SneakyThrows
     private void doUpdateChapterLine(Line updatedLine) {
         log.debug("Updating line with ID: {}", updatedLine.getId());
 
@@ -317,28 +349,35 @@ public class LineService {
                 .map(mapper::toDto)
                 .orElseThrow(() -> new RuntimeException("Line not found with id: " + updatedLine.getId()));
 
-        var result = updateChapterLines(currentLine.getChapterId(), Collections.singletonList(currentLine),
-                (line, originalLines, translatedLines, lineIndex) -> {
-                    // Verify hash before modifying
-                    String currentOriginalLine = originalLines.get(lineIndex);
-                    String currentTranslatedLine = translatedLines.get(lineIndex);
+        boolean result = false;
+        try {
+            result = updateChapterLines(currentLine.getChapterId(), Collections.singletonList(currentLine),
+                    (line, originalLines, translatedLines, lineIndex) -> {
+                        // Verify hash before modifying
+                        String currentOriginalLine = originalLines.get(lineIndex);
+                        String currentTranslatedLine = translatedLines.get(lineIndex);
 
-                    if (updatedLine.getOriginalLine() != null) {
-                        checkHash(line.getOriginalLine(), currentOriginalLine);
-                        originalLines.set(lineIndex, updatedLine.getOriginalLine());
-                    }
+                        if (updatedLine.getOriginalLine() != null && line.getOriginalLine() != null) {
+                            checkHash(line.getOriginalLine(), currentOriginalLine);
+                            originalLines.set(lineIndex, updatedLine.getOriginalLine());
+                        }
 
-                    if (updatedLine.getTranslatedLine() != null) {
-                        checkHash(line.getTranslatedLine(), currentTranslatedLine);
-                        translatedLines.set(lineIndex, updatedLine.getTranslatedLine());
-                    }
-                });
+                        if (updatedLine.getTranslatedLine() != null && line.getTranslatedLine() != null) {
+                            checkHash(line.getTranslatedLine(), currentTranslatedLine);
+                            translatedLines.set(lineIndex, updatedLine.getTranslatedLine());
+                        }
+                    });
+        } catch (LineHashMismatchException e) {
+            asyncHelper.inNewTransaction(() ->
+                            linesInfoDao.refreshView(currentLine.getBookId(), currentLine.getNumber()),
+                    (r, throwable) -> log.debug("MatView update status: {}", r ? "success" : "failed"));
+            ExceptionUtils.rethrow(e);
+        }
 
         if(result) {
-            asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(() -> {
-                        linesInfoDao.refreshView(currentLine.getBookId(), currentLine.getNumber());
-                    }))
-                    .whenComplete((unused, throwable) -> log.debug("MatView has been updated"));
+            asyncHelper.inNewTransaction(() ->
+                            linesInfoDao.refreshView(currentLine.getBookId(), currentLine.getNumber()),
+                    (r, throwable) -> log.debug("MatView update status: {}", r ? "success" : "failed"));
         }
     }
 

@@ -3,6 +3,7 @@ package machinum.service;
 import jakarta.persistence.EntityManager;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import machinum.exception.AppIllegalStateException;
 import machinum.flow.FlowContext;
@@ -82,12 +83,12 @@ public class ChapterFacade {
         chapterService.saveWithContext(context);
     }
 
+    @SneakyThrows
     public Chapter updateChapter(Chapter updatedChapter) {
         var result = chapterService.updateChapter(updatedChapter);
-        asyncHelper.runAsync(() -> dbHelper.doInNewTransaction(() -> {
-                    lineDao.refreshView(updatedChapter.getBookId(), updatedChapter.getNumber());
-                }))
-                .whenComplete((unused, throwable) -> log.debug("MatView has been updated"));
+        asyncHelper.inNewTransaction(() ->
+                        lineDao.refreshView(updatedChapter.getBookId(), updatedChapter.getNumber()),
+                (r, throwable) -> log.debug("MatView update status: {}", r ? "success" : "failed"));
 
         return result;
     }

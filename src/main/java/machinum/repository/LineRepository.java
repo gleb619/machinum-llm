@@ -3,6 +3,7 @@ package machinum.repository;
 import machinum.entity.LineView;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,7 +14,7 @@ import java.util.List;
 @Repository
 public interface LineRepository extends JpaRepository<LineView, String> {
 
-    List<LineView> findByBookId(String bookId);
+    Page<LineView> findByBookId(String bookId, Pageable pageable);
 
     List<LineView> findByChapterId(String chapterId);
 
@@ -52,7 +53,7 @@ public interface LineRepository extends JpaRepository<LineView, String> {
             )
             ORDER BY l.number, l.line_index
             """, nativeQuery = true)
-    List<String> findSimilarOriginalLines(@Param("bookId") String bookId,
+    Page<String> findSimilarOriginalLines(@Param("bookId") String bookId,
                                           @Param("text") String text,
                                           @Param("searchPattern") String searchPattern,
                                           @Param("matchCase") Boolean matchCase,
@@ -80,7 +81,7 @@ public interface LineRepository extends JpaRepository<LineView, String> {
             )
             ORDER BY l.number, l.line_index
             """, nativeQuery = true)
-    List<String> findSimilarTranslatedLines(@Param("bookId") String bookId,
+    Page<String> findSimilarTranslatedLines(@Param("bookId") String bookId,
                                             @Param("text") String text,
                                             @Param("searchPattern") String searchPattern,
                                             @Param("matchCase") Boolean matchCase,

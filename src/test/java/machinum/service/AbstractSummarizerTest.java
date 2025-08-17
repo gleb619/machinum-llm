@@ -7,7 +7,7 @@ import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ public abstract class AbstractSummarizerTest extends NormalTest {
     @RepeatedIfExceptionsTest
     void testSummarize() throws IOException {
         String chapterText = Files.readString(rewrittenChapterPath);
-        var summary = DurationUtil.measure("summary", () -> {
+        var summary = DurationMeasureUtil.measure("summary", () -> {
             return summarizer.summarize(FlowContextActions.of(text(chapterText)));
         }).mutate(FlowContext::context);
 
@@ -49,7 +49,7 @@ public abstract class AbstractSummarizerTest extends NormalTest {
         var glossary = readJson(previousGlossaryPath, new TypeReference<List<ObjectName>>() {
         });
 
-        var summary = DurationUtil.measure("summary", () -> {
+        var summary = DurationMeasureUtil.measure("summary", () -> {
             return summarizer.summarize((FlowContext<Chapter>) of(
                     text(chapterText),
                     context(contextText),

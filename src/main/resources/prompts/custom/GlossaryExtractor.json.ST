@@ -1,10 +1,11 @@
-Your Task:
-Analyze the following chunks of text from a web novel chapter and create a glossary of key terms, concepts, and
-entities. Use the rawNovelInfo tool if additional information is needed. Provide the output in JSON format, following
-the provided schema.
+Your Task:  
+Analyze given context of web novel chapter text and generate a glossary of key terms, concepts, and entities in strict
+JSON format.
 
-Chunks to Analyze:
+Only output the JSON. Do not include any explanation, comments, notes, examples, thoughts, or formatting outside the
+JSON.
+
+Text to Analyze:
+<context>
 {text}
-
-Do not add any explain, notes, examples or thoughts, just provide the glossary in JSON format,
-following the provided schema:
+</context>

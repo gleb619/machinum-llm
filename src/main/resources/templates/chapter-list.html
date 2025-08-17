@@ -265,7 +265,12 @@
                     @click="setSelectedItem(chapter.id)"
                     @dblclick="filters.chapterNumber = chapter.number"
                     class="cursor-pointer">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="chapter.id"></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <a class="hover:text-blue-600"
+                           x-bind:href="`/chapters?chapterId=${chapter.id}`"
+                           x-text="chapter.id">
+                        </a>
+                    </td>
                     <td class="px-6 py-4 text-sm text-gray-900 max-w-xs">
                         <div class="truncate" :title="(chapter.title + ' / ' + (chapter.translatedTitle || '#no-translation'))">
                             <span x-text="chapter.title"></span>

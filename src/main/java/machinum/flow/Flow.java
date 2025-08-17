@@ -19,7 +19,7 @@ import java.util.stream.IntStream;
 import static machinum.flow.Flow.ErrorStrategy.defaultStrategy;
 import static machinum.flow.InMemoryStateManager.inMemory;
 import static machinum.flow.OneStepRunner.FlowExtensions.aggregate;
-import static machinum.util.DurationUtil.DurationConfig.humanReadableDuration;
+import static machinum.util.DurationMeasureUtil.DurationConfig.humanReadableDuration;
 import static machinum.util.JavaUtil.newId;
 
 @Slf4j

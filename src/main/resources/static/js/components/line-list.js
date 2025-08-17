@@ -7,6 +7,7 @@ export function lineListApp() {
             lines: [],
             lineSearchQuery: '',
             lineFilter: '',
+            replaceText: '',
             editingLineId: null,
             lineFindText: '',
             lineReplaceWith: '',
@@ -15,7 +16,17 @@ export function lineListApp() {
             lineMatchCase: false,
             lineMatchWholeWord: false,
             lineUseRegex: false,
+            lineFilteredMatchCase: false,
+            lineFilteredMatchWholeWord: false,
+            lineFilteredUseRegex: false,
         },
+        lineLoading: false,
+        replaceLoading: false,
+
+        lineCurrentPage: 0,
+        lineTotalPages: 1,
+        lineTotalElements: 0,
+        linePageSize: 100,
 
 
         initLineList() {
@@ -32,26 +43,75 @@ export function lineListApp() {
 
         get filteredLines() {
             if (!this.lineObject.lineFilter) return this.lineObject.lines;
-            return this.lineObject.lines.filter(line =>
-                line.originalLine.toLowerCase().includes(this.lineObject.lineFilter.toLowerCase()) ||
-                line.translatedLine.toLowerCase().includes(this.lineObject.lineFilter.toLowerCase())
-            );
+
+            const filterText = this.lineObject.lineFilter;
+            const matchCase = this.lineObject.lineFilteredMatchCase;
+
+            return this.lineObject.lines.filter(line => {
+                const originalLine = line?.originalLine || '';
+                const translatedLine = line?.translatedLine || '';
+
+                if (this.lineObject.lineFilteredUseRegex) {
+                    try {
+                        const regex = new RegExp(filterText, matchCase ? '' : 'i');
+                        return regex.test(originalLine) || regex.test(translatedLine);
+                    } catch (e) {
+                        return false;
+                    }
+                }
+
+                if (this.lineObject.lineFilteredMatchWholeWord) {
+                    const escapedFilter = filterText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const wordRegex = new RegExp(`(?:^|\s|[.,!?"'])\\b${escapedFilter}\\b(?:$|\s|[.,!?"'])`, matchCase ? 'u' : 'iu');
+                    const result = (wordRegex.test(originalLine) || wordRegex.test(translatedLine));
+
+                    if(!result) {
+                        const originalMatchResult = originalLine.match(wordRegex);
+                        const translatedMatchResult = translatedLine.match(wordRegex);
+
+                        if(originalMatchResult && originalMatchResult[0]) {
+                            return true;
+                        }
+                        if(translatedMatchResult && translatedMatchResult[0]) {
+                            return true;
+                        }
+                    } else {
+                        return result;
+                    }
+
+                    return findWholeWord(originalLine, filterText, matchCase) ||
+                           findWholeWord(translatedLine, filterText, matchCase);
+                }
+
+                if (matchCase) {
+                    return originalLine.includes(filterText) || translatedLine.includes(filterText);
+                } else {
+                    const lowerFilter = filterText.toLowerCase();
+                    return originalLine.toLowerCase().includes(lowerFilter) ||
+                           translatedLine.toLowerCase().includes(lowerFilter);
+                }
+            });
         },
 
-        fetchChapterLines(chapterId) {
-            return fetch(`/api/chapters/${chapterId}/lines`)
-                .then(response => response.json())
-                .then(data => {
-                    this.lineObject.lines = data;
-                })
-                .catch(error => {
-                    console.error('Error fetching lines:', error)
-                    this.showToast(`Error: ${error.message || error.code}`, true);
-                });
+        async fetchChapterLines(chapterId) {
+            this.lineLoading = true;
+            try {
+                const response = await fetch(`/api/chapters/${chapterId}/lines`);
+                const data = await response.json();
+                this.lineObject.lines = data;
+                this.lineCurrentPage = parseInt(response.headers.get('x-current-page')) || 0;
+                this.lineTotalPages = parseInt(response.headers.get('x-total-pages')) || 1;
+                this.lineTotalElements = parseInt(response.headers.get('x-total-elements')) || 0;
+
+                setTimeout(() => this.lineLoading = false, 100);
+            } catch (error) {
+                console.error('Error fetching lines:', error);
+                this.showToast(`Error: ${error.message || error.code}`, true);
+            }
         },
 
         async fetchSimilarLines(line, fields) {
-
+            this.lineLoading = true;
             this.lineObject.lineSearchQuery = line;
 
             let url;
@@ -78,9 +138,13 @@ export function lineListApp() {
                 });
 
                 const data = await response.json();
+                setTimeout(() => this.lineLoading = false, 100);
 
                 if(response.ok) {
                     this.lineObject.lines = data;
+                    this.lineCurrentPage = parseInt(response.headers.get('x-current-page')) || 0;
+                    this.lineTotalPages = parseInt(response.headers.get('x-total-pages')) || 1;
+                    this.lineTotalElements = parseInt(response.headers.get('x-total-elements')) || 0;
                     this.changeValue('lineObject', this.lineObject);
                     return Promise.resolve(data);
                 } else {
@@ -177,29 +241,32 @@ export function lineListApp() {
             }
         },
         
-        performReplace() {
+        async performReplace() {
             if (!this.lineObject.lineSearchQuery || !this.lineObject.lineReplaceWith) return;
-    
-            fetch(`/api/books/${this.filters.bookId}/lines/replace`, {
-                method: 'POST',
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    find: this.lineObject.lineSearchQuery,
-                    replace: this.lineObject.lineReplaceWith,
-                    ids: this.filteredLines.map(line => line.id)
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                this.lineObject.lines = data;
+            this.lineLoading = true;
+
+            try {
+                const response = await fetch(`/api/books/${this.filters.bookId}/lines/replace`, {
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        find: this.lineObject.lineSearchQuery,
+                        replace: this.lineObject.lineReplaceWith,
+                        ids: this.filteredLines.map(line => line.id)
+                    })
+                });
+
                 this.showToast('Replacement successful!');
-            })
-            .catch(error => {
+                //TODO await until pg refresh mat view is complete before fetching again
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                await this.fetchSimilarLines(this.lineObject.lineSearchQuery, [this.lineObject.selectedField]);
+            } catch (error) {
                 console.error('Error replacing lines:', error);
                 this.showToast(`Error: ${error.message || error.code}`, true);
-            });
+                this.lineLoading = false;
+            }
         },
     
         editLine(lineId) {
@@ -211,6 +278,33 @@ export function lineListApp() {
 
         removeLineItem(lineId) {
             this.lineObject.lines = this.lineObject.lines.filter(line => line.id !== lineId);
+        },
+
+        async applyReplaceChanges(lineId) {
+            this.replaceLoading = true;
+            const line = this.lineObject.lines.find(l => l.id === lineId);
+            const temp = {
+                originalLine: '',
+                translatedLine: '',
+            };
+
+            if(line?.originalLine) {
+                temp.originalLine = line.originalLine.replace(this.lineObject.lineFilter, this.lineObject.replaceText);
+            }
+
+            if(line?.translatedLine) {
+                temp.translatedLine = line.translatedLine.replace(this.lineObject.lineFilter, this.lineObject.replaceText);
+            }
+
+            try {
+                const changeResult = await this.saveLine(lineId, temp.originalLine, temp.translatedLine);
+            } catch(ignore) {
+                this.removeLineItem(lineId);
+            } finally {
+                setTimeout(() => {
+                  this.replaceLoading = false;
+                }, 100);
+            }
         },
 
         async saveLine(lineId, originalText, translatedText) {
@@ -228,7 +322,7 @@ export function lineListApp() {
                 delete request.translatedLine;
             }
 
-            if(Object.keys(request).length === 0) return;
+            if(Object.keys(request).length === 1) return Promise.resolve();
 
             try {
                 const response = await fetch(`/api/lines/${lineId}`, {
@@ -246,26 +340,112 @@ export function lineListApp() {
                     if (!rsp.ok) {
                         console.error('Error updating line:', rsp);
                         this.showToast(`Error: ${rsp.message || rsp.detail}`, true);
+                        return Promise.reject(new Error(rsp.message || rsp.detail));
                     }
                 } else {
                     this.removeById(this.lineObject.lines, lineId);
                     this.showToast('Line updated successfully!');
                     await this.pullChapterContentChangesById(line.chapterId);
                 }
+
+                return Promise.resolve();
             } catch (error) {
                 console.error('Error updating line:', error);
                 this.showToast(`Error: ${error.message || error.code}`, true);
+                return Promise.reject(error);
             }
         },
 
-        highlightLineMatch(text, query) {
-            if (!text || !query) return text;
+        highlightLineMatch(text, remoteQuery, localQuery) {
+            if (!text || !remoteQuery) return text;
 
-            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const escapedQuery = remoteQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`(${escapedQuery})`, 'gi');
 
-            return text.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
-        }
+            let result = text.replace(regex, '<mark class="bg-yellow-100">$1</mark>');
+
+            if (localQuery) {
+                const escapedLocalQuery = localQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const localRegex = new RegExp(`(${escapedLocalQuery})`, 'gi');
+                result = result.replace(localRegex, '<mark class="bg-yellow-300">$1</mark>');
+            }
+
+            return result;
+        },
+
+        get linePaginatedLines() {
+            const start = this.lineCurrentPage * this.linePageSize;
+            const end = start + this.linePageSize;
+            return this.lineObject.lines.slice(start, end);
+        },
+
+        get lineStartIndex() {
+            return this.lineCurrentPage * this.linePageSize;
+        },
+
+        get lineEndIndex() {
+            return this.lineStartIndex + this.linePageSize;
+        },
+
+        get linePageNumbers() {
+            const pages = [];
+            const maxVisible = 5;
+            const halfVisible = Math.floor(maxVisible / 2);
+
+            let start = Math.max(1, this.lineCurrentPage - halfVisible);
+            let end = Math.min(this.lineTotalPages, start + maxVisible - 1);
+
+            if (end - start + 1 < maxVisible) {
+                start = Math.max(1, end - maxVisible + 1);
+            }
+
+            if (start > 1) {
+                pages.push(1);
+                if (start > 2) pages.push('...');
+            }
+
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+
+            if (end < this.lineTotalPages) {
+                if (end < this.lineTotalPages - 1) pages.push('...');
+                pages.push(this.lineTotalPages);
+            }
+
+            return pages;
+        },
+
+        async lineGoToPage(page) {
+            if (page >= 1 && page <= this.lineTotalPages && page !== this.lineCurrentPage) {
+                this.lineCurrentPage = page;
+                await this.lineFetchData();
+            }
+        },
 
     };
 }
+
+/**
+ * Checks if a line contains a specific whole word.
+ * This function splits the line by any character that is NOT a Unicode letter or number,
+ * effectively isolating words from all punctuation and spacing.
+ * @param {string} line The text to search within.
+ * @param {string} filterText The whole word to find.
+ * @param {boolean} matchCase Whether the search is case-sensitive.
+ * @returns {boolean} True if the whole word is found.
+ */
+const findWholeWord = (line, filterText, matchCase) => {
+    // This regex splits the line by one or more characters that are NOT Unicode letters or numbers.
+    // The 'u' flag is essential for this to work with languages like Russian.
+    const words = line.split(/[^\p{L}\p{N}]+/u);
+
+    if (matchCase) {
+        // Check if any of the resulting words are an exact match.
+        return words.includes(filterText);
+    } else {
+        // For case-insensitive search, convert both to lower case before comparing.
+        const lowerFilter = filterText.toLowerCase();
+        return words.some(word => word.toLowerCase() === lowerFilter);
+    }
+};

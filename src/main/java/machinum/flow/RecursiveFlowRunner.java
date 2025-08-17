@@ -1,8 +1,8 @@
 package machinum.flow;
 
-import machinum.util.DurationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import machinum.util.DurationMeasureUtil;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -18,7 +18,7 @@ public class RecursiveFlowRunner<T> implements FlowRunner<T> {
         log.debug("Executing whole flow from given state: {}", initialState);
         try {
             var pipes = runner.getFlow().getStatePipes();
-            DurationUtil.measure("flowRun", () -> filterFromKey(pipes, initialState).keySet()
+            DurationMeasureUtil.measure("flowRun", () -> filterFromKey(pipes, initialState).keySet()
                     .forEach(runner::run));
         } finally {
             log.debug("Executed whole flow from given state: {}", initialState);

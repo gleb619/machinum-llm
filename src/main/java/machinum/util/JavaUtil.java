@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.NonFinal;
+import machinum.exception.AppIllegalStateException;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.Serializable;
@@ -15,6 +16,7 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -385,6 +387,45 @@ public class JavaUtil {
             return HexFormat.of().formatHex(hashBytes);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Failed to calculate hash", e);
+        }
+    }
+
+    public static Duration parseDuration(String durationStr) {
+        if (durationStr == null || durationStr.isEmpty()) {
+            throw new IllegalArgumentException("Input string is null or empty");
+        }
+
+        durationStr = durationStr.trim();
+        char unit = durationStr.charAt(durationStr.length() - 1);
+        var valueStr = durationStr.substring(0, durationStr.length() - 1).trim();
+
+        if (!valueStr.matches("\\d+")) {
+            throw new IllegalArgumentException("Invalid number format in duration string");
+        }
+
+        long value = Long.parseLong(valueStr);
+
+        return switch (unit) {
+            case 's' -> Duration.ofSeconds(value);
+            case 'm' -> Duration.ofMinutes(value);
+            case 'h' -> Duration.ofHours(value);
+            case 'w' -> Duration.ofDays(value * 7);
+            default -> throw new IllegalArgumentException("Unsupported time unit: " + unit);
+        };
+    }
+
+    /**
+     * Adds a small delay between execution.
+     *
+     * @param millis
+     * @throws AppIllegalStateException if the thread is interrupted during sleep
+     */
+    public static void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new AppIllegalStateException("Work interrupted", ie);
         }
     }
 

@@ -9,7 +9,7 @@ import machinum.flow.FlowContext;
 import machinum.processor.core.AssistantContext.OutputType;
 import machinum.processor.exception.NoDataException;
 import machinum.util.CodeBlockExtractor;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import machinum.util.PropertiesParser;
 import machinum.util.TraceUtil;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -27,12 +27,13 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static machinum.config.Constants.CHAPTER;
 import static machinum.processor.core.HashSupport.hashStringWithCRC32;
 import static machinum.processor.core.PromptConstants.NO_DATA_KEYWORD;
 import static machinum.service.plugin.StatisticPlugin.withStatistics;
-import static machinum.util.DurationUtil.ArgumentPlugin.forArgument;
+import static machinum.util.DurationMeasureUtil.ArgumentPlugin.forArgument;
 import static machinum.util.JavaUtil.calculatePercent;
 import static machinum.util.TextUtil.*;
 
@@ -69,7 +70,7 @@ public class Assistant {
         var chapterNumber = assistantContext.getFlowContext().optionalValue(FlowContext::chapterNumberArg).orElse(-1);
         var ignoreCacheMode = Boolean.TRUE.equals(assistantContext.getFlowContext().metadata(Constants.IGNORE_CACHE_MODE));
 
-        var duration = DurationUtil.configure(
+        var duration = DurationMeasureUtil.configure(
                 forArgument(assistantContext),
                 forArgument(CHAPTER, chapterNumber),
                 withStatistics());
@@ -90,6 +91,7 @@ public class Assistant {
                             |--> Working with {}0: rayId={},\s
                               model={}, contextLength={},\s
                               inputText={}...; [{} tokens|{} words]\s
+                              inputs={}\s
                               inputTotalTokens={}, inputTotalWords={},\s
                               inputTokensLeft={}, allocated={}%,\s
                               inputHistorySize={}, inputHistoryWords={}, inputHistoryTokens={},
@@ -99,6 +101,7 @@ public class Assistant {
                     assistantContext.getOperation(), rayId,
                     options.getModel(), options.getNumCtx(),
                     toShortDescription(assistantContext.getText()), -1, chunkWordCount,
+                    formatVars(assistantContext.getInputs()),
                     totalTokens, totalWords,
                     options.getNumCtx() - totalTokens, calculatePercent(totalTokens, options.getNumCtx()),
                     localHistory.size(), historyWordCount, -1,
@@ -106,8 +109,6 @@ public class Assistant {
 
             var prompt = new Prompt(localHistory, options);
             try {
-//                var spec = createRequest(assistantContext, prompt, glossaryTools, assistantContext.getTools());
-//                work(prompt, Objects.requireNonNull(spec, "Ai can't return null"), forceMode);
                 var response = work(assistantContext, prompt, ignoreCacheMode);
                 var content = parseContent(response.getText());
 
@@ -142,7 +143,7 @@ public class Assistant {
             }
         });
 
-        var result = DurationUtil.calculateTimePerWord(report.duration(), chunkWordCount);
+        var result = DurationMeasureUtil.calculateTimePerWord(report.duration(), chunkWordCount);
 
         log.info("Time per word: chunk={}, text={}..., result={}..., {}sec", name, toShortDescription(assistantContext.getText()), toShortDescription(resultContext.result()), result);
 
@@ -247,6 +248,16 @@ public class Assistant {
         } catch (Exception e) {
             return mapper.apply(content);
         }
+    }
+
+    private String formatVars(Map<String, String> inputs) {
+        if (inputs.isEmpty()) {
+            return "none";
+        }
+
+        return inputs.entrySet().stream()
+                .map(entry -> "%s:%s".formatted(entry.getKey(), toShortDescription(entry.getValue())))
+                .collect(Collectors.joining("; "));
     }
 
     /* ============= */

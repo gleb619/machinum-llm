@@ -36,7 +36,7 @@ public class LineDao {
     }
 
     public String findBookIdByChapter(String chapterId) {
-        return jdbcTemplate.queryForObject("SELECT book_id FROM lines_info WHERE chapter_id = ?", String.class, chapterId);
+        return jdbcTemplate.queryForObject("SELECT book_id FROM lines_info WHERE chapter_id = ? LIMIT 1", String.class, chapterId);
     }
 
     public List<String> findTranslatedSimilarLineForChapter(String chapterId, String line) {

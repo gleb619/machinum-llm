@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.converter.ChapterHistoryMapper.ChapterInfoHistoryConverter;
 import machinum.converter.JsonlConverter;
 import machinum.extract.util.PatchDeserializer;
-import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
@@ -55,7 +55,7 @@ import static machinum.config.Config.CacheConstants.*;
 public class Config {
 
     @Bean
-    VectorStore vectorStore(JdbcTemplate template, EmbeddingModel embeddingModel) {
+    VectorStore vectorStore(JdbcTemplate template, OllamaEmbeddingModel embeddingModel) {
         return PgVectorStore.builder(template, embeddingModel)
                 .build();
     }
@@ -100,13 +100,13 @@ public class Config {
     }
 
     @Bean
-    public DbHelper dbHelper(VectorStore vectorStore, ApplicationContext context) {
-        return new DbHelper(vectorStore, context);
+    public DbHelper dbHelper(ApplicationContext context) {
+        return new DbHelper(context);
     }
 
     @Bean
-    public AsyncHelper asyncHelper() {
-        return new AsyncHelper();
+    public AsyncHelper asyncHelper(DbHelper dbHelper) {
+        return new AsyncHelper(dbHelper);
     }
 
     @Bean

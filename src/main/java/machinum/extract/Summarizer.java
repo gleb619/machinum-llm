@@ -1,14 +1,13 @@
 package machinum.extract;
 
-import machinum.model.Chapter;
-import machinum.processor.core.ChunkSupport;
-import machinum.flow.FlowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import machinum.flow.FlowContext;
+import machinum.model.Chapter;
+import machinum.processor.core.ChunkSupport;
 import org.springframework.stereotype.Component;
 
 import static machinum.config.Constants.FLOW_TYPE;
-import static machinum.util.TextUtil.toShortDescription;
 
 @Slf4j
 @Component
@@ -22,12 +21,15 @@ public class Summarizer implements ChunkSupport {
     public FlowContext<Chapter> summarize(FlowContext<Chapter> flowContext) {
         boolean isSimpleFlow = "simple".equals(flowContext.metadata(FLOW_TYPE, "none"));
 
+        FlowContext<Chapter> chapterFlowContext;
         if(isSimpleFlow) {
-            return summaryExtractor.simpleExtract(flowContext);
+            chapterFlowContext = summaryExtractor.simpleExtract(flowContext);
         } else {
-            return summaryExtractor.extractSummary(flowContext);
+            chapterFlowContext = summaryExtractor.extractSummary(flowContext);
     //                .then(summaryConsolidator::consolidate);
         }
+
+        return chapterFlowContext;
     }
 
 }

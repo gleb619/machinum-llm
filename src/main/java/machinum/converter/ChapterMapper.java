@@ -15,6 +15,7 @@ import java.util.HashSet;
 
 import static machinum.processor.core.ChapterWarning.WarningType.EMPTY_FIELD;
 import static machinum.util.JavaUtil.firstNotNull;
+import static machinum.util.TextUtil.isNotEmpty;
 import static machinum.util.TextUtil.length;
 
 @Mapper(componentModel = "spring")
@@ -51,6 +52,13 @@ public interface ChapterMapper extends BaseMapper<ChapterEntity, Chapter> {
             list.add(ChapterWarning.createNew(b -> b
                     .type(EMPTY_FIELD)
                     .text("Translated text can't be empty")
+                    .metadata(ChapterWarning.NAME_PARAM, "translatedText")
+            ));
+        }
+        if (isNotEmpty(target.getTranslatedText()) && target.getTranslatedText().lines().count() < 5) {
+            list.add(ChapterWarning.createNew(b -> b
+                    .type(EMPTY_FIELD)
+                    .text("Not enough data in translated text")
                     .metadata(ChapterWarning.NAME_PARAM, "translatedText")
             ));
         }

@@ -84,7 +84,7 @@ public class DocsLoaderService {
 //            List<Document> newDocuments = transformer.apply(documents);
             List<Document> newDocuments = splitter.apply(documents);
 
-            dbHelper.add(newDocuments);
+            //dbHelper.add(newDocuments);
         }
     }
 
@@ -125,7 +125,7 @@ public class DocsLoaderService {
                 // Add documents in batches to avoid memory overload
                 if (documents.size() >= 100) {
                     log.info("Sending part to vector store");
-                    dbHelper.add(documents);
+//                    dbHelper.add(documents);
                     documents.clear();
                 }
             }
@@ -133,7 +133,7 @@ public class DocsLoaderService {
             // Add any remaining documents
             if (!documents.isEmpty()) {
                 log.info("Sending to vector store");
-                dbHelper.add(documents);
+//                dbHelper.add(documents);
             }
 
             log.info("Done");

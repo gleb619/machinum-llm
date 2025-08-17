@@ -4,7 +4,7 @@ import io.github.artsok.RepeatedIfExceptionsTest;
 import machinum.extract.RewriterXml;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -28,7 +28,7 @@ public abstract class AbstractRewriterTest extends NormalTest {
         String chapterText = Files.readString(chapterPath);
         String oldChapterText = Files.readString(previousRewrittenChapterPath);
 
-        var rewrite = DurationUtil.measure("rewrite", () -> {
+        var rewrite = DurationMeasureUtil.measure("rewrite", () -> {
             return rewriter.rewrite((FlowContext<Chapter>) of(
                     iteration(1),
                     text(oldChapterText).asObsolete(),

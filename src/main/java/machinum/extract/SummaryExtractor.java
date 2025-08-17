@@ -56,7 +56,8 @@ public class SummaryExtractor implements ChunkSupport, FlowSupport, Precondition
 
     private FlowContext<Chapter> doExtractSummary(FlowContext<Chapter> flowContext, boolean createHistory) {
         var text = flowContext.text();
-        var awaitedLines = String.valueOf(Math.min((int) Math.ceil(countLines(text) / 6.5), 25));
+        int minValue = (int) Math.ceil(countLines(text) / 6.5);
+        var awaitedLines = String.valueOf(Math.min(Math.max(minValue, 10), 25));
         var textTokens = countTokens(text);
         log.debug("Prepare to summarize text to fit the content window: text={}..., awaitedLines={}", toShortDescription(text), awaitedLines);
 

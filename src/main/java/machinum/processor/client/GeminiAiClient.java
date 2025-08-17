@@ -73,7 +73,6 @@ public class GeminiAiClient implements AiClient {
         }
 
         throw new RuntimeException("Failed to get response after %d attempts".formatted(MAX_RETRIES), lastException);
-
     }
 
     @Override

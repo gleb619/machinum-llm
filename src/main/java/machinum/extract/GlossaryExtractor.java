@@ -12,6 +12,7 @@ import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
+import machinum.processor.client.AiClient;
 import machinum.processor.core.*;
 import machinum.tool.RawInfoTool;
 import machinum.util.CustomTypeReference;
@@ -51,6 +52,8 @@ public class GlossaryExtractor implements JsonSupport, ObjectNameSupport, ChunkS
     protected final Double temperature;
     @Value("${app.glossary.extract.numCtx}")
     protected final Integer contextLength;
+    @Value("${app.glossary.extract.provider}")
+    protected final String provider;
     protected final RetryHelper retryHelper;
     @Value("classpath:prompts/custom/system/GlossaryExtractorFirstSystem.ST")
     private final Resource firstSystemTemplate;
@@ -141,6 +144,7 @@ public class GlossaryExtractor implements JsonSupport, ObjectNameSupport, ChunkS
 
                     return options;
                 })
+                .provider(AiClient.Provider.parse(provider))
                 .build();
 
         return retryHelper.withRetry(text, retryChunk ->

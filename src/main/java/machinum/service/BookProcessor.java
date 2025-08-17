@@ -10,7 +10,7 @@ import machinum.exception.AppIllegalStateException;
 import machinum.flow.*;
 import machinum.flow.OneStepRunner.Aggregation;
 import machinum.model.Chapter;
-import machinum.util.DurationUtil;
+import machinum.util.DurationMeasureUtil;
 import machinum.util.TextUtil;
 import machinum.util.TraceUtil;
 import org.springframework.async.AsyncHelper;
@@ -85,8 +85,8 @@ public class BookProcessor {
 
     public enum ProcessorState implements Flow.State {
 
-        CLEANING,
         SUMMARY,
+        CLEANING,
         GLOSSARY,
         PROOFREAD,
         TRANSLATE_GLOSSARY,
@@ -98,18 +98,18 @@ public class BookProcessor {
         ;
 
         public static ProcessorState defaultState() {
-            return ProcessorState.CLEANING;
+            return ProcessorState.SUMMARY;
         }
 
         public static String defaultStateName() {
-            return ProcessorState.CLEANING.name();
+            return ProcessorState.SUMMARY.name();
         }
 
         public static ProcessorState parse(String value) {
             try {
                 return valueOf(value.toUpperCase().trim());
             } catch (IllegalArgumentException e) {
-                return CLEANING;
+                return SUMMARY;
             }
         }
 
@@ -132,8 +132,8 @@ public class BookProcessor {
                     .refresh(chapterFacade::refresh)
                     .extend(chapterFacade::extend)
                     .beforeAll(ctx -> log.info("┌── Started book state[{}] processing: {}", ctx.getState(), runId))
-                    .aroundAll((ctx, action) -> DurationUtil.measure("bookFlow-%s".formatted(ctx.getState()), action))
-                    .aroundEachState((ctx, action) -> DurationUtil.measure("stateFlow-%s-%s".formatted(ctx.iteration(), ctx.getState()), () -> {
+                    .aroundAll((ctx, action) -> DurationMeasureUtil.measure("bookFlow-%s".formatted(ctx.getState()), action))
+                    .aroundEachState((ctx, action) -> DurationMeasureUtil.measure("stateFlow-%s-%s".formatted(ctx.iteration(), ctx.getState()), () -> {
                         Map<ProcessorState, Boolean> availableStates = ctx.metadata(AVAILABLE_STATES);
 
                         if(Objects.nonNull(availableStates) && Boolean.FALSE.equals(availableStates.get(ctx.getState()))) {
@@ -152,7 +152,7 @@ public class BookProcessor {
 
                         return accept(ctx);
                     })
-                    .aroundEach((ctx, action) -> DurationUtil.measure("pipeFlow-%s-%s-%s".formatted(ctx.getCurrentPipeIndex(), ctx.iteration(), ctx.getState()), () -> {
+                    .aroundEach((ctx, action) -> DurationMeasureUtil.measure("pipeFlow-%s-%s-%s".formatted(ctx.getCurrentPipeIndex(), ctx.iteration(), ctx.getState()), () -> {
                         log.info("|-- Working with pipe №%s".formatted(ctx.getCurrentPipeIndex()));
 
                         var currentNumber = ctx.getCurrentItem().getNumber();
@@ -215,31 +215,14 @@ public class BookProcessor {
                     .andThen(flow -> flow.copy(Function.identity()))
                     .andThen(flow -> flow
                         .metadata(FLOW_TYPE, "simple")
-//                        .aroundEach((ctx, action) -> {
-////                            if(ctx.getState().equals(ProcessorState.COPYEDIT)) {
-////                                if(TextUtil.isEmpty(ctx.getCurrentItem().getTranslatedText()) &&
-////                                   TextUtil.isEmpty(ctx.getCurrentItem().getFixedTranslatedText())) {
-////
-////                                   log.error("Action is forbidden for {} chapter", ctx.chapterNumber());
-////                                   return ctx.preventSink();
-////                                }
-////                            }
-//
-//                            if(ctx.getState().equals(ProcessorState.CLEANING)) {
-//                                return ctx.preventSink();
-//                            }
-//
-//                            return action.apply(ctx);
-//                        })
-                        .onState(ProcessorState.CLEANING)
-                            .comment("On %s state we use gemma2"::formatted)
-//                            .nothing()
-                            .pipeStateless(templateAiFacade::bootstrapWith)
-                            .pipe(templateAiFacade::rewrite)
                         .onState(ProcessorState.SUMMARY)
                             .comment("On %s state we use qwen"::formatted)
                             .pipeStateless(templateAiFacade::bootstrapWith)
                             .pipe(templateAiFacade::summary)
+                        .onState(ProcessorState.CLEANING)
+                            .comment("On %s state we use gemma2"::formatted)
+                            .pipeStateless(templateAiFacade::bootstrapWith)
+                            .pipe(templateAiFacade::rewrite)
                         .onState(ProcessorState.GLOSSARY)
                             .pipeStateless(templateAiFacade::bootstrapWith)
                             .pipe(templateAiFacade::glossary)
@@ -247,10 +230,10 @@ public class BookProcessor {
                             .comment("On %s state we use saiga"::formatted)
                             .pipeStateless(templateAiFacade::bootstrapWith)
                             .pipe(templateAiFacade::editWithGlossary)
-//                        .onState(ProcessorState.FINISHED)
-//                            .comment("Cooldown on last state[%s]"::formatted)
-//                            .nothing()
-//                            .waitFor(cooldown)
+                        .onState(ProcessorState.FINISHED)
+                            .comment("Cooldown on last state[%s]"::formatted)
+                            .nothing()
+                            .waitFor(cooldown)
                         .build()
                     );
             //@formatter:on
@@ -269,15 +252,14 @@ public class BookProcessor {
                     .andThen(flow -> flow.copy(Function.identity()))
                     .andThen(flow -> flow
                         .metadata(FLOW_TYPE, "complex")
-                        .onState(ProcessorState.CLEANING)
-                            .comment("On %s state we use gemma2"::formatted)
-                            .pipeStateless(templateAiFacade::bootstrapWith)
-                            .pipe(templateAiFacade::rewrite)
-                        //TODO move SUMMARY to first position
                         .onState(ProcessorState.SUMMARY)
                             .comment("On %s state we use qwen"::formatted)
                             .pipeStateless(templateAiFacade::bootstrapWith)
                             .pipe(templateAiFacade::summary)
+                        .onState(ProcessorState.CLEANING)
+                            .comment("On %s state we use gemma2"::formatted)
+                            .pipeStateless(templateAiFacade::bootstrapWith)
+                            .pipe(templateAiFacade::rewrite)
                         .onState(ProcessorState.GLOSSARY)
                             .pipeStateless(templateAiFacade::bootstrapWith)
                             .pipe(templateAiFacade::glossary)
@@ -300,18 +282,17 @@ public class BookProcessor {
                             .comment("On %s state we use t-pro"::formatted)
                             .pipeStateless(templateAiFacade::bootstrapWith)
                             .pipe(templateAiFacade::translateAll)
-//                        .onState(ProcessorState.COPYEDIT)
-//                            .comment("On %s state we use saiga"::formatted)
-//                            .pipeStateless(templateAiFacade::bootstrapWith)
-//                            .pipe(templateAiFacade::editGrammarInChunks)
+                        .onState(ProcessorState.COPYEDIT)
+                            .comment("On %s state we use saiga"::formatted)
+                            .pipeStateless(templateAiFacade::bootstrapWith)
+                            .pipe(templateAiFacade::editGrammarInChunks)
                         .onState(ProcessorState.SYNTHESIZE)
                             .comment("On %s state we use tts"::formatted)
                             .pipeStateless(templateAiFacade::bootstrapWith)
                             .pipe(templateAiFacade::synthesize)
                         .onState(ProcessorState.FINISHED)
                             .comment("Cooldown on last state[%s]"::formatted)
-                            .nothing()
-//                            .waitFor(cooldown)
+                            .waitFor(cooldown)
                         .build()
                     );
             //@formatter:on
