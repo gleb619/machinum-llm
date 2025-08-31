@@ -224,16 +224,28 @@ public class ChapterFacade {
         });
     }
 
-    public void updateGlossary(String id, ChapterGlossary updatedChapterGlossary) {
-        var template = chapterService.getById(id);
-        var objectName = updatedChapterGlossary.getObjectName();
-        var chapters = chapterGlossaryService.findChaptersByGlossary(List.of(objectName.getName()), template.getBookId());
+    public void updateGlossary(String chapterId, ChapterGlossary glossaryFromReq) {
+        var template = chapterService.getById(chapterId);
+        var glossaryFromDb = chapterGlossaryService.getById(glossaryFromReq.getId());
+        var objectFromReq = glossaryFromReq.getObjectName();
+        var objectFromDb = glossaryFromDb.getObjectName();
+        var chapters = chapterGlossaryService.findChaptersByGlossary(List.of(objectFromDb.getName()), template.getBookId());
 
-        dbHelper.doInNewTransaction(() -> {
-            for (var chapter : chapters) {
-                chapterService.updateGlossaryTranslation(chapter, List.of(objectName));
-            }
-        });
+        boolean dbHasRuName = objectFromDb.hasRuName();
+        boolean reqHasRuName = objectFromReq.hasRuName();
+        if (dbHasRuName && reqHasRuName && !Objects.equals(objectFromDb.ruName(), objectFromReq.ruName())) {
+            dbHelper.doInNewTransaction(() -> {
+                for (var chapter : chapters) {
+                    chapterService.updateGlossaryTranslation(chapter, List.of(objectFromReq));
+                }
+            });
+        } else if (objectFromReq.getMetadata().containsKey("newName")) {
+            dbHelper.doInNewTransaction(() -> {
+                for (var chapter : chapters) {
+                    chapterService.updateGlossaryName(chapter, List.of(objectFromReq));
+                }
+            });
+        }
     }
 
 }

@@ -29,8 +29,9 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class ChapterController implements ControllerTrait {
 
-    private static final int MISSING_MODE = 0;
-    private static final int TRANSLATION_MODE = 1;
+    private static final String MISSING_MODE = "missing";
+    private static final String TRANSLATION_MODE = "translated";
+    private static final String CHAPTERS_MODE = "chapters";
 
     private final ChapterService chapterService;
     private final ChapterAnalysisService chapterAnalysisService;
@@ -120,27 +121,43 @@ public class ChapterController implements ControllerTrait {
             @PathVariable("bookId") String bookId,
             @RequestParam("page") int page,
             @RequestParam("size") int size,
-            @RequestParam(value = "translationMode", defaultValue = "-1") int translationMode) {
+            @RequestParam(value = "translationMode", defaultValue = "all") String translationMode,
+            @RequestParam(name = "fromChapter", required = false) Integer fromChapterNumber,
+            @RequestParam(name = "toChapter", required = false) Integer toChapterNumber) {
         log.debug("Fetching chapters names for bookId: {}", bookId);
 
-        Page<ChapterGlossary> result;
-        if (translationMode == MISSING_MODE) {
-            result = chapterGlossaryService.findBookTranslatedGlossary(bookId, false, PageRequest.of(page, size));
-        } else if (translationMode == TRANSLATION_MODE) {
-            result = chapterGlossaryService.findBookTranslatedGlossary(bookId, true, PageRequest.of(page, size));
-        } else {
-            result = chapterGlossaryService.findBookGlossary(bookId, PageRequest.of(page, size));
-        }
+        Page<ChapterGlossary> result = switch (translationMode) {
+            case MISSING_MODE ->
+                    chapterGlossaryService.findBookTranslatedGlossary(bookId, false, PageRequest.of(page, size));
+            case TRANSLATION_MODE ->
+                    chapterGlossaryService.findBookTranslatedGlossary(bookId, true, PageRequest.of(page, size));
+            case CHAPTERS_MODE ->
+                    chapterGlossaryService.findBookTranslatedGlossary(bookId, fromChapterNumber, toChapterNumber, PageRequest.of(page, size));
+            case null, default -> chapterGlossaryService.findBookGlossary(bookId, PageRequest.of(page, size));
+        };
 
         return pageResponse(result);
     }
 
-    @PatchMapping("/api/chapters/{id}/glossary")
+
+    @GetMapping("/api/books/{bookId}/glossary/search")
+    public ResponseEntity<List<ChapterGlossary>> searchGlossary(
+            @RequestParam String bookId,
+            @RequestParam String searchText,
+            @RequestParam(defaultValue = "1") Integer chapterStart,
+            @RequestParam(defaultValue = "999999") Integer chapterEnd,
+            @RequestParam(defaultValue = "20") Integer topK,
+            @RequestParam(defaultValue = "0.1") Float minScore) {
+
+        return ResponseEntity.ok(chapterGlossaryService.searchGlossary(bookId, searchText, chapterStart, chapterEnd, topK, minScore));
+    }
+
+    @PatchMapping("/api/chapters/{chapterId}/glossary")
     public ResponseEntity<Chapter> updateGlossary(
-            @PathVariable("id") String id,
+            @PathVariable("chapterId") String chapterId,
             @RequestBody ChapterGlossary updatedChapterGlossary) {
 
-        chapterFacade.updateGlossary(id, updatedChapterGlossary);
+        chapterFacade.updateGlossary(chapterId, updatedChapterGlossary);
 
         return ResponseEntity.noContent().build();
     }

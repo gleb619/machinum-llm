@@ -1,6 +1,6 @@
 package machinum.repository;
 
-import machinum.entity.ChapterEntity;
+import machinum.entity.ChapterGlossaryView;
 import machinum.model.ChapterGlossary.ChapterGlossaryProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,9 +13,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static machinum.repository.ChapterGlossaryRepository.Queries.BOOK_GLOSSARY;
+import static machinum.repository.ChapterGlossaryRepository.Queries.GLOSSARY_SEARCH;
 
 @Repository
-public interface ChapterGlossaryRepository extends JpaRepository<ChapterEntity, String> {
+public interface ChapterGlossaryRepository extends JpaRepository<ChapterGlossaryView, String> {
 
     @Query(value = """ 
                 select 
@@ -31,24 +32,6 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterEntity, 
     List<GlossaryByQueryResult> findGlossaryByQuery(@Param("names") List<String> names,
                                                     @Param("chapterNumber") Integer chapterNumber,
                                                     @Param("bookId") String bookId);
-
-    @Query(value = """ 
-                select distinct
-                    c2.chapter_id
-                from 
-                    chapter_glossary c2 
-                where 
-                    c2.name in :names 
-                    and c2.book_id = :bookId 
-            """, nativeQuery = true)
-    List<String> findChaptersByGlossary_Native(@Param("names") List<String> names,
-                                               @Param("bookId") String bookId);
-
-    default List<ChapterEntity> findChaptersByGlossary(@Param("names") List<String> names,
-                                                       @Param("bookId") String bookId) {
-        List<String> ids = findChaptersByGlossary_Native(names, bookId);
-        return findAllById(ids);
-    }
 
     @Query(value = """ 
                 WITH data AS (
@@ -271,6 +254,46 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterEntity, 
                                                            @Param("translated") Boolean translated,
                                                            PageRequest pageRequest);
 
+    @Query(value =
+            BOOK_GLOSSARY + """
+                    SELECT 
+                        cg1.id,
+                        cg1.chapterId,
+                        cg1.chapterNumber,
+                        cg1.rawJson 
+                    FROM data cg1 
+                    WHERE cg1.row_num = 1 
+                    AND cg1.chapterNumber BETWEEN :fromChapter AND :toChapter
+                    ORDER BY cg1.chapterNumber, cg1.category, cg1.name""",
+            countQuery = BOOK_GLOSSARY + """
+                    SELECT count(cg1.id) 
+                    FROM data cg1 
+                    WHERE cg1.row_num = 1 
+                    AND cg1.chapterNumber BETWEEN :fromChapter AND :toChapter""", nativeQuery = true)
+    Page<ChapterGlossaryProjection> findTranslatedGlossary(@Param("bookId") String bookId,
+                                                           @Param("fromChapter") Integer fromChapter,
+                                                           @Param("toChapter") Integer toChapter,
+                                                           PageRequest pageRequest);
+
+    @Query(value = Queries.GLOSSARY_SEARCH + """
+            SELECT 
+                cg1.id,
+                cg1.chapterId,
+                cg1.chapterNumber,
+                cg1.rawJson 
+            FROM data cg1
+            """, countQuery = GLOSSARY_SEARCH + """
+            SELECT count(cg1.id) 
+            FROM data cg1 
+            """, nativeQuery = true)
+    List<ChapterGlossaryProjection> searchGlossary(
+            @Param("bookId") String bookId,
+            @Param("searchText") String searchText,
+            @Param("chapterStart") Integer chapterStart,
+            @Param("chapterEnd") Integer chapterEnd,
+            @Param("topK") Integer topK,
+            @Param("minScore") Float minScore);
+
     interface GlossaryByQueryResult {
 
         String getName();
@@ -299,6 +322,24 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterEntity, 
                               WHERE cg0.book_id = :bookId
                         )
                         """;
+
+        public static final String GLOSSARY_SEARCH = //language=sql
+                """
+                        WITH data AS (
+                          SELECT 
+                              cg0.id,
+                              cg0.chapter_id as chapterId,
+                              cg0."number" as chapterNumber,
+                              cg0."name",
+                              cg0.category,
+                              cg0.description,
+                              cg0.translated,
+                              cg0.raw_json as rawJson
+                          FROM search_glossary(:bookId, :searchText, :chapterStart, :chapterEnd, :topK, :minScore) sg1
+                          LEFT JOIN chapter_glossary cg0.id = sg1.id
+                        )
+                        """;
+
     }
 
 

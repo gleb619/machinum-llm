@@ -5,65 +5,88 @@ export function glossaryListApp() {
     return {
         glossaryList: [],
         glossaryListBackup: [],
-        glossaryTranslationFilter: 'all',
-        glossaryFilterTerm: '',
-        glossaryCurrentPage: 0,
-        glossaryPageSize: 50,
-        glossaryTotalPages: 0,
-        glossaryTotalElements: 0,
-        glossarySortColumn: 'chapterNumber',
-        glossarySortDirection: 'asc',
+        glossaryObject: {
+            glossaryTranslationFilter: 'all',
+            glossaryFilterTerm: '',
+            glossaryCurrentPage: 0,
+            glossaryPageSize: 50,
+            glossaryTotalPages: 0,
+            glossaryTotalElements: 0,
+            glossarySortColumn: 'chapterNumber',
+            glossarySortDirection: 'asc',
+            glossaryActiveTab: 'search',
+            glossaryStartChapter: 1,
+            glossaryEndChapter: 10
+        },
         glossaryDebounceTimers: {},
         glossarySaveStates: {},
+        glossaryChangeLoader: {},
 
         initGlossaryList() {
-            this.loadValue('glossaryTranslationFilter', 'all');
-            this.loadValue('glossaryCurrentPage', 0);
+            this.loadValue('glossaryObject', this.glossaryObject);
             this.fetchGlossary();
         },
 
-        fetchGlossary() {
+        async fetchGlossary() {
             if(!this.activeId) return;
 
-            const params = new URLSearchParams({
-                page: this.glossaryCurrentPage,
-                size: this.glossaryPageSize
-            });
+            let params;
 
-            if (this.glossaryTranslationFilter == 'missing') {
-                params.append('translationMode', '0');
-            } else if (this.glossaryTranslationFilter == 'translated') {
-                params.append('translationMode', '1');
+            // Handle different fetching strategies based on activeTab
+            if (this.glossaryObject.glossaryActiveTab === 'range') {
+                // For range tab, use startChapter and endChapter in queryParams
+                params = new URLSearchParams({
+                    page: this.glossaryObject.glossaryCurrentPage,
+                    size: this.glossaryObject.glossaryPageSize,
+                    fromChapter: this.glossaryObject.glossaryStartChapter,
+                    toChapter: this.glossaryObject.glossaryEndChapter,
+                    translationMode: "chapters",
+                });
             } else {
-                params.append('allGlossary', 'true');
+                // For search tab, use translationMode filtering
+                params = new URLSearchParams({
+                    page: this.glossaryObject.glossaryCurrentPage,
+                    size: this.glossaryObject.glossaryPageSize
+                });
+
+                if (this.glossaryObject.glossaryTranslationFilter == 'missing') {
+                    params.append('translationMode', 'missing');
+                } else if (this.glossaryObject.glossaryTranslationFilter == 'translated') {
+                    params.append('translationMode', 'translated');
+                } else {
+                    params.append('translationMode', 'all');
+                }
             }
 
-            fetch(`/api/books/${this.activeId}/glossary?${params.toString()}`)
-                .then(response => response.json()
-                   .then(rsp => {
-                      if (!response.ok) {
-                          console.error('Error fetching glossaryList:', rsp);
-                          this.showToast(`Error: ${rsp.message || rsp.detail}`, true);
-                      } else {
-                          this.glossaryCurrentPage = parseInt(response.headers.get('x-current-page')) || 0;
-                          this.glossaryTotalPages = parseInt(response.headers.get('x-total-pages')) || 1;
-                          this.glossaryTotalElements = parseInt(response.headers.get('x-total-elements')) || 0;
-                          this.glossaryList = rsp;
-                          this.glossaryListBackup = JSON.parse(JSON.stringify(rsp));
-                          this.changeValue('glossaryCurrentPage', this.glossaryCurrentPage);
-                      }
-                }))
-                .catch(error => {
-                    console.error('Error:', error);
-                    this.showToast(`Failed to fetch chapters: ${error.message || error.detail || error}`, true);
-                });
+            try {
+                const response = await fetch(`/api/books/${this.activeId}/glossary?${params.toString()}`);
+
+                if (!response.ok) {
+                    const rsp = await response.json();
+                    console.error('Error fetching glossaryList:', rsp);
+                    this.showToast(`Error: ${rsp.message || rsp.detail}`, true);
+                    return;
+                }
+
+                const rsp = await response.json();
+                this.glossaryObject.glossaryCurrentPage = parseInt(response.headers.get('x-current-page')) || 0;
+                this.glossaryObject.glossaryTotalPages = parseInt(response.headers.get('x-total-pages')) || 1;
+                this.glossaryObject.glossaryTotalElements = parseInt(response.headers.get('x-total-elements')) || 0;
+                this.glossaryList = rsp;
+                this.glossaryListBackup = JSON.parse(JSON.stringify(rsp));
+                this.changeValue('glossaryObject', this.glossaryObject);
+
+            } catch (error) {
+                console.error('Error:', error);
+                this.showToast(`Failed to fetch chapters: ${error.message || error.detail || error}`, true);
+            }
         },
 
         get glossaryListFiltered() {
             let filtered = this.glossaryList;
 
-            if (this.glossaryFilterTerm.trim() !== '') {
-                const term = this.glossaryFilterTerm.toLowerCase();
+            if (this.glossaryObject.glossaryFilterTerm.trim() !== '') {
+                const term = this.glossaryObject.glossaryFilterTerm.toLowerCase();
                 filtered = filtered.filter(glossary =>
                     glossary.name.toLowerCase().includes(term) ||
                     glossary.category.toLowerCase().includes(term) ||
@@ -75,11 +98,11 @@ export function glossaryListApp() {
             filtered.sort((a, b) => {
                 let comparison = 0;
 
-                if (this.glossarySortColumn === 'chapterNumber') {
+                if (this.glossaryObject.glossarySortColumn === 'chapterNumber') {
                     comparison = a.chapterNumber - b.chapterNumber;
                 } else {
-                    const aValue = a[this.glossarySortColumn].toLowerCase();
-                    const bValue = b[this.glossarySortColumn].toLowerCase();
+                    const aValue = a[this.glossaryObject.glossarySortColumn].toLowerCase();
+                    const bValue = b[this.glossaryObject.glossarySortColumn].toLowerCase();
 
                     if (aValue < bValue) {
                         comparison = -1;
@@ -88,24 +111,24 @@ export function glossaryListApp() {
                     }
                 }
 
-                return this.glossarySortDirection === 'asc' ? comparison : -comparison;
+                return this.glossaryObject.glossarySortDirection === 'asc' ? comparison : -comparison;
             });
 
             return filtered;
         },
 
         sortGlossaryBy(column) {
-            if (this.glossarySortColumn === column) {
-                this.glossarySortDirection = this.glossarySortDirection === 'asc' ? 'desc' : 'asc';
+            if (this.glossaryObject.glossarySortColumn === column) {
+                this.glossaryObject.glossarySortDirection = this.glossaryObject.glossarySortDirection === 'asc' ? 'desc' : 'asc';
             } else {
-                this.glossarySortColumn = column;
-                this.glossarySortDirection = 'asc';
+                this.glossaryObject.glossarySortColumn = column;
+                this.glossaryObject.glossarySortDirection = 'asc';
             }
         },
 
         changeGlossaryPage(page) {
-            if (page >= 0 && page < this.glossaryTotalPages) {
-                this.glossaryCurrentPage = page;
+            if (page >= 0 && page < this.glossaryObject.glossaryTotalPages) {
+                this.glossaryObject.glossaryCurrentPage = page;
                 this.fetchGlossary();
             }
         },
@@ -114,8 +137,8 @@ export function glossaryListApp() {
             const pages = [];
             const maxVisiblePages = 5;
 
-            let startPage = Math.max(0, this.glossaryCurrentPage - Math.floor(maxVisiblePages / 2));
-            let endPage = Math.min(this.glossaryTotalPages - 1, startPage + maxVisiblePages - 1);
+            let startPage = Math.max(0, this.glossaryObject.glossaryCurrentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(this.glossaryObject.glossaryTotalPages - 1, startPage + maxVisiblePages - 1);
 
             // Adjust start page if we're near the end
             if (endPage - startPage < maxVisiblePages - 1) {
@@ -148,7 +171,7 @@ export function glossaryListApp() {
                 default: return '';
             }
         },
-    
+
         setSaveState(glossaryId, state) {
             this.glossarySaveStates[glossaryId] = state;
 
@@ -190,31 +213,34 @@ export function glossaryListApp() {
             }, 500);
         },
 
-        updateGlossaryChanges(glossary) {
-            fetch(`/api/chapters/${glossary.chapterId}/glossary`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(glossary)
-            })
-            .then(response => {
+        async updateGlossaryChanges(glossary) {
+            this.glossaryChangeLoader[glossary.id] = true;
+            try {
+                const response = await fetch(`/api/chapters/${glossary.chapterId}/glossary`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(glossary)
+                });
+
                 if (response.status === 204) {
                     this.setSaveState(glossary.id, 'success');
                 } else {
                     this.setSaveState(glossary.id, 'error');
-                    response.json()
-                      .then(rsp => {
-                        console.error('Error saving glossary:', rsp);
-                        this.showToast(`Error: ${rsp.message || rsp.detail}`, true);
-                      });
+                    const rsp = await response.json();
+                    console.error('Error saving glossary:', rsp);
+                    this.showToast(`Error: ${rsp.message || rsp.detail}`, true);
                 }
-            })
-            .catch(error => {
+            } catch (error) {
                 this.setSaveState(glossary.id, 'error');
                 console.error('Error:', error);
                 this.showToast(`Failed to save changes: ${error.message || error.detail || error}`, true);
-            });
+            } finally {
+                setTimeout(() => {
+                    this.glossaryChangeLoader[glossary.id] = false;
+                }, 100);
+            }
         },
 
         async handleTranslateGlossary(glossary) {
@@ -238,5 +264,29 @@ export function glossaryListApp() {
                 this.showToast(`Translation failed: ${error.message}`, true);
             }
         },
+
+        startEditName(glossary) {
+            glossary.editingName = true;
+            glossary.nameEdit = glossary.name;
+        },
+
+        async updateGlossaryName(glossary) {
+            const { editingName, nameEdit, ...localGlossary } = glossary || {};
+            if (nameEdit && nameEdit.trim()) {
+                localGlossary.newName = nameEdit.trim();
+                this.cancelEditName(glossary);
+
+                await this.updateGlossaryChanges(localGlossary);
+                glossary.name = localGlossary.newName;
+            } else {
+                this.cancelEditName(glossary);
+            }
+        },
+
+        cancelEditName(glossary) {
+            glossary.editingName = false;
+            glossary.nameEdit = '';
+        },
+
     };
 }

@@ -13,6 +13,7 @@ with data as (
         c1 ->>'category' as category,
         c1 ->>'description' as description,
         c1 ->>'ruName' IS NOT NULL as translated,
+        c1 ->>'ruName' as translated_name,
         c1 #>> '{}' as raw_json
     from
         chapter_info ci,

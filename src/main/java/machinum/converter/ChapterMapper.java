@@ -2,8 +2,6 @@ package machinum.converter;
 
 import machinum.entity.ChapterEntity;
 import machinum.model.Chapter;
-import machinum.model.ChapterGlossary;
-import machinum.model.ChapterGlossary.ChapterGlossaryProjection;
 import machinum.processor.core.ChapterWarning;
 import machinum.repository.ChapterRepository.ChapterTitleDto;
 import org.mapstruct.Mapper;
@@ -83,7 +81,5 @@ public interface ChapterMapper extends BaseMapper<ChapterEntity, Chapter> {
     }
 
     Chapter toDto(ChapterTitleDto chapterTitleDto);
-
-    ChapterGlossary toDto(ChapterGlossaryProjection projection);
 
 }

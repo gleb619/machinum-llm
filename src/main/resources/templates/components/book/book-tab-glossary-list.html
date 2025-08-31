@@ -5,98 +5,150 @@
 <div th:fragment="glossary-list" th:remove="tag">
     <template x-if="bookActiveTab === 'glossary'">
         <div class="h-full">
-        <div class="bg-white p-5 border-b border-gray-200">
-            <h2 class="text-lg font-semibold mb-4 text-gray-900">Search & Operations</h2>
-
-            <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-                <!-- Search Options -->
-                <div class="w-full md:w-3/5">
-                    <!-- Search Radio Group -->
-                    <div class="mb-4">
-                        <div class="flex flex-wrap gap-3 items-center">
-                            <span class="text-sm font-medium text-gray-700">Search in:</span>
-                            <label class="inline-flex items-center">
-                                <input @change="changeValue('glossaryTranslationFilter', 'all'); changeGlossaryPage(0)"
-                                       class="form-radio text-blue-500" name="glossary-translation-filter"
-                                       type="radio"
-                                       value="all"
-                                       x-model="glossaryTranslationFilter">
-                                <span class="ml-2">All glossary</span>
-                            </label>
-                            <label class="inline-flex items-center">
-                                <input @change="changeValue('glossaryTranslationFilter', 'missing'); changeGlossaryPage(0)"
-                                       class="form-radio text-blue-500" name="glossary-translation-filter"
-                                       type="radio"
-                                       value="missing"
-                                       x-model="glossaryTranslationFilter">
-                                <span class="ml-2">No translation</span>
-                            </label>
-                            <label class="inline-flex items-center">
-                                <input @change="changeValue('glossaryTranslationFilter', 'translated'); changeGlossaryPage(0)"
-                                       class="form-radio text-blue-500" name="glossary-translation-filter"
-                                       type="radio"
-                                       value="translated"
-                                       x-model="glossaryTranslationFilter">
-                                <span class="ml-2">With translation</span>
-                            </label>
-                            <label class="inline-flex items-center">
-                                <input @change="changeValue('glossaryTranslationFilter', 'aberration'); changeTitlePage(0)"
-                                       class="form-radio text-blue-500" name="glossary-translation-filter"
-                                       type="radio"
-                                       value="aberration"
-                                       x-model="glossaryTranslationFilter">
-                                <span class="ml-2">Aberration translation(TODO)</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Filter Box -->
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                 xmlns="http://www.w3.org/2000/svg">
-                                <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                      stroke-width="2"></path>
-                            </svg>
-                        </div>
-                        <input class="pl-10 p-2 w-full border rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                               placeholder="Filter glossary locally..."
-                               type="text"
-                               x-model="glossaryFilterTerm">
+            <div class="bg-white p-2 border-b border-gray-200">
+                <!-- Tabs -->
+                <div class="mb-3">
+                    <div class="flex space-x-1 bg-white p-1">
+                        <button :class="glossaryObject.glossaryActiveTab === 'search' ? 'border-b text-blue-600 border-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'"
+                                @click="glossaryObject.glossaryActiveTab = 'search'"
+                                class="px-3 py-1 text-sm font-medium transition-colors">
+                            Search & Filter
+                        </button>
+                        <button :class="glossaryObject.glossaryActiveTab === 'range' ? 'border-b text-blue-600 border-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'"
+                                @click="glossaryObject.glossaryActiveTab = 'range'"
+                                class="px-3 py-1 text-sm font-medium transition-colors">
+                            Chapter Range
+                        </button>
                     </div>
                 </div>
 
-                <!-- Batch Operations -->
-                <div class="w-full md:w-2/5">
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <h3 class="text-sm font-medium mb-3 text-gray-700">Batch Operations</h3>
-                        <div class="flex flex-wrap gap-2">
-                            <button @click="translateAllTiles()"
-                                    class="bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg py-2 px-4 transition duration-200 flex items-center disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
-                                    disabled>
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                <!-- Search Tab -->
+                <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-3 p-2"
+                     x-show="glossaryObject.glossaryActiveTab === 'search'">
+                    <!-- Search Options -->
+                    <div class="w-full md:w-3/5">
+                        <!-- Search Radio Group -->
+                        <div class="mb-3">
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <span class="text-xs font-medium text-gray-700">Search in:</span>
+                                <label class="inline-flex items-center">
+                                    <input @change="changeValue('glossaryObject', glossaryObject); changeGlossaryPage(0)"
+                                           class="form-radio text-blue-500" name="glossary-translation-filter"
+                                           type="radio"
+                                           value="all"
+                                           x-model="glossaryObject.glossaryTranslationFilter">
+                                    <span class="ml-1 text-xs">All glossary</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input @change="changeValue('glossaryObject', glossaryObject); changeGlossaryPage(0)"
+                                           class="form-radio text-blue-500" name="glossary-translation-filter"
+                                           type="radio"
+                                           value="missing"
+                                           x-model="glossaryObject.glossaryTranslationFilter">
+                                    <span class="ml-1 text-xs">No translation</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input @change="changeValue('glossaryObject', glossaryObject); changeGlossaryPage(0)"
+                                           class="form-radio text-blue-500" name="glossary-translation-filter"
+                                           type="radio"
+                                           value="translated"
+                                           x-model="glossaryObject.glossaryTranslationFilter">
+                                    <span class="ml-1 text-xs">With translation</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input @change="changeValue('glossaryObject', glossaryObject); changeTitlePage(0)"
+                                           class="form-radio text-blue-500" name="glossary-translation-filter"
+                                           type="radio"
+                                           value="aberration"
+                                           x-model="glossaryObject.glossaryTranslationFilter">
+                                    <span class="ml-1 text-xs">Aberration translation(TODO)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Filter Box -->
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                                <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                      xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
-                                          stroke-linecap="round" stroke-linejoin="round"
+                                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round"
+                                          stroke-linejoin="round"
                                           stroke-width="2"></path>
                                 </svg>
-                                Translate All
-                            </button>
+                            </div>
                         </div>
-                        <div class="flex flex-wrap gap-2">
-                            <small class="italic text-xs mt-2">*disabled</small>
+                    </div>
+
+                    <!-- Batch Operations -->
+                    <div class="w-full md:w-2/5">
+                        <div class="bg-gray-50 rounded p-3">
+                            <h4 class="text-xs font-medium mb-2 text-gray-700">Batch Operations</h4>
+                            <div class="flex flex-wrap gap-2">
+                                <button @click="translateAllTiles()"
+                                        class="bg-blue-500 hover:bg-blue-600 text-white font-medium rounded py-1 px-3 text-sm transition duration-200 flex items-center disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+                                        disabled>
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                         xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+                                              stroke-linecap="round" stroke-linejoin="round"
+                                              stroke-width="2"></path>
+                                    </svg>
+                                    Translate All
+                                </button>
+                            </div>
+                            <small class="italic text-xs mt-1 block">*disabled</small>
                         </div>
                     </div>
                 </div>
-            </div>
+
+                <!-- Chapter Range Tab -->
+                <div class="flex flex-col md:flex-row gap-3 p-2" x-show="glossaryObject.glossaryActiveTab === 'range'">
+                    <div class="w-full">
+                        <h4 class="text-xs font-medium mb-2 text-gray-700">Chapter Range Selection</h4>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Start Chapter</label>
+                                <input :max="currentBook?.chaptersCount - 1"
+                                       class="w-full p-2 text-sm border rounded focus:ring-blue-500 focus:border-blue-500"
+                                       min="1"
+                                       type="number"
+                                       x-model.number="glossaryObject.glossaryStartChapter">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">End Chapter</label>
+                                <input :max="currentBook?.chaptersCount - 1"
+                                       :min="glossaryObject.glossaryStartChapter + 1"
+                                       class="w-full p-2 text-sm border rounded focus:ring-blue-500 focus:border-blue-500"
+                                       min="1"
+                                       type="number"
+                                       x-model.number="glossaryObject.glossaryEndChapter">
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button @click="changeValue('glossaryObject', glossaryObject); changeGlossaryPage(0)"
+                                    class="bg-green-500 hover:bg-green-600 text-white font-medium rounded py-1 px-3 text-sm transition duration-200">
+                                Apply Range
+                            </button>
+                        </div>
+                        <div class="mt-2 text-xs text-gray-600">
+                            <span x-text="`Selected: Chapter ${glossaryObject.glossaryStartChapter} to ${glossaryObject.glossaryEndChapter}, total ${glossaryObject.glossaryEndChapter - glossaryObject.glossaryStartChapter}`"></span>
+                        </div>
+                    </div>
+                </div>
         </div>
 
         <!-- Glossary List Section Header -->
         <div class="px-5 py-4 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center justify-between">
             <div class="flex items-center">
                 <h2 class="text-lg font-semibold text-gray-900">Glossary</h2>
-                <span class="ml-3 text-sm text-gray-500" x-text="`(${glossaryTotalElements} items)`"></span>
+                <span class="ml-3 text-sm text-gray-500"
+                      x-text="`(${glossaryObject.glossaryTotalElements} items)`"></span>
+            </div>
+            <div class="flex items-center">
+                <input class="pl-8 p-2 w-full border rounded text-sm focus:ring-blue-500 focus:border-blue-500"
+                       placeholder="Filter glossary locally..."
+                       type="text"
+                       x-model="glossaryObject.glossaryFilterTerm">
             </div>
 
             <div class="flex items-center mt-2 sm:mt-0">
@@ -104,7 +156,7 @@
                 <select
                         @change="changeGlossaryPage(0)"
                         class="border border-gray-300 px-2 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        x-model="glossaryPageSize">
+                        x-model="glossaryObject.glossaryPageSize">
                     <option value="10">10</option>
                     <option value="20">20</option>
                     <option value="50">50</option>
@@ -122,36 +174,36 @@
                     <th @click="sortGlossaryBy('chapterNumber')" class="py-3 px-6 text-left cursor-pointer">
                         <div class="flex items-center">
                             Number
-                            <span class="ml-2" x-show="glossarySortColumn === 'chapterNumber'">
-                            <template x-if="glossarySortDirection === 'asc'"><small>▲</small></template>
-                            <template x-if="glossarySortDirection === 'desc'"><small>▼</small></template>
+                            <span class="ml-2" x-show="glossaryObject.glossarySortColumn === 'chapterNumber'">
+                            <template x-if="glossaryObject.glossarySortDirection === 'asc'"><small>▲</small></template>
+                            <template x-if="glossaryObject.glossarySortDirection === 'desc'"><small>▼</small></template>
                         </span>
                         </div>
                     </th>
                     <th @click="sortGlossaryBy('name')" class="py-3 px-6 text-left cursor-pointer max-w-md">
                         <div class="flex items-center">
                             Name
-                            <span class="ml-2" x-show="glossarySortColumn === 'name'">
-                            <template x-if="glossarySortDirection === 'asc'"><small>▲</small></template>
-                            <template x-if="glossarySortDirection === 'desc'"><small>▼</small></template>
+                            <span class="ml-2" x-show="glossaryObject.glossarySortColumn === 'name'">
+                            <template x-if="glossaryObject.glossarySortDirection === 'asc'"><small>▲</small></template>
+                            <template x-if="glossaryObject.glossarySortDirection === 'desc'"><small>▼</small></template>
                         </span>
                         </div>
                     </th>
                     <th @click="sortGlossaryBy('category')" class="py-3 px-6 text-left cursor-pointer">
                         <div class="flex items-center">
                             Category
-                            <span class="ml-2" x-show="glossarySortColumn === 'category'">
-                            <template x-if="glossarySortDirection === 'asc'"><small>▲</small></template>
-                            <template x-if="glossarySortDirection === 'desc'"><small>▼</small></template>
+                            <span class="ml-2" x-show="glossaryObject.glossarySortColumn === 'category'">
+                            <template x-if="glossaryObject.glossarySortDirection === 'asc'"><small>▲</small></template>
+                            <template x-if="glossaryObject.glossarySortDirection === 'desc'"><small>▼</small></template>
                         </span>
                         </div>
                     </th>
                     <th @click="sortGlossaryBy('ruName')" class="py-3 px-6 text-left cursor-pointer min-w-md">
                         <div class="flex items-center">
                             Translated Name
-                            <span class="ml-2" x-show="glossarySortColumn === 'ruName'">
-                            <template x-if="glossarySortDirection === 'asc'"><small>▲</small></template>
-                            <template x-if="glossarySortDirection === 'desc'"><small>▼</small></template>
+                            <span class="ml-2" x-show="glossaryObject.glossarySortColumn === 'ruName'">
+                            <template x-if="glossaryObject.glossarySortDirection === 'asc'"><small>▲</small></template>
+                            <template x-if="glossaryObject.glossarySortDirection === 'desc'"><small>▼</small></template>
                         </span>
                         </div>
                     </th>
@@ -161,8 +213,9 @@
                 <template :key="glossary.id" x-for="(glossary, index) in glossaryListFiltered">
                     <tr :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50'"
                         class="border-b border-gray-200 hover:bg-gray-100">
-                        <td class="py-3 px-6 text-left">
-                            <span x-text="(glossaryCurrentPage * glossaryPageSize) + index + 1"></span>
+                        <td :title="`ID: ${glossary.id}`" class="py-3 px-6 text-left">
+                            <span class="block"
+                                  x-text="(glossaryObject.glossaryCurrentPage * glossaryObject.glossaryPageSize) + index + 1"></span>
                             <a class="text-xs text-gray-300 hover:text-blue-600"
                                target="_blank"
                                x-bind:href="`/chapters?chapterId=${glossary.chapterId}`"
@@ -172,7 +225,39 @@
                         </td>
                         <td class="py-3 px-6 text-left">
                             <div class="space-y-1 max-w-md" x-bind:title="glossary.description">
-                                <h4 class="font-semibold text-gray-900" x-text="glossary.name"></h4>
+                                <div class="flex items-center gap-2 group">
+                                    <template x-if="!glossary.editingName">
+                                        <h4 class="font-semibold text-gray-900" x-text="glossary.name"></h4>
+                                    </template>
+                                    <template x-if="glossary.editingName">
+                                        <div class="flex items-center w-full">
+                                            <input
+                                                    @keydown.enter="updateGlossaryName(glossary)"
+                                                    @keydown.escape="cancelEditName(glossary)"
+                                                    class="font-semibold text-gray-900 bg-white border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex-1"
+                                                    type="text"
+                                                    x-model="glossary.nameEdit">
+                                            <button
+                                                    @click="updateGlossaryName(glossary)"
+                                                    class="ml-2 text-green-600 hover:text-green-700 focus:outline-none">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                     viewBox="0 0 24 24">
+                                                    <path d="M5 13l4 4L19 7" stroke-linecap="round"
+                                                          stroke-linejoin="round" stroke-width="2"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <button
+                                            @click="startEditName(glossary)"
+                                            class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-600 focus:outline-none transition-opacity"
+                                            x-show="!glossary.editingName">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round"
+                                                  stroke-width="2"></path>
+                                        </svg>
+                                    </button>
+                                </div>
                                 <p class="text-gray-600 text-xs leading-relaxed truncate cursor-pointer"
                                    x-text="glossary.description"></p>
                             </div>
@@ -187,6 +272,7 @@
                                             :class="getSaveStateClass(glossary.id)"
                                             @blur="saveGlossaryChanges(glossary)"
                                             @keydown.enter="$event.target.blur()"
+                                            :disabled="!!glossaryChangeLoader[glossary.id]"
                                             class="w-full px-2 py-2 bg-transparent border-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
                                             type="text"
                                             x-model="glossary.ruName">
@@ -194,11 +280,21 @@
                                             :class="getSaveBorderClass(glossary.id)"
                                             class="absolute inset-0 pointer-events-none border-2 border-transparent transition-all duration-500 ease-in-out">
                                     </div>
+                                    <div class="absolute right-2 top-1/2 transform -translate-y-1/2"
+                                         x-show="glossaryChangeLoader[glossary.id]">
+                                        <svg class="animate-spin h-4 w-4 text-gray-400"
+                                             fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                                    stroke-width="4"></circle>
+                                            <path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                  fill="currentColor"></path>
+                                        </svg>
+                                    </div>
                                 </div>
                                 <button
                                         @click="handleTranslateGlossary(glossary)"
                                         class="pl-2 mr-2 text-gray-600 hover:text-blue-600 focus:outline-none"
-                                        glossary="Translate glossary">
+                                        title="Translate glossary">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                          xmlns="http://www.w3.org/2000/svg">
                                         <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
@@ -212,7 +308,7 @@
                 </template>
                 <template x-if="glossaryListFiltered.length === 0">
                     <tr class="bg-white">
-                        <td class="py-6 text-center text-gray-500" colspan="3">
+                        <td class="py-6 text-center text-gray-500" colspan="4">
                             No glossary found
                         </td>
                     </tr>
@@ -224,15 +320,15 @@
         <!-- Pagination -->
         <div class="px-6 py-2 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
                 <span class="text-sm"
-                      x-text="`Page ${(glossaryCurrentPage + 1)} of ${glossaryTotalPages} (${glossaryTotalElements} total items)`"></span>
+                      x-text="`Page ${(glossaryObject.glossaryCurrentPage + 1)} of ${glossaryObject.glossaryTotalPages} (${glossaryObject.glossaryTotalElements} total items)`"></span>
 
             <div class="flex justify-center space-x-2">
                 <nav aria-label="Pagination" class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
                     <!-- Previous button -->
                     <button
-                            :class="{'opacity-50 cursor-not-allowed': glossaryCurrentPage === 0}"
-                            :disabled="glossaryCurrentPage === 0"
-                            @click="changeGlossaryPage(glossaryCurrentPage - 1)"
+                            :class="{'opacity-50 cursor-not-allowed': glossaryObject.glossaryCurrentPage === 0}"
+                            :disabled="glossaryObject.glossaryCurrentPage === 0"
+                            @click="changeGlossaryPage(glossaryObject.glossaryCurrentPage - 1)"
                             class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                         <span class="sr-only">Previous</span>
                         &laquo;
@@ -240,7 +336,7 @@
 
                     <!-- First page button (always visible) -->
                     <button
-                            :class="{'bg-blue-50 border-blue-500 text-blue-600': glossaryCurrentPage === 0, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': glossaryCurrentPage !== 0}"
+                            :class="{'bg-blue-50 border-blue-500 text-blue-600': glossaryObject.glossaryCurrentPage === 0, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': glossaryObject.glossaryCurrentPage !== 0}"
                             @click="changeGlossaryPage(0)"
                             class="relative inline-flex items-center px-4 py-2 border text-sm font-medium">
                         1
@@ -250,16 +346,16 @@
                     <button
                             class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
                             disabled
-                            x-show="glossaryCurrentPage > 4">
+                            x-show="glossaryObject.glossaryCurrentPage > 4">
                         &hellip;
                     </button>
 
                     <!-- Dynamic pages around current page -->
                     <template
                             :key="page"
-                            x-for="page in [...Array(glossaryTotalPages).keys()].map(i => i + 1).filter(p => p !== 1 && p !== glossaryTotalPages && p >= glossaryCurrentPage - 2 && p <= glossaryCurrentPage + 2)">
+                            x-for="page in [...Array(glossaryObject.glossaryTotalPages).keys()].map(i => i + 1).filter(p => p !== 1 && p !== glossaryObject.glossaryTotalPages && p >= glossaryObject.glossaryCurrentPage - 2 && p <= glossaryObject.glossaryCurrentPage + 2)">
                         <button
-                                :class="{'bg-blue-50 border-blue-500 text-blue-600': glossaryCurrentPage + 1 === page, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': glossaryCurrentPage + 1 !== page}"
+                                :class="{'bg-blue-50 border-blue-500 text-blue-600': glossaryObject.glossaryCurrentPage + 1 === page, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': glossaryObject.glossaryCurrentPage + 1 !== page}"
                                 @click="changeGlossaryPage(page - 1)"
                                 class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
                                 x-text="page">
@@ -270,24 +366,24 @@
                     <button
                             class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
                             disabled
-                            x-show="glossaryCurrentPage < glossaryTotalPages - 3">
+                            x-show="glossaryObject.glossaryCurrentPage < glossaryObject.glossaryTotalPages - 3">
                         &hellip;
                     </button>
 
-                    <!-- Last page button (always visible if glossaryTotalPages > 1) -->
+                    <!-- Last page button (always visible if glossaryObject.glossaryTotalPages > 1) -->
                     <button
-                            :class="{'bg-blue-50 border-blue-500 text-blue-600': glossaryCurrentPage + 1 === glossaryTotalPages, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': glossaryCurrentPage + 1 !== glossaryTotalPages}"
-                            @click="changeGlossaryPage(glossaryTotalPages - 1)"
+                            :class="{'bg-blue-50 border-blue-500 text-blue-600': glossaryObject.glossaryCurrentPage + 1 === glossaryObject.glossaryTotalPages, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': glossaryObject.glossaryCurrentPage + 1 !== glossaryObject.glossaryTotalPages}"
+                            @click="changeGlossaryPage(glossaryObject.glossaryTotalPages - 1)"
                             class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
-                            x-show="glossaryTotalPages > 1"
-                            x-text="glossaryTotalPages">
+                            x-show="glossaryObject.glossaryTotalPages > 1"
+                            x-text="glossaryObject.glossaryTotalPages">
                     </button>
 
                     <!-- Next button -->
                     <button
-                            :class="{'opacity-50 cursor-not-allowed': glossaryCurrentPage + 1 === glossaryTotalPages}"
-                            :disabled="glossaryCurrentPage + 1 === glossaryTotalPages"
-                            @click="changeGlossaryPage(glossaryCurrentPage + 1)"
+                            :class="{'opacity-50 cursor-not-allowed': glossaryObject.glossaryCurrentPage + 1 === glossaryObject.glossaryTotalPages}"
+                            :disabled="glossaryObject.glossaryCurrentPage + 1 === glossaryObject.glossaryTotalPages"
+                            @click="changeGlossaryPage(glossaryObject.glossaryCurrentPage + 1)"
                             class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                         <span class="sr-only">Next</span>
                         &raquo;

@@ -47,6 +47,8 @@ import static machinum.util.TextUtil.isNotEmpty;
 @RequiredArgsConstructor
 public class ChapterService {
 
+    public static final String NEW_EN_NAME = "newName";
+
     private final ChapterIndexRepository chapterIndexRepository;
     private final ChapterRepository chapterRepository;
     private final ChapterMapper chapterMapper;
@@ -494,6 +496,28 @@ public class ChapterService {
 
         if (persist) {
             chapterRepository.updateGlossary(chapter.getId(), objectMapperHolder.execute(mapper -> mapper.writeValueAsString(chapter.getNames())));
+        }
+    }
+
+    @Transactional
+    public void updateGlossaryName(Chapter chapter, List<ObjectName> newNames) {
+        boolean persist = false;
+
+        for (var newObjectName : newNames) {
+            var newName = newObjectName.getMetadata().get(NEW_EN_NAME);
+            var objectInChapter = chapter.findObjectName(newObjectName.getName());
+            if (Objects.nonNull(objectInChapter)) {
+                int targetIndex = chapter.getNames().indexOf(objectInChapter);
+                chapter.getNames().set(targetIndex, objectInChapter.toBuilder()
+                        .name(newName)
+                        .build());
+                persist = true;
+            }
+        }
+
+        if (persist) {
+            chapterRepository.updateGlossary(chapter.getId(), objectMapperHolder.execute(
+                    mapper -> mapper.writeValueAsString(chapter.getNames())));
         }
     }
 

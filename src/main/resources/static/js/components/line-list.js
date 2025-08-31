@@ -3,8 +3,8 @@
  */
 export function lineListApp() {
     return {
+        lines: [],
         lineObject: {
-            lines: [],
             lineSearchQuery: '',
             lineFilter: '',
             replaceText: '',
@@ -98,7 +98,7 @@ export function lineListApp() {
             try {
                 const response = await fetch(`/api/chapters/${chapterId}/lines`);
                 const data = await response.json();
-                this.lineObject.lines = data;
+                this.lines = data;
                 this.lineCurrentPage = parseInt(response.headers.get('x-current-page')) || 0;
                 this.lineTotalPages = parseInt(response.headers.get('x-total-pages')) || 1;
                 this.lineTotalElements = parseInt(response.headers.get('x-total-elements')) || 0;
@@ -141,7 +141,7 @@ export function lineListApp() {
                 setTimeout(() => this.lineLoading = false, 100);
 
                 if(response.ok) {
-                    this.lineObject.lines = data;
+                    this.lines = data;
                     this.lineCurrentPage = parseInt(response.headers.get('x-current-page')) || 0;
                     this.lineTotalPages = parseInt(response.headers.get('x-total-pages')) || 1;
                     this.lineTotalElements = parseInt(response.headers.get('x-total-elements')) || 0;
@@ -205,7 +205,7 @@ export function lineListApp() {
         },
 
         removeAllLines(fields = ['text', 'translatedText']) {
-            if(!this.lineObject.lines || this.lineObject.lines.length == 0) {
+            if(!this.lines || this.lineObject.lines.length == 0) {
                 return;
             }
 
@@ -230,7 +230,7 @@ export function lineListApp() {
                                 this.fetchChapters(this.currentPage);
                             });
                     } else {
-                        this.lineObject.lines = [];
+                        this.lines = [];
                         this.showToast('All lines removed successfully!');
                     }
                 })
@@ -260,7 +260,6 @@ export function lineListApp() {
 
                 this.showToast('Replacement successful!');
                 //TODO await until pg refresh mat view is complete before fetching again
-                await new Promise(resolve => setTimeout(resolve, 1000));
                 await this.fetchSimilarLines(this.lineObject.lineSearchQuery, [this.lineObject.selectedField]);
             } catch (error) {
                 console.error('Error replacing lines:', error);
@@ -277,7 +276,7 @@ export function lineListApp() {
         },
 
         removeLineItem(lineId) {
-            this.lineObject.lines = this.lineObject.lines.filter(line => line.id !== lineId);
+            this.lines = this.lineObject.lines.filter(line => line.id !== lineId);
         },
 
         async applyReplaceChanges(lineId) {

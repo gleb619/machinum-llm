@@ -185,15 +185,15 @@ public class LinesInfoDao {
                     .map(CompletableFuture::join)
                     .reduce(true, (a, b) -> a && b);
 
-            // Call refreshSingleView for each viewName asynchronously
-            uniqueViewNames.forEach(viewName -> asyncHelper.inNewTransaction(() -> refreshSingleView(viewName)));
+//            // Call refreshSingleView for each viewName asynchronously
+//            uniqueViewNames.forEach(viewName -> asyncHelper.inNewTransaction(() -> refreshSingleView(viewName)));
 
             return result;
         } else {
             String viewName = uniqueViewNames.iterator().next();
             boolean result = refreshSingleViewConcurrently(viewName);
-            // Call refreshSingleView for the viewName asynchronously
-            asyncHelper.inNewTransaction(() -> refreshSingleView(viewName));
+//            // Call refreshSingleView for the viewName asynchronously
+//            asyncHelper.inNewTransaction(() -> refreshSingleView(viewName));
             return result;
         }
     }

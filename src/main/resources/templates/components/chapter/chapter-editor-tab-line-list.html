@@ -246,17 +246,17 @@
                 <div class="flex flex-col text-center">
                     <span class="text-xs text-gray-500">Total Lines</span>
                     <span class="text-xl font-bold text-gray-900"
-                          x-text="`${lineObject.lines.length} / ${filteredLines.length}`"></span>
+                          x-text="`${lines.length} / ${filteredLines.length}`"></span>
                 </div>
                 <div class="flex flex-col text-center">
                     <span class="text-xs text-gray-500">Missing Original</span>
                     <span class="text-xl font-bold text-red-500"
-                          x-text="lineObject.lines.filter(l => !l.originalLine).length"></span>
+                          x-text="lines.filter(l => !l.originalLine).length"></span>
                 </div>
                 <div class="flex flex-col text-center">
                     <span class="text-xs text-gray-500">Missing Translation</span>
                     <span class="text-xl font-bold text-red-500"
-                          x-text="lineObject.lines.filter(l => !l.translatedLine).length"></span>
+                          x-text="lines.filter(l => !l.translatedLine).length"></span>
                 </div>
             </div>
 
@@ -267,7 +267,7 @@
                 </div>
             </template>
             <template x-if="!lineLoading">
-                <div x-show="lineObject.lines && lineObject.lines.length > 0">
+                <div x-show="lines && lines.length > 0">
                     <ul class="divide-y divide-gray-200" x-data="{ openLinesMenu: false, selectedLine: null }">
                         <template :key="line.id" x-for="(line, index) in filteredLines">
                             <li class="py-4 hover:bg-gray-50 transition duration-150 rounded-lg">
@@ -482,7 +482,7 @@
                     </ul>
 
                     <!-- Compact Pagination Controls -->
-                    <div class="bg-gray-50 border-t px-3 py-2" x-show="lineObject.lines.length > 0">
+                    <div class="bg-gray-50 border-t px-3 py-2" x-show="lines.length > 0">
                         <div class="flex items-center justify-between">
                             <!-- Page Size & Info -->
                             <div class="flex items-center gap-3">
@@ -569,7 +569,7 @@
                     <!-- No results message -->
                     <div
                             class="text-center py-8"
-                            x-show="lineObject.lines.length > 0 && filteredLines.length === 0">
+                            x-show="lines.length > 0 && filteredLines.length === 0">
                         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor"
                              viewBox="0 0 24 24"
                              xmlns="http://www.w3.org/2000/svg">
@@ -593,7 +593,7 @@
             <!-- Empty state -->
             <div
                     class="text-center py-10"
-                    x-show="!lineObject.lines || lineObject.lines.length == 0">
+                    x-show="!lines || lines.length == 0">
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                      xmlns="http://www.w3.org/2000/svg">
                     <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round"
