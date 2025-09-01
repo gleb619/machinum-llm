@@ -72,7 +72,10 @@ export function glossaryListApp() {
                 this.glossaryObject.glossaryCurrentPage = parseInt(response.headers.get('x-current-page')) || 0;
                 this.glossaryObject.glossaryTotalPages = parseInt(response.headers.get('x-total-pages')) || 1;
                 this.glossaryObject.glossaryTotalElements = parseInt(response.headers.get('x-total-elements')) || 0;
-                this.glossaryList = rsp;
+                this.glossaryList = rsp.map(item => {
+                    item.details = {};
+                    return item;
+                });
                 this.glossaryListBackup = JSON.parse(JSON.stringify(rsp));
                 this.changeValue('glossaryObject', this.glossaryObject);
 
@@ -151,7 +154,7 @@ export function glossaryListApp() {
 
             return pages;
         },
-        
+
         getSaveStateClass(glossaryId) {
             const state = this.glossarySaveStates[glossaryId];
             switch(state) {
@@ -161,7 +164,7 @@ export function glossaryListApp() {
                 default: return '';
             }
         },
-    
+
         getSaveBorderClass(glossaryId) {
             const state = this.glossarySaveStates[glossaryId];
             switch(state) {
@@ -193,23 +196,25 @@ export function glossaryListApp() {
 
             if (!hasChanges) return;
 
+            const { details, ...localGlossary } = glossary || {};
+
             // Update backup with current values
-            const index = this.glossaryListBackup.findIndex(t => t.id === glossary.id);
+            const index = this.glossaryListBackup.findIndex(t => t.id === localGlossary.id);
             if (index !== -1) {
-                this.glossaryListBackup[index] = JSON.parse(JSON.stringify(glossary));
+                this.glossaryListBackup[index] = JSON.parse(JSON.stringify(localGlossary));
             }
 
             // Clear any existing timer for this glossary
-            if (this.glossaryDebounceTimers[glossary.id]) {
-                clearTimeout(this.glossaryDebounceTimers[glossary.id]);
+            if (this.glossaryDebounceTimers[localGlossary.id]) {
+                clearTimeout(this.glossaryDebounceTimers[localGlossary.id]);
             }
 
-            this.setSaveState(glossary.id, 'saving');
+            this.setSaveState(localGlossary.id, 'saving');
 
             // Set new timer (debounce to avoid too many requests)
-            this.glossaryDebounceTimers[glossary.id] = setTimeout(() => {
-                this.updateGlossaryChanges(glossary);
-                delete this.glossaryDebounceTimers[glossary.id];
+            this.glossaryDebounceTimers[localGlossary.id] = setTimeout(() => {
+                this.updateGlossaryChanges(localGlossary);
+                delete this.glossaryDebounceTimers[localGlossary.id];
             }, 500);
         },
 
@@ -266,14 +271,14 @@ export function glossaryListApp() {
         },
 
         startEditName(glossary) {
-            glossary.editingName = true;
-            glossary.nameEdit = glossary.name;
+            glossary.details.editingName = true;
+            glossary.details.nameEdit = glossary.name;
         },
 
         async updateGlossaryName(glossary) {
-            const { editingName, nameEdit, ...localGlossary } = glossary || {};
-            if (nameEdit && nameEdit.trim()) {
-                localGlossary.newName = nameEdit.trim();
+            const { details, ...localGlossary } = glossary || {};
+            if (details.nameEdit && details.nameEdit.trim()) {
+                localGlossary.newName = details.nameEdit.trim();
                 this.cancelEditName(glossary);
 
                 await this.updateGlossaryChanges(localGlossary);
@@ -284,8 +289,8 @@ export function glossaryListApp() {
         },
 
         cancelEditName(glossary) {
-            glossary.editingName = false;
-            glossary.nameEdit = '';
+            glossary.details.editingName = false;
+            glossary.details.nameEdit = '';
         },
 
     };

@@ -288,6 +288,7 @@ export function listApp() {
 
         registerChangeListener(app, selector, fn) {
             const input = document.querySelector(`[x-ref="${selector}"]`);
+            if(!input) return;
             input.addEventListener('change', async (e) => {
               const file = e.target.files[0];
               if (!file) return;

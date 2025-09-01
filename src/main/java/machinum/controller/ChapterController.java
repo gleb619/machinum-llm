@@ -149,7 +149,8 @@ public class ChapterController implements ControllerTrait {
             @RequestParam(defaultValue = "20") Integer topK,
             @RequestParam(defaultValue = "0.1") Float minScore) {
 
-        return ResponseEntity.ok(chapterGlossaryService.searchGlossary(bookId, searchText, chapterStart, chapterEnd, topK, minScore));
+        var result = chapterGlossaryService.searchGlossary(bookId, searchText, chapterStart, chapterEnd, topK, minScore);
+        return ResponseEntity.ok(result);
     }
 
     @PatchMapping("/api/chapters/{chapterId}/glossary")
@@ -160,6 +161,41 @@ public class ChapterController implements ControllerTrait {
         chapterFacade.updateGlossary(chapterId, updatedChapterGlossary);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/replace-text")
+    public void replaceText(@RequestBody ReplaceTextRequest request) {
+        log.info("Replacing text in bookId: {}, search: {}, replacement: {}",
+                request.bookId(), request.search(), request.replacement());
+        chapterGlossaryService.replaceText(request.bookId(), request.search(), request.replacement());
+    }
+
+    @PostMapping("/replace-text-by-id")
+    public void replaceTextById(@RequestBody ReplaceTextByIdRequest request) {
+        log.info("Replacing text by id in chapterId: {}, search: {}, replacement: {}",
+                request.chapterId(), request.search(), request.replacement());
+        chapterGlossaryService.replaceTextById(request.chapterId(), request.search(), request.replacement());
+    }
+
+    @PostMapping("/replace-text-for-column")
+    public void replaceTextForColumn(@RequestBody ReplaceTextForColumnRequest request) {
+        log.info("Replacing text for column in chapterId: {}, columnName: {}, search: {}, replacement: {}",
+                request.chapterId(), request.columnName(), request.search(), request.replacement());
+        chapterGlossaryService.replaceTextForColumn(request.chapterId(), request.columnName(), request.search(), request.replacement());
+    }
+
+    @PostMapping("/replace-summary")
+    public void replaceSummary(@RequestBody ReplaceSummaryRequest request) {
+        log.info("Replacing summary in bookId: {}, search: {}, replacement: {}",
+                request.bookId(), request.search(), request.replacement());
+        chapterGlossaryService.replaceSummary(request.bookId(), request.search(), request.replacement());
+    }
+
+    @PutMapping("/update-ru-name")
+    public void updateGlossaryRuName(@RequestBody UpdateGlossaryRuNameRequest request) {
+        log.info("Updating glossary ru name for bookId: {}, oldRuName: {}, newRuName: {}, returnIds: {}",
+                request.bookId(), request.oldRuName(), request.newRuName(), request.returnIds());
+        chapterGlossaryService.updateGlossaryRuName(request.bookId(), request.oldRuName(), request.newRuName(), request.returnIds());
     }
 
     @PostMapping("/api/tokens")
@@ -243,6 +279,21 @@ public class ChapterController implements ControllerTrait {
             return PageRequest.of(page, size);
         }
 
+    }
+
+    public record ReplaceTextRequest(String bookId, String search, String replacement) {
+    }
+
+    public record ReplaceTextByIdRequest(String chapterId, String search, String replacement) {
+    }
+
+    public record ReplaceTextForColumnRequest(String chapterId, String columnName, String search, String replacement) {
+    }
+
+    public record ReplaceSummaryRequest(String bookId, String search, String replacement) {
+    }
+
+    public record UpdateGlossaryRuNameRequest(String bookId, String oldRuName, String newRuName, Boolean returnIds) {
     }
 
 }

@@ -8,6 +8,7 @@ import { bookStateApp } from './components/book-state.js';
 import { bookReportApp } from './components/book-report.js';
 import { titleListApp } from './components/book-title-list.js';
 import { glossaryListApp } from './components/book-glossary-list.js';
+import { glossaryDetailsApp } from './components/book-glossary-details.js';
 import { sidebarChapterSelectorApp } from './components/sidebar-chap-selector.js';
 
 const startTime = new Date().getTime();
@@ -33,6 +34,7 @@ export function app() {
             ...Object.getOwnPropertyDescriptors(bookReportApp()),
             ...Object.getOwnPropertyDescriptors(titleListApp()),
             ...Object.getOwnPropertyDescriptors(glossaryListApp()),
+            ...Object.getOwnPropertyDescriptors(glossaryDetailsApp()),
             ...Object.getOwnPropertyDescriptors(sidebarChapterSelectorApp()),
         });
     } catch(e) {

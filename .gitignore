@@ -74,3 +74,4 @@ Thumbs.db
 /out/*
 /src/main/generated/*
 .aider*
+/.history/*

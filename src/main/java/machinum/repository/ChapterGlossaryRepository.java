@@ -5,6 +5,7 @@ import machinum.model.ChapterGlossary.ChapterGlossaryProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -32,6 +33,22 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterGlossary
     List<GlossaryByQueryResult> findGlossaryByQuery(@Param("names") List<String> names,
                                                     @Param("chapterNumber") Integer chapterNumber,
                                                     @Param("bookId") String bookId);
+
+    @Query(value = """ 
+                select 
+                    c2.name,
+                    count(1) as count
+                from 
+                    chapter_glossary c2 
+                where 
+                    c2.book_id = :bookId 
+                    and c2.number <= :chapterNumber
+                    and c2.name in :names 
+                group by c2.name
+            """, nativeQuery = true)
+    List<CountResult> countGlossaryInPreviousChapters(@Param("names") List<String> names,
+                                                      @Param("chapterNumber") Integer chapterNumber,
+                                                      @Param("bookId") String bookId);
 
     @Query(value = """ 
                 WITH data AS (
@@ -294,11 +311,52 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterGlossary
             @Param("topK") Integer topK,
             @Param("minScore") Float minScore);
 
+    @Modifying
+    @Query(value = "SELECT mt_replace_text(:bookId, :search, :replacement)", nativeQuery = true)
+//    @Query(value = "SELECT mt_replace_text(:bookId, cast(:search as text), cast(:replacement as text))", nativeQuery = true)
+    List replaceText(@Param("bookId") String bookId,
+                     @Param("search") String search,
+                     @Param("replacement") String replacement);
+
+    @Modifying
+    @Query(value = "SELECT mt_replace_text_by_id(:chapterId, cast(:search as text), cast(:replacement as text))", nativeQuery = true)
+    List replaceTextById(@Param("chapterId") String chapterId,
+                         @Param("search") String search,
+                         @Param("replacement") String replacement);
+
+    @Modifying
+    @Query(value = "SELECT mt_replace_text_for_column(:chapterId, :columnName, cast(:search as text), cast(:replacement as text))", nativeQuery = true)
+    List replaceTextForColumn(@Param("chapterId") String chapterId,
+                              @Param("columnName") String columnName,
+                              @Param("search") String search,
+                              @Param("replacement") String replacement);
+
+    @Modifying
+    @Query(value = "SELECT mt_replace_summary(:bookId, cast(:search as text), cast(:replacement as text))", nativeQuery = true)
+    List replaceSummary(@Param("bookId") String bookId,
+                        @Param("search") String search,
+                        @Param("replacement") String replacement);
+
+    @Query(value = "SELECT mt_update_glossary_runame(:bookId, :oldRuName, :newRuName, :returnIds)",
+            nativeQuery = true)
+    List updateGlossaryRuName(@Param("bookId") String bookId,
+                              @Param("oldRuName") String oldRuName,
+                              @Param("newRuName") String newRuName,
+                              @Param("returnIds") Boolean returnIds);
+
     interface GlossaryByQueryResult {
 
         String getName();
 
         String getRawJson();
+
+    }
+
+    interface CountResult {
+
+        String getName();
+
+        Long getCount();
 
     }
 
@@ -336,7 +394,8 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterGlossary
                               cg0.translated,
                               cg0.raw_json as rawJson
                           FROM search_glossary(:bookId, :searchText, :chapterStart, :chapterEnd, :topK, :minScore) sg1
-                          LEFT JOIN chapter_glossary cg0.id = sg1.id
+                          LEFT JOIN chapter_glossary cg0 ON cg0.id = sg1.glossary_id
+                          ORDER BY sg1.score 
                         )
                         """;
 

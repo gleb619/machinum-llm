@@ -35,6 +35,7 @@ export function lineListApp() {
             const qLineSearchQuery = this.fromSearchParams(window.location.search).get('lineSearchQuery');
             if(qLineSearchQuery) {
                 this.lineObject.lineSearchQuery = qLineSearchQuery;
+                this.selectTab('lines');
                 setTimeout(() => {
                     this.fetchSimilarLines(this.lineObject.lineSearchQuery, [this.lineObject.selectedField]);
                 }, 10);

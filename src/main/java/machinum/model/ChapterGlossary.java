@@ -14,6 +14,8 @@ public class ChapterGlossary {
     private Integer chapterNumber;
     @JsonUnwrapped
     private ObjectName objectName;
+    //aka !isFoundInPreviousChapters
+    private boolean isUnique;
 
     public interface ChapterGlossaryProjection {
 

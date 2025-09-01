@@ -47,7 +47,7 @@ public class ChapterGlossaryView {
     @Column(name = "translated", nullable = false)
     private Boolean translated;
 
-    @Column(name = "translated")
+    @Column(name = "translated_name")
     private String translatedName;
 
     @Column(name = "raw_json", columnDefinition = "text")
