@@ -3,6 +3,7 @@ package machinum.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
 import lombok.extern.slf4j.Slf4j;
+import machinum.processor.client.GeminiAiClient;
 import machinum.processor.client.GeminiClient.JacksonJsonParser;
 import machinum.processor.client.GeminiClientPool;
 import machinum.processor.client.GeminiClientPool.GeminiClientItem;
@@ -39,6 +40,13 @@ public class GeminiConfig {
                 .collect(Collectors.toList());
 
         return new GeminiClientPool(clients);
+    }
+
+    @Bean
+    public GeminiAiClient geminiAiClient(
+            @Value("${spring.ai.gemini-ai.chat.options.model:gemini-2.0-flash-exp}") String model,
+            GeminiClientPool clientPool) {
+        return new GeminiAiClient(model, clientPool);
     }
 
 }

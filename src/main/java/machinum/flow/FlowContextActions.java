@@ -117,4 +117,24 @@ public class FlowContextActions {
         return flowContext -> extractor.apply(flowContext).asAlternative();
     }
 
+    public static <T> FlowArgument<Integer> iterationArg(FlowContext<T> context) {
+        var argument = (FlowArgument) context.findArgument(ITERATION_PARAM, NEW_FLAG)
+                .orElseGet(() -> createArg(ITERATION_PARAM, 1));
+        return argument;
+    }
+
+    public static <T> FlowArgument<Integer> subIterationArg(FlowContext<T> context) {
+        var argument = (FlowArgument) context.findArgument(SUB_ITERATION_PARAM, NEW_FLAG)
+                .orElseGet(() -> createArg(SUB_ITERATION_PARAM, 1));
+        return argument;
+    }
+
+    public static <T> FlowArgument<Object> resultArg(FlowContext<T> context) {
+        return context.arg(RESULT_PARAM);
+    }
+
+    public static <T, U> FlowArgument<U> oldArg(FlowContext<T> context, String name) {
+        return context.getArgument(name, OLD_FLAG);
+    }
+
 }

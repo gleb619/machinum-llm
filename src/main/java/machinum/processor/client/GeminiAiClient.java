@@ -12,25 +12,24 @@ import machinum.util.TextUtil;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class GeminiAiClient implements AiClient {
 
     public static final String USER_ROLE = "user";
     public static final String MODEL_ROLE = "model";
+
     private static final int MAX_RETRIES = 2;
+
+    private final String model;
+
     private final GeminiClientPool clientPool;
 
-    @Value("${spring.ai.gemini-ai.chat.options.model:gemini-2.0-flash-exp}")
-    private final String model;
 
     @Override
     public AssistantMessage call(AssistantContext assistantContext, Prompt prompt) {

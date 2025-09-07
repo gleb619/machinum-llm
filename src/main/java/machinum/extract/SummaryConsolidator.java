@@ -63,7 +63,7 @@ public class SummaryConsolidator implements ChunkSupport, FlowSupport {
 
         if (flowContext.hasArgument(FlowContext::consolidatedContextArg)) {
             result = doAction(flowContext, flowContext.consolidatedContext(), flowContext.context());
-        } else if (flowContext.hasArguments(FlowContext::oldContexArg, FlowContext::contextArg)) {
+        } else if (flowContext.hasArguments(FlowContext::oldContextArg, FlowContext::contextArg)) {
             result = doAction(flowContext, flowContext.oldContext(), flowContext.context());
         } else {
             result = flowContext.context();

@@ -197,7 +197,7 @@ public interface FlowSupport {
         if (items.contains(HistoryItem.CONSOLIDATED_CONTEXT)) {
             historyContext.getFlowContext().hasAnyArgument(oldContext -> {
                 processContext(historyContext, oldContext, previousContext, history, USER_PREVIOUS_CONTEXT_TEMPLATE);
-            }, FlowContext::consolidatedContextArg, FlowContext::oldContexArg);
+            }, FlowContext::consolidatedContextArg, FlowContext::oldContextArg);
         }
 
         if (items.contains(HistoryItem.CONTEXT)) {

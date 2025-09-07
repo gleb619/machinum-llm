@@ -1,14 +1,12 @@
 package machinum.flow;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Singular;
+import lombok.ToString;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import machinum.flow.OneStepRunner.Aggregation;
-import machinum.flow.OneStepRunner.Window;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -16,12 +14,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static machinum.flow.Flow.ErrorStrategy.defaultStrategy;
+import static machinum.flow.ErrorStrategy.defaultStrategy;
 import static machinum.flow.InMemoryStateManager.inMemory;
-import static machinum.flow.OneStepRunner.FlowExtensions.aggregate;
-import static machinum.util.DurationMeasureUtil.DurationConfig.humanReadableDuration;
 import static machinum.util.JavaUtil.newId;
 
+/**
+ * Represents a flow for processing items through a series of states and actions.
+ * This class provides a fluent API for building and configuring flows.
+ *
+ * @param <T> The type of items processed by the flow.
+ */
 @Slf4j
 @Value
 @Builder(toBuilder = true)
@@ -57,7 +59,7 @@ public class Flow<T> {
     BiConsumer<FlowContext<T>, Runnable> aroundEachStateAction = (ctx, run) -> run.run();
 
     @Builder.Default
-    BiFunction<FlowContext<T>, Function<FlowContext<T>, FlowContext<T>>, FlowContext<T>> aroundEachAction = DefaultHandler.defaultAroundEach();
+    BiFunction<FlowContext<T>, Function<FlowContext<T>, FlowContext<T>>, FlowContext<T>> aroundEachAction = FlowAction.defaultAroundEach();
 
     @Builder.Default
     FlowPredicate<T> aroundEachCondition = FlowPredicateResult::accept;
@@ -75,7 +77,7 @@ public class Flow<T> {
     Map<State, List<Function<FlowContext<T>, FlowContext<T>>>> statePipes = new LinkedHashMap<>();
 
     @Builder.Default
-    Consumer<FlowContext<T>> sinkAction = (ctx) -> {
+    Consumer<FlowContext<T>> sinkAction = ctx -> {
     };
 
     @Builder.Default
@@ -84,32 +86,79 @@ public class Flow<T> {
     @Builder.Default
     ErrorStrategy<T> errorStrategy = defaultStrategy();
 
-
-    public static <T> Flow<T> from(Function<Flow.FlowBuilder<T>, Flow.FlowBuilder<T>> fn) {
+    /**
+     * Creates a flow from a builder function.
+     *
+     * @param fn  The builder function.
+     * @param <T> The type of items in the flow.
+     * @return The created flow.
+     */
+    public static <T> Flow<T> from(Function<FlowBuilder<T>, FlowBuilder<T>> fn) {
         return fn.apply(Flow.builder()).build();
     }
 
+    /**
+     * Creates a flow from variable arguments.
+     *
+     * @param args The source items.
+     * @param <T> The type of items.
+     * @return The created flow.
+     */
     public static <T> Flow<T> from(T... args) {
         return from(Arrays.asList(args));
     }
 
+    /**
+     * Creates a flow from a collection.
+     *
+     * @param source The source collection.
+     * @param <T> The type of items.
+     * @return The created flow.
+     */
     public static <T> Flow<T> from(Collection<T> source) {
         return from(b -> b.source(source));
     }
 
+    /**
+     * Creates a flow from a collection with a specific state manager.
+     *
+     * @param source The source collection.
+     * @param stateManager The state manager.
+     * @param <T> The type of items.
+     * @return The created flow.
+     */
     public static <T> Flow<T> from(Collection<T> source, StateManager stateManager) {
-        return from(b -> b.source(source)
-                .stateManager(stateManager));
+        return from(b -> b.source(source).stateManager(stateManager));
     }
 
+    /**
+     * Creates a new flow with the specified state manager.
+     *
+     * @param stateManager The state manager.
+     * @return The new flow.
+     */
     public Flow<T> withStateManager(StateManager stateManager) {
         return this.copy(b -> b.stateManager(stateManager));
     }
 
+    /**
+     * Maps the flow items using a simple mapper function.
+     *
+     * @param mapper The mapper function.
+     * @param <I> The type of the mapped items.
+     * @return The mapped flow.
+     */
     public <I> Flow<I> map(Function<? super T, ? extends I> mapper) {
         return map((context, number, item) -> mapper.apply(item));
     }
 
+    /**
+     * Maps the flow items using a tri-function mapper.
+     *
+     * @param mapper The mapper function.
+     * @param <I> The type of the mapped items.
+     * @return The mapped flow.
+     */
     public <I> Flow<I> map(TriFunction<Map<String, Object>, Integer, ? super T, ? extends I> mapper) {
         var list = getSource();
         Flow<?> flow = copy(FlowBuilder::clearSource);
@@ -119,62 +168,153 @@ public class Flow<T> {
                 .collect(Collectors.toList())));
     }
 
+    /**
+     * Adds metadata to the flow.
+     *
+     * @param key The metadata key.
+     * @param value The metadata value.
+     * @return The updated flow.
+     */
     public Flow<T> metadata(String key, Object value) {
         return copy(b -> b.metadata(key, value));
     }
 
+    /**
+     * Adds metadata map to the flow.
+     *
+     * @param map The metadata map.
+     * @return The updated flow.
+     */
     public Flow<T> metadata(Map<String, Object> map) {
         return copy(b -> b.metadata(map));
     }
 
+    /**
+     * Sets the before-all action.
+     *
+     * @param action The action to perform before all processing.
+     * @return The updated flow.
+     */
     public Flow<T> beforeAll(Consumer<FlowContext<T>> action) {
         return copy(b -> b.beforeAllAction(action));
     }
 
+    /**
+     * Sets the after-all action.
+     *
+     * @param action The action to perform after all processing.
+     * @return The updated flow.
+     */
     public Flow<T> afterAll(Consumer<FlowContext<T>> action) {
         return copy(b -> b.afterAllAction(action));
     }
 
+    /**
+     * Sets the around-all action.
+     *
+     * @param action The around-all action.
+     * @return The updated flow.
+     */
     public Flow<T> aroundAll(BiConsumer<FlowContext<T>, Runnable> action) {
         return copy(b -> b.aroundAllAction(action));
     }
 
+    /**
+     * Sets the around-each-state action.
+     *
+     * @param action The around-each-state action.
+     * @return The updated flow.
+     */
     public Flow<T> aroundEachState(BiConsumer<FlowContext<T>, Runnable> action) {
         return copy(b -> b.aroundEachStateAction(action));
     }
 
+    /**
+     * Sets the extend action.
+     *
+     * @param action The extend action.
+     * @return The updated flow.
+     */
     public Flow<T> extend(Function<FlowContext<T>, FlowContext<T>> action) {
         return copy(b -> b.extendAction(action));
     }
 
+    /**
+     * Sets the bootstrap action.
+     *
+     * @param action The bootstrap action.
+     * @return The updated flow.
+     */
     public Flow<T> bootstrap(Function<FlowContext<T>, FlowContext<T>> action) {
         return copy(b -> b.bootstrapAction(action));
     }
 
+    /**
+     * Sets the refresh action.
+     *
+     * @param action The refresh action.
+     * @return The updated flow.
+     */
     public Flow<T> refresh(Function<FlowContext<T>, T> action) {
         return copy(b -> b.refreshAction(action));
     }
 
+    /**
+     * Sets the each-condition predicate.
+     *
+     * @param condition The condition predicate.
+     * @return The updated flow.
+     */
     public Flow<T> eachCondition(FlowPredicate<T> condition) {
         return copy(b -> b.aroundEachCondition(condition));
     }
 
+    /**
+     * Sets the around-each action.
+     *
+     * @param action The around-each action.
+     * @return The updated flow.
+     */
     public Flow<T> aroundEach(BiFunction<FlowContext<T>, Function<FlowContext<T>, FlowContext<T>>, FlowContext<T>> action) {
         return copy(b -> b.aroundEachAction(action));
     }
 
+    /**
+     * Sets the exception action.
+     *
+     * @param action The exception action.
+     * @return The updated flow.
+     */
     public Flow<T> exception(BiConsumer<FlowContext<T>, Exception> action) {
         return copy(b -> b.exceptionAction(action));
     }
 
+    /**
+     * Creates a state builder for the specified state.
+     *
+     * @param state The state to configure.
+     * @return The state builder.
+     */
     public StateBuilder<T> onState(State state) {
         return new StateBuilder<>(this, state);
     }
 
+    /**
+     * Sets the sink action.
+     *
+     * @param action The sink action.
+     * @return The updated flow.
+     */
     public Flow<T> sink(Consumer<FlowContext<T>> action) {
         return copy(b -> b.sinkAction(action));
     }
 
+    /**
+     * Creates a copy of the flow with modifications.
+     *
+     * @param fn The function to modify the builder.
+     * @return The modified flow.
+     */
     public Flow<T> copy(Function<FlowBuilder<T>, FlowBuilder<T>> fn) {
         var stateMap = new LinkedHashMap<>(getStatePipes());
         var metadata = new HashMap<>(getMetadata());
@@ -187,206 +327,88 @@ public class Flow<T> {
                 .statePipes(stateMap)).build();
     }
 
-    public Flow.State nextState(Flow.State initState) {
-        return Util.getNextKey(statePipes, initState);
+    /**
+     * Gets the next state after the specified state.
+     *
+     * @param initState The current state.
+     * @return The next state, or null if none.
+     */
+    public State nextState(State initState) {
+        return FlowActions.getNextKey(statePipes, initState);
     }
 
-    public boolean isInitState(Flow.State initState) {
-        return Util.isFirstKey(statePipes, initState);
+    /**
+     * Checks if the specified state is the initial state.
+     *
+     * @param initState The state to check.
+     * @return true if it's the initial state, false otherwise.
+     */
+    public boolean isInitState(State initState) {
+        return FlowActions.isFirstKey(statePipes, initState);
     }
 
+    /**
+     * Represents a state in the flow.
+     */
     public interface State {
 
+        /**
+         * Creates a default state.
+         *
+         * @return The default state.
+         */
         static State defaultState() {
             return new State() {
             };
         }
-
     }
 
-    interface ErrorStrategy<T> {
-
-        static <U> ErrorStrategy<U> defaultStrategy() {
-            return new FailFast<>();
-        }
-
-        void handleError(FlowContext<T> context, Exception e);
-
-    }
-
+    /**
+     * Predicate for flow conditions.
+     *
+     * @param <T> The type of items.
+     */
     @FunctionalInterface
     public interface FlowPredicate<T> {
 
         /**
-         * Evaluates this predicate on the given argument.
+         * Evaluates this predicate on the given context.
          *
-         * @param t the input argument
-         * @return {@code true} if the input argument matches the predicate,
-         * otherwise {@code false}
+         * @param context The flow context.
+         * @return The predicate result.
          */
-        FlowPredicateResult<T> test(FlowContext<T> t);
-
+        FlowPredicateResult<T> test(FlowContext<T> context);
     }
 
-    @Slf4j
-    static class IgnoreErrors<T> implements ErrorStrategy<T> {
-
-        @Override
-        public void handleError(FlowContext<T> context, Exception e) {
-            log.warn("Ignoring error: {}", e.getMessage());
-        }
-
-    }
-
-    @Slf4j
-    static class FailFast<T> implements ErrorStrategy<T> {
-
-        @Override
-        public void handleError(FlowContext<T> context, Exception e) {
-            if (e instanceof FlowException fe) {
-                if(fe.isShouldStopExecution()) {
-                    throw new FlowException("FailFast strategy triggered", e);
-                } else if (Objects.nonNull(fe.getReason())) {
-                    log.warn("Execution will no be stopped, due reason: {}", fe.getReason());
-                    return;
-                }
-            }
-
-            throw new FlowException("FailFast strategy triggered", e);
-        }
-
-    }
-
-    private static class DefaultHandler<U> implements BiFunction<FlowContext<U>, Function<FlowContext<U>, FlowContext<U>>, FlowContext<U>> {
-
-        public static <I> BiFunction<FlowContext<I>, Function<FlowContext<I>, FlowContext<I>>, FlowContext<I>> defaultAroundEach() {
-            return new DefaultHandler<>();
-        }
-
-        public static <I> boolean isDefaultHandler(BiFunction<FlowContext<I>, Function<FlowContext<I>, FlowContext<I>>, FlowContext<I>> handler) {
-            return handler instanceof Flow.DefaultHandler<I>;
-        }
-
-        @Override
-        public FlowContext<U> apply(FlowContext<U> ctx, Function<FlowContext<U>, FlowContext<U>> fn) {
-            return fn.apply(ctx);
-        }
-
-    }
-
-    @Value
-    @Builder(toBuilder = true)
-    public static class StateBuilder<T> {
-
-        Flow<T> flow;
-
-        State state;
-
-        public StateBuilder(Flow<T> flow, State state) {
-            this.flow = flow;
-            this.state = state;
-        }
-
-        public StateBuilder<T> comment(Function<State, String> comment) {
-            log.debug(comment.apply(state));
-            return this;
-        }
-
-        public StateBuilder<T> pipeStateless(Function<FlowContext<T>, FlowContext<T>> action) {
-            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(context -> action.apply(context)
-                    .preventChanges());
-            return this;
-        }
-
-        public StateBuilder<T> pipe(Function<FlowContext<T>, FlowContext<T>> action) {
-            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(action);
-            return this;
-        }
-
-        public StateBuilder<T> window(Window window, Aggregation<T> action) {
-            return pipe(aggregate(window, action));
-        }
-
-        public StateBuilder<T> nothing() {
-            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(Function.identity());
-            return this;
-        }
-
-        public StateBuilder<T> waitFor(Duration duration) {
-            getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>()).add(ctx -> {
-                try {
-                    log.debug("Waiting for {} to cool down GPU", humanReadableDuration(duration));
-                    TimeUnit.MILLISECONDS.sleep(duration.toMillis());
-                } catch (InterruptedException e) {
-                    return ExceptionUtils.rethrow(e);
-                }
-
-                return ctx;
-            });
-            return this;
-        }
-
-        public StateBuilder<T> onState(State state) {
-            return flow.onState(state);
-        }
-
-        public Flow<T> sink(Consumer<FlowContext<T>> action) {
-            return flow.sink(action);
-        }
-
-        public Flow<T> build() {
-            return flow;
-        }
-
-    }
-
+    /**
+     * Result of a flow predicate evaluation.
+     *
+     * @param <T> The type of items.
+     * @param context The flow context.
+     * @param testResult The test result.
+     */
     public record FlowPredicateResult<T>(FlowContext<T> context, boolean testResult) {
 
+        /**
+         * Creates an accept result.
+         *
+         * @param context The flow context.
+         * @param <U> The type of items.
+         * @return The accept result.
+         */
         public static <U> FlowPredicateResult<U> accept(FlowContext<U> context) {
             return new FlowPredicateResult<>(context, true);
         }
 
+        /**
+         * Creates a reject result.
+         *
+         * @param context The flow context.
+         * @param <U> The type of items.
+         * @return The reject result.
+         */
         public static <U> FlowPredicateResult<U> reject(FlowContext<U> context) {
             return new FlowPredicateResult<>(context, false);
         }
-
     }
-
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    private static class Util {
-
-        /**
-         * Retrieves the key immediately following the specified key in a LinkedHashMap.
-         *
-         * @param map The input LinkedHashMap.
-         * @param key The key to find the next key for.
-         * @param <K> The type of keys in the map.
-         * @return The next key after the specified key, or null if the key is not found or is the last key.
-         */
-        public static <K, V> K getNextKey(Map<K, V> map, K key) {
-            boolean foundKey = false;
-
-            for (K currentKey : map.keySet()) {
-                if (foundKey) {
-                    return currentKey; // Return the next key
-                }
-                if (currentKey.equals(key)) {
-                    foundKey = true; // Mark that the specified key has been found
-                }
-            }
-
-            return null; // Key not found or it was the last key
-        }
-
-        public static <K, V> boolean isFirstKey(Map<K, V> map, K key) {
-            for (K currentKey : map.keySet()) {
-                return currentKey.equals(key);
-            }
-
-            return false;
-        }
-
-    }
-
 }
-

@@ -191,12 +191,12 @@ class FlowContextTest {
         String hasArg = flowContext
                 .addArgs(consolidatedContext("example1"))
                 .parseArgument(FlowContext::consolidatedContextArg,
-                        FlowArgument::toString,
+                        FlowArgument::getValue,
                         unused -> EMPTY_PLACEHOLDER);
 
         String hasntArg = flowContext
                 .parseArgument(FlowContext::consolidatedContextArg,
-                        FlowArgument::toString,
+                        FlowArgument::getValue,
                         unused -> EMPTY_PLACEHOLDER);
 
         Assertions.assertEquals("example1", hasArg);

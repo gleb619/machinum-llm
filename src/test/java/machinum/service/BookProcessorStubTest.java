@@ -3,6 +3,7 @@ package machinum.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import machinum.TestApplication;
 import machinum.controller.BookOperationController.BookOperationRequest;
+import machinum.controller.BookOperationController.BookOperationRequest.RuleConfig;
 import machinum.model.Chapter;
 import machinum.model.ChapterHistory;
 import machinum.repository.ChapterHistoryRepository;
@@ -106,6 +107,9 @@ class BookProcessorStubTest extends NormalTest {
         bookProcessor.doStart(BookOperationRequest.builder()
                 .id(bookId)
                 .operationName(COMPLEX_FLOW)
+                .config(RuleConfig.builder()
+                        .ruleType(RuleConfig.RuleType.ALL)
+                        .build())
                 .build());
 
         var statistics = statisticService.currentStatistics();
