@@ -8,9 +8,10 @@ import machinum.config.Constants;
 import machinum.controller.BookOperationController.BookOperationRequest;
 import machinum.exception.AppIllegalStateException;
 import machinum.extract.Glossary;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
+import machinum.flow.model.Chunks;
 import machinum.model.Chapter;
-import machinum.model.Chunks;
 import machinum.model.ObjectName;
 import machinum.util.JavaUtil;
 import org.springframework.stereotype.Service;
@@ -18,7 +19,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Map;
 
-import static machinum.flow.FlowContextActions.glossary;
+import static machinum.flow.AppFlowActions.glossary;
 import static machinum.flow.FlowContextActions.iteration;
 import static machinum.service.BookProcessor.ProcessorState.defaultState;
 import static machinum.service.BookWindowProcessor.Operations.TRANSLATE_GLOSSARY;
@@ -50,9 +51,9 @@ public class BookWindowProcessor {
         var translatedNames = new ArrayList<ObjectName>();
         for (var namesChunk : namesChunks) {
             var bootstrapContext = prepareContext(request)
-                    .replace(FlowContext::glossaryArg, glossary(namesChunk));
+                    .replace(AppFlowActions::glossaryArg, glossary(namesChunk));
             var context = glossary.glossaryTranslate(bootstrapContext);
-            translatedNames.addAll(context.glossary());
+            translatedNames.addAll(AppFlowActions.glossary(context));
         }
         System.out.println("BookWindowProcessor.translateGlossary");
 

@@ -3,9 +3,8 @@ package machinum.flow;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import machinum.processor.core.StringSupport;
-import machinum.util.TextUtil;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import machinum.flow.model.StringSupport;
+import machinum.flow.util.FlowUtil;
 
 import java.time.Instant;
 import java.util.List;
@@ -15,7 +14,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static machinum.flow.FlowContextConstants.*;
-import static machinum.util.JavaUtil.newId;
+import static machinum.flow.util.FlowUtil.newId;
 
 @Slf4j
 @Data
@@ -130,11 +129,11 @@ public class FlowArgument<U> implements StringSupport {
     }
 
     public Integer countWords() {
-        return TextUtil.countWords(stringValue());
+        return FlowUtil.countWords(stringValue());
     }
 
     public Integer countTokens() {
-        return TextUtil.countTokens(stringValue());
+        return FlowUtil.countTokens(stringValue());
     }
 
     /* ============= */
@@ -157,7 +156,7 @@ public class FlowArgument<U> implements StringSupport {
                     .writeValueAsString(value);
         } catch (Exception e) {
             log.error("Found corrupted value: {}", value);
-            return ExceptionUtils.rethrow(e);
+            return FlowUtil.rethrow(e);
         }
     }
 

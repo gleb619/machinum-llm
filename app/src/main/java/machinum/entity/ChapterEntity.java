@@ -1,10 +1,13 @@
 package machinum.entity;
 
-import machinum.listener.ChapterEntityListener;
-import machinum.model.*;
-import machinum.model.Character;
 import jakarta.persistence.*;
 import lombok.*;
+import machinum.flow.model.Chunks;
+import machinum.listener.ChapterEntityListener;
+import machinum.model.ChainOfThoughts;
+import machinum.model.Character;
+import machinum.model.ObjectName;
+import machinum.model.Scene;
 import machinum.processor.core.ChapterWarning;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.GenericGenerator;
@@ -14,7 +17,6 @@ import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 @Data
 @AllArgsConstructor

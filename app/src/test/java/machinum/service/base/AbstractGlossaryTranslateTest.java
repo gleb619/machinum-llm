@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import machinum.extract.GlossaryJsonTranslate;
 import machinum.extract.GlossaryTranslate;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
@@ -57,10 +58,10 @@ public abstract class AbstractGlossaryTranslateTest extends NormalTest {
                     iteration(1),
                     text(cleanText),
                     context(summaryText),
-                    glossary(glossaryJson),
-                    glossary(oldGlossaryJson).asObsolete()
+                    AppFlowActions.glossary(glossaryJson),
+                    AppFlowActions.glossary(oldGlossaryJson).asObsolete()
             ));
-        }).mutate(FlowContext::glossary);
+        }).mutate(AppFlowActions::glossary);
 
         withReport(jsonText("glossaryTranslate", glossary), () -> {
             assertCharacterCount(glossary.stringResult(), (int) calculatePart(10, cleanText));

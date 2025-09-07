@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static machinum.config.Constants.CHAPTER;
-import static machinum.processor.core.HashSupport.hashStringWithCRC32;
+import static machinum.flow.model.HashSupport.hashStringWithCRC32;
 import static machinum.processor.core.PromptConstants.NO_DATA_KEYWORD;
 import static machinum.service.plugin.StatisticPlugin.withStatistics;
 import static machinum.util.DurationMeasureUtil.ArgumentPlugin.forArgument;

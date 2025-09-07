@@ -3,8 +3,8 @@ package machinum.model;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import machinum.flow.model.StringSupport;
 import machinum.processor.core.JsonSupport.JsonDescription;
-import machinum.processor.core.StringSupport;
 
 import java.util.ArrayList;
 import java.util.HashMap;

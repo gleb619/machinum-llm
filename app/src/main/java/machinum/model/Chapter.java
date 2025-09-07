@@ -1,10 +1,11 @@
 package machinum.model;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
-import machinum.processor.core.ChapterWarning;
-import machinum.processor.core.HashSupport;
-import machinum.util.JavaUtil;
 import lombok.*;
+import machinum.flow.model.Chunks;
+import machinum.flow.model.HashSupport;
+import machinum.processor.core.ChapterWarning;
+import machinum.util.JavaUtil;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -3,11 +3,11 @@ package machinum.processor;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import machinum.exception.AppIllegalStateException;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.processor.HistoryService.ContextBundle.ContextBundleBuilder;
-import machinum.processor.core.FlowSupport;
 import machinum.processor.core.FlowSupport.HistoryItem;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -15,15 +15,10 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.scheduling.annotation.Async;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static machinum.util.TextUtil.countTokens;
 
@@ -79,7 +74,7 @@ public class HistoryService {
                                     ContextBundleBuilder builder,
                                     TokenBudget budget) {
 
-        flowContext.hasArgument(FlowContext::glossaryArg, glossary -> {
+        flowContext.hasArgument(AppFlowActions::glossaryArg, glossary -> {
             var glossaryText = formatGlossary(glossary.getValue());
             int tokens = countTokens(glossaryText);
 

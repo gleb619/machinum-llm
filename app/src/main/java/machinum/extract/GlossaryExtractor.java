@@ -8,8 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
-import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.processor.client.AiClient;
@@ -105,7 +105,7 @@ public class GlossaryExtractor implements JsonSupport, ObjectNameSupport, ChunkS
                 .map("`%s`"::formatted)
                 .collect(Collectors.joining(";")));
 
-        return flowContext.rearrange(FlowContext::glossaryArg, FlowContextActions.glossary(names));
+        return flowContext.rearrange(AppFlowActions::glossaryArg, AppFlowActions.glossary(names));
     }
 
     private List<Message> prepareHistory(FlowContext<Chapter> flowContext, Resource sysTemplate, Integer textTokens) {

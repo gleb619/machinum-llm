@@ -6,8 +6,8 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
-import machinum.flow.FlowContextArgs;
 import machinum.flow.FlowException;
 import machinum.processor.core.AssistantContext;
 import machinum.processor.core.ChapterWarning;
@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-import static machinum.flow.FlowContextActions.warning;
 import static machinum.processor.core.ChapterWarning.createNew;
 
 /**
@@ -206,7 +205,7 @@ public class GeminiClient implements AiClient {
                     and personally identifiable information (PII)\
                     """;
 
-            var flowContext = ctx.getFlowContext().rearrange(FlowContextArgs::warningArg, warning(createNew(b -> b
+            var flowContext = ctx.getFlowContext().rearrange(c -> AppFlowActions.warningArg(c), AppFlowActions.warning(createNew(b -> b
                     .text(reason)
                     .type(ChapterWarning.WarningType.R18_CONTENT)
                     .metadata("exception", e.getMessage())

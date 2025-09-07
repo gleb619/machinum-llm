@@ -392,7 +392,7 @@
                                                       x-text="item.description"></span>
                                                 <span class="text-gray-300 hover:text-gray-600"
                                                       title="References"
-                                                      x-show="item.references"
+                                                      x-show="item.references && item.references.length > 0"
                                                       x-text="`[${item.references.join(', ')}]`"></span>
                                             </div>
                                         </td>

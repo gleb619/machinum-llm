@@ -5,10 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.config.Constants;
 import machinum.exception.AppIllegalStateException;
 import machinum.extract.*;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
+import machinum.flow.model.Chunks;
 import machinum.model.Chapter;
-import machinum.model.Chunks;
 import machinum.util.TextUtil;
 import org.springframework.stereotype.Service;
 
@@ -149,7 +150,7 @@ public class TemplateAiFacade {
                 .push(FlowContext::textArg, text(textValue))
                 .push(FlowContext::contextArg, context(contextValue))
                 .push(FlowContext::consolidatedContextArg, consolidatedContext(consolidatedContextValue))
-                .push(FlowContext::glossaryArg, FlowContextActions.glossary(glossaryValue))
+                .push(AppFlowActions::glossaryArg, AppFlowActions.glossary(glossaryValue))
                 .push(ctx -> ctx.arg(TITLE), FlowContextActions.createArg(TITLE, title))
                 .push(ctx -> ctx.arg(TRANSLATED_TITLE), FlowContextActions.createArg(TRANSLATED_TITLE, translatedTitle))
                 .push(FlowContext::translatedTextArg, FlowContextActions.translatedText(translatedText))

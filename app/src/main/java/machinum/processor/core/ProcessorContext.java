@@ -1,7 +1,7 @@
 package machinum.processor.core;
 
 import lombok.*;
-import machinum.model.core.Mergeable;
+import machinum.flow.model.Mergeable;
 import org.springframework.ai.chat.messages.Message;
 
 import java.util.ArrayList;

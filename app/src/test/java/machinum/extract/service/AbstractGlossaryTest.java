@@ -3,6 +3,7 @@ package machinum.extract.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import machinum.extract.Glossary;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
@@ -39,12 +40,12 @@ public abstract class AbstractGlossaryTest extends DbTest {
         var glossary = DurationMeasureUtil.measure("glossaryExtractor", () -> {
             return this.glossary.extractGlossary((FlowContext<Chapter>) of(
                             context(previousContext).asObsolete(),
-                            glossary(previousGlossary),
+                    AppFlowActions.glossary(previousGlossary),
                             text(chapterText),
                             context(contextText)
                     )
             );
-        }).mutate(FlowContext::glossary);
+        }).mutate(AppFlowActions::glossary);
 
         withReport(jsonText("glossaryExtractor", glossary), () -> {
             assertCharacterCount(glossary.stringResult(), (int) calculatePart(10, chapterText));

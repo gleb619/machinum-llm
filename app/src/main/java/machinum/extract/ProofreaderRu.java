@@ -3,6 +3,7 @@ package machinum.extract;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
@@ -102,7 +103,7 @@ public class ProofreaderRu implements ChunkSupport, FlowSupport {
         }
 
         List<Message> history = new ArrayList<>(fulfillHistory(systemTemplate, flowContext, historySettings));
-        flowContext.hasArgument(FlowContext::glossaryArg, glossary -> {
+        flowContext.hasArgument(AppFlowActions::glossaryArg, glossary -> {
             var value = glossary.getValue().stream()
                     .map(ObjectName::invertedStringValue)
                     .collect(Collectors.joining("\n"));

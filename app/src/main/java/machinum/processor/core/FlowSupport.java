@@ -1,6 +1,7 @@
 package machinum.processor.core;
 
 import lombok.*;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowArgument;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
@@ -21,7 +22,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static machinum.flow.FlowContextActions.alt;
-import static machinum.flow.FlowContextActions.glossary;
 import static machinum.util.JavaUtil.*;
 import static machinum.util.TextUtil.countHistoryTokens;
 import static machinum.util.TextUtil.countTokens;
@@ -118,7 +118,7 @@ public interface FlowSupport {
             history.add(new AssistantMessage(oldContext.stringValue()));
         }, FlowContext::consolidatedContextArg, FlowContext::contextArg);
 
-        flowContext.hasArgument(FlowContext::glossaryArg, glossary -> {
+        flowContext.hasArgument(AppFlowActions::glossaryArg, glossary -> {
             history.add(new UserMessage(USER_GLOSSARY_TEMPLATE));
             var value = glossary.getValue().stream()
                     .map(ObjectName::shortStringValue)
@@ -181,11 +181,11 @@ public interface FlowSupport {
             historyContext.getFlowContext().hasAnyArgument(oldGlossary -> {
                 var uniqueGlossary = oldGlossary.map(list -> uniqueBy(list, ObjectName::getName));
                 processGlossary(historyContext, oldGlossary, uniqueGlossary, history, names, USER_PREVIOUS_GLOSSARY_TEMPLATE);
-            }, FlowContext::consolidatedGlossaryArg, FlowContext::oldGlossaryArg);
+            }, AppFlowActions::consolidatedGlossaryArg, AppFlowActions::oldGlossaryArg);
         }
 
         if (items.contains(HistoryItem.GLOSSARY)) {
-            historyContext.getFlowContext().hasArgument(FlowContext::glossaryArg, glossary -> {
+            historyContext.getFlowContext().hasArgument(AppFlowActions::glossaryArg, glossary -> {
                 var uniqueGlossary = glossary.map(chapterNames -> uniqueItems(names, chapterNames, ObjectName::getName));
                 processGlossary(historyContext, glossary, uniqueGlossary, history, names, USER_GLOSSARY_TEMPLATE);
             });
@@ -225,8 +225,8 @@ public interface FlowSupport {
 
         // Try alt glossary argument if available
         var flowContext = historyContext.getFlowContext();
-        if (flowContext.hasArgument(alt(FlowContext::glossaryArg))) {
-            var glossaryArg = flowContext.resolve(alt(FlowContext::glossaryArg));
+        if (flowContext.hasArgument(alt(AppFlowActions::glossaryArg))) {
+            var glossaryArg = flowContext.resolve(alt(AppFlowActions::glossaryArg));
 
             // Try full existing glossary
             var altFullTokens = glossaryArg.countTokens();
@@ -243,8 +243,8 @@ public interface FlowSupport {
 //        }
 
 //        // Try existing glossary argument if available
-//        if (flowContext.hasArgument(alt(FlowContext::glossaryArg))) {
-//            var glossaryArg = flowContext.resolve(alt(FlowContext::glossaryArg));
+//        if (flowContext.hasArgument(alt(AppFlowActions::glossaryArg))) {
+//            var glossaryArg = flowContext.resolve(alt(AppFlowActions::glossaryArg));
 
 //            // Try short existing glossary
 //            var altShortValue = glossaryArg.shortStringValue();
@@ -256,7 +256,7 @@ public interface FlowSupport {
 
         // Fallback to truncated glossary
         var truncated = uniqueGlossary.map(val ->
-                cut(val, subList -> glossary(subList).countTokens(), budget::canAllocate));
+                cut(val, subList -> AppFlowActions.glossary(subList).countTokens(), budget::canAllocate));
 
         return new GlossaryResult(truncated.stringValue(), truncated.countTokens(), true);
     }

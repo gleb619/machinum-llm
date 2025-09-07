@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.flow.Flow.State;
 import machinum.flow.OneStepRunner.Aggregation;
 import machinum.flow.OneStepRunner.Window;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import machinum.flow.util.FlowUtil;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -15,7 +15,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static machinum.flow.OneStepRunner.FlowExtensions.aggregate;
-import static machinum.util.DurationMeasureUtil.DurationConfig.humanReadableDuration;
 
 /**
  * Builder for configuring states in a flow.
@@ -96,10 +95,10 @@ public class StateBuilder<T> {
         getFlow().getStatePipes().computeIfAbsent(state, k -> new ArrayList<>())
                 .add(ctx -> {
                     try {
-                        log.debug("Waiting for {} to cool down GPU", humanReadableDuration(duration));
+                        log.debug("Waiting for {} to cool down GPU", FlowUtil.toString(duration));
                         TimeUnit.MILLISECONDS.sleep(duration.toMillis());
                     } catch (InterruptedException e) {
-                        return ExceptionUtils.rethrow(e);
+                        return FlowUtil.rethrow(e);
                     }
                     return ctx;
                 });

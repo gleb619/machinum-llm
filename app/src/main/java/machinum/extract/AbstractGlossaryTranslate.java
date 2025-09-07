@@ -10,8 +10,9 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
 import machinum.exception.AppIllegalStateException;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
-import machinum.flow.FlowContextActions;
+import machinum.flow.model.StringSupport;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.processor.core.*;
@@ -67,7 +68,7 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
 
 
     public FlowContext<Chapter> translateWithCache(FlowContext<Chapter> flowContext) {
-        var termsGroupedByRuName = flowContext.glossary().stream()
+        var termsGroupedByRuName = AppFlowActions.glossary(flowContext).stream()
                 .collect(Collectors.groupingBy(ObjectName::hasRuName,
                         Collectors.mapping(Function.identity(), Collectors.toList())));
 
@@ -80,12 +81,12 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
             return flowContext;
         }
 
-        var tempResult = doTranslate(flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(termsToWork)));
+        var tempResult = doTranslate(flowContext.replace(AppFlowActions::glossaryArg, AppFlowActions.glossary(termsToWork)));
         var output = new ArrayList<ObjectName>();
         output.addAll(readyTerms);
-        output.addAll(tempResult.glossary());
+        output.addAll(AppFlowActions.glossary(tempResult));
 
-        return flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(output));
+        return flowContext.replace(AppFlowActions::glossaryArg, AppFlowActions.glossary(output));
     }
 
     public FlowContext<Chapter> translate(FlowContext<Chapter> flowContext) {
@@ -103,7 +104,7 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
     /* ============= */
 
     private FlowContext<Chapter> doTranslate(FlowContext<Chapter> flowContext) {
-        var names = new ArrayList<>(flowContext.glossary());
+        var names = new ArrayList<>(AppFlowActions.glossary(flowContext));
         var nameMap = names.stream()
                 .collect(Collectors.toMap(ObjectName::getName, Function.identity(), (f, s) -> f));
         var text = names.stream()
@@ -112,7 +113,7 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
 
         log.debug("Preparing a translation for extract of given: names={}", names.size());
 
-        var terms = flowContext.glossary().stream()
+        var terms = AppFlowActions.glossary(flowContext).stream()
                 .map(ObjectName::getName)
                 .map(TextUtil::cleanTerm)
                 .collect(Collectors.joining("\n"));
@@ -121,7 +122,7 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
 
         var newNames = checkAndFixTranslations(flowContext, localContext, nameMap, names);
 
-        return flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(newNames));
+        return flowContext.replace(AppFlowActions::glossaryArg, AppFlowActions.glossary(newNames));
     }
 
     private AssistantContext.Result doAction(FlowContext<Chapter> flowContext, String text, List<Message> history, String terms) {
@@ -186,8 +187,8 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
 
             if (!namesWithoutTranslation.isEmpty()) {
                 //If still have some names without translation, we try to translate again
-                var subFlow = translateWithCache(flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(namesWithoutTranslation)));
-                var subNamesList = subFlow.glossary();
+                var subFlow = translateWithCache(flowContext.replace(AppFlowActions::glossaryArg, AppFlowActions.glossary(namesWithoutTranslation)));
+                var subNamesList = AppFlowActions.glossary(subFlow);
 
                 for (var subObjectName : subNamesList) {
                     var objectName = nameMap.get(subObjectName.getName());

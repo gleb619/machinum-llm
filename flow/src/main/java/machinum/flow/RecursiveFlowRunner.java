@@ -2,23 +2,25 @@ package machinum.flow;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import machinum.util.DurationMeasureUtil;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 @Slf4j
 @RequiredArgsConstructor
 public class RecursiveFlowRunner<T> implements FlowRunner<T> {
 
     private final OneStepRunner<T> runner;
+    private final Consumer<Runnable> measureWrapper;
 
     @Override
     public void run(Flow.State initialState) {
         log.debug("Executing whole flow from given state: {}", initialState);
         try {
             var pipes = runner.getFlow().getStatePipes();
-            DurationMeasureUtil.measure("flowRun", () -> filterFromKey(pipes, initialState).keySet()
+
+            measureWrapper.accept(() -> filterFromKey(pipes, initialState).keySet()
                     .forEach(runner::run));
         } finally {
             log.debug("Executed whole flow from given state: {}", initialState);
@@ -31,10 +33,10 @@ public class RecursiveFlowRunner<T> implements FlowRunner<T> {
     }
 
     @Override
-    public FlowRunner<T> recreate(Flow<T> subFlow) {
+    public FlowRunner<T> recreate(Flow<T> subFlow, Consumer<Runnable> measureWrapper) {
         return new RecursiveFlowRunner<>(
-                new OneStepRunner<>(subFlow)
-        );
+                new OneStepRunner<>(subFlow),
+                measureWrapper);
     }
 
     /* ============= */

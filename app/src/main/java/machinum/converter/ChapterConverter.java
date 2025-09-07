@@ -139,7 +139,7 @@ public class ChapterConverter {
 //                    .chapterInfo(Chapter.builder()
 //                            .summary(localContext.context())
 ////                    .selfConsistency(templateAiFacade.selfConsistency(flowContext))
-//                            .names(localContext.glossary())
+//                            .names(localAppFlowActions.glossary(context))
 //                            .proofreadText(localContext.proofread())
 //                            .build()));
 

@@ -1,4 +1,4 @@
-package machinum.processor.core;
+package machinum.flow.exception;
 
 import lombok.Getter;
 import machinum.flow.FlowArgument;

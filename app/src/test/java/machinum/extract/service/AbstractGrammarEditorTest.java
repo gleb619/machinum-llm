@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import machinum.extract.GrammarEditor;
 import machinum.extract.Translater;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
@@ -51,7 +52,7 @@ public abstract class AbstractGrammarEditorTest extends NormalTest {
                     translatedText(translatedText),
                     text(chapterText),
                     context(contextText),
-                    glossary(glossary)
+                    AppFlowActions.glossary(glossary)
             ));
         }).mutate(FlowContext::translatedText);
 
@@ -80,7 +81,7 @@ public abstract class AbstractGrammarEditorTest extends NormalTest {
                     translatedText(translatedText),
                     text(chapterText),
                     context(contextText),
-                    glossary(glossary)
+                    AppFlowActions.glossary(glossary)
             ));
         }).mutate(FlowContext::translatedText);
 

@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import machinum.exception.AppIllegalStateException;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
-import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.util.LanguageDetectorUtil;
@@ -64,9 +64,9 @@ public class ExternalGlossaryTranslater extends MachinumAutomataTranslater {
      * @throws TranslationException if any terms fail to translate properly
      */
     public FlowContext<Chapter> translate(FlowContext<Chapter> flowContext) {
-        log.debug("Starting translation of {} glossary terms", flowContext.glossary().size());
+        log.debug("Starting translation of {} glossary terms", AppFlowActions.glossary(flowContext).size());
 
-        var glossaryTerms = flowContext.glossary();
+        var glossaryTerms = AppFlowActions.glossary(flowContext);
         var termsByTranslationStatus = partitionTermsByTranslationStatus(glossaryTerms);
 
         var translatedTerms = termsByTranslationStatus.get(true);
@@ -247,7 +247,7 @@ public class ExternalGlossaryTranslater extends MachinumAutomataTranslater {
         validateAllTermsTranslated(updatedTerms);
 
         log.debug("Updated glossary with {} terms", updatedTerms.size());
-        return flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(updatedTerms));
+        return flowContext.replace(AppFlowActions::glossaryArg, AppFlowActions.glossary(updatedTerms));
     }
 
     /**

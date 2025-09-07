@@ -1,7 +1,7 @@
 package machinum.service.processor.core;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import machinum.model.Chunks;
+import machinum.flow.model.Chunks;
 import machinum.processor.core.SplitFactory;
 import machinum.processor.core.SplitStrategy;
 import machinum.util.TextUtil;

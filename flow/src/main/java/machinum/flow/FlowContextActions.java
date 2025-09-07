@@ -3,9 +3,7 @@ package machinum.flow;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import machinum.model.Chunks;
-import machinum.model.ObjectName;
-import machinum.processor.core.ChapterWarning;
+import machinum.flow.model.Chunks;
 
 import java.util.List;
 import java.util.Map;
@@ -30,14 +28,6 @@ public class FlowContextActions {
 
     public static FlowArgument<String> translatedText(String value) {
         return createArg(TRANSLATED_TEXT_PARAM, value);
-    }
-
-    public static FlowArgument<List<ObjectName>> glossary(List<ObjectName> value) {
-        return createArg(GLOSSARY_PARAM, value);
-    }
-
-    public static FlowArgument<List<ObjectName>> consolidatedGlossary(List<ObjectName> value) {
-        return createArg(CONSOLIDATED_GLOSSARY_PARAM, value);
     }
 
     public static FlowArgument<String> proofread(String value) {
@@ -74,10 +64,6 @@ public class FlowContextActions {
 
     public static FlowArgument<Object> result(Object value) {
         return createArg(RESULT_PARAM, value).asEphemeral();
-    }
-
-    public static FlowArgument<ChapterWarning> warning(ChapterWarning chapterWarning) {
-        return createArg(WARNING_PARAM, chapterWarning);
     }
 
     public static <U> FlowArgument<U> createArg(@NonNull String name, U value) {

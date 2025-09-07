@@ -2,6 +2,7 @@ package machinum.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import machinum.extract.SSMLConverter;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowArgument;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
@@ -38,7 +39,7 @@ public class AbstractSSMLTest extends NormalTest {
                                     iteration(1),
                                     translatedText(translatedText),
                                     context(contextText),
-                                    glossary(glossary)));
+                                    AppFlowActions.glossary(glossary)));
                 }).mutate(FlowContext::resultArg)
                 .mutate(FlowArgument::stringValue);
 

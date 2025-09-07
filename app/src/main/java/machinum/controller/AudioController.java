@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-import static machinum.processor.core.HashSupport.hashStringWithCRC32;
+import static machinum.flow.model.HashSupport.hashStringWithCRC32;
 
 /**
  * Controller class for handling HTTP requests related to Audio.

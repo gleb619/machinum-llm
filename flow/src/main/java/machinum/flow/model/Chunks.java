@@ -1,18 +1,15 @@
-package machinum.model;
+package machinum.flow.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
-import machinum.model.core.Mergeable;
-import machinum.processor.core.StringSupport;
+import machinum.flow.util.FlowUtil;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static machinum.util.TextUtil.countTokens;
 
 @Data
 @AllArgsConstructor
@@ -102,7 +99,7 @@ public class Chunks implements StringSupport, Mergeable<Chunks> {
         public static ChunkItem of(String text) {
             return ChunkItem.builder()
                     .text(text)
-                    .tokens(countTokens(text))
+                    .tokens(FlowUtil.countTokens(text))
                     .build();
         }
 
@@ -116,7 +113,7 @@ public class Chunks implements StringSupport, Mergeable<Chunks> {
         }
 
         public ChunkItem withText(String newText) {
-            return copy(b -> b.text(newText).tokens(countTokens(newText)));
+            return copy(b -> b.text(newText).tokens(FlowUtil.countTokens(newText)));
         }
 
         public ChunkItem map(Function<String, String> mapper) {

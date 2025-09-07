@@ -16,7 +16,7 @@ import java.util.stream.IntStream;
 
 import static machinum.flow.ErrorStrategy.defaultStrategy;
 import static machinum.flow.InMemoryStateManager.inMemory;
-import static machinum.util.JavaUtil.newId;
+import static machinum.flow.util.FlowUtil.newId;
 
 /**
  * Represents a flow for processing items through a series of states and actions.

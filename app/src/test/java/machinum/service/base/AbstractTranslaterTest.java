@@ -3,6 +3,7 @@ package machinum.service.base;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import machinum.extract.Translater;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
@@ -39,7 +40,7 @@ public abstract class AbstractTranslaterTest extends NormalTest {
             return translater.translateAll((FlowContext<Chapter>) of(
                     text(chapterText),
                     context(contextText),
-                    glossary(glossary)
+                    AppFlowActions.glossary(glossary)
             ));
         }).mutate(FlowContext::translatedText);
 
@@ -61,7 +62,7 @@ public abstract class AbstractTranslaterTest extends NormalTest {
             return translater.translateWithScoringLoop((FlowContext<Chapter>) of(
                     text(chapterText),
                     context(contextText),
-                    glossary(glossary)
+                    AppFlowActions.glossary(glossary)
             ));
         }).mutate(FlowContext::translatedText);
 
@@ -84,7 +85,7 @@ public abstract class AbstractTranslaterTest extends NormalTest {
                     iteration(1),
                     text(chapterText),
                     context(contextText),
-                    glossary(glossary)
+                    AppFlowActions.glossary(glossary)
             ));
         }).mutate(FlowContext::translatedText);
 
@@ -109,7 +110,7 @@ public abstract class AbstractTranslaterTest extends NormalTest {
                     text(chapterText),
                     translatedText(translatedText),
                     context(contextText),
-                    glossary(glossary)
+                    AppFlowActions.glossary(glossary)
             ));
         }).mutate(FlowContext::translatedText);
 

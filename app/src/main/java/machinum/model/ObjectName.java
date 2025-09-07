@@ -6,9 +6,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import machinum.flow.model.StringSupport;
 import machinum.processor.core.JsonSupport.JsonDescription;
 import machinum.processor.core.JsonSupport.SchemaIgnore;
-import machinum.processor.core.StringSupport;
 
 import java.util.*;
 

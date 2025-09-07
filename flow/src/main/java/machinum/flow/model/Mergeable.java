@@ -1,4 +1,4 @@
-package machinum.model.core;
+package machinum.flow.model;
 
 public interface Mergeable<SELF extends Mergeable<SELF>> {
 

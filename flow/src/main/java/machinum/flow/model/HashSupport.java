@@ -1,4 +1,4 @@
-package machinum.processor.core;
+package machinum.flow.model;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;

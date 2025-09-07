@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.exception.AppIllegalStateException;
 import machinum.extract.ExternalGlossaryTranslater.TranslationException;
 import machinum.extract.util.ProperNameExtractor;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowArgument;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
@@ -19,7 +20,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static machinum.config.Constants.BOOK_ID;
-import static machinum.flow.FlowContextActions.consolidatedGlossary;
 import static machinum.util.JavaUtil.*;
 
 @Slf4j
@@ -47,11 +47,11 @@ public class Glossary {
                 .toList();
         var bookId = flowContext.getCurrentItem().getBookId();
 
-        var currentGlossary = flowContext.glossary();
+        var currentGlossary = AppFlowActions.glossary(flowContext);
         var additionalGlossary = chapterGlossaryService.findReferences(chapterNumber, references, bookId, 1);
         var newGlossary = joinNames(currentGlossary, additionalGlossary);
 
-        return flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(newGlossary));
+        return flowContext.replace(AppFlowActions::glossaryArg, AppFlowActions.glossary(newGlossary));
     }
 
     public FlowContext<Chapter> extractGlossary(FlowContext<Chapter> flowContext) {
@@ -60,19 +60,19 @@ public class Glossary {
                 .toList();
 
         // Combine glossary from previous + current + db references
-        var glossaryFromLastChapter = flowContext.optionalValue(FlowContext::oldGlossaryArg)
+        var glossaryFromLastChapter = flowContext.optionalValue(AppFlowActions::oldGlossaryArg)
                 .orElse(Collections.emptyList());
         var fullGlossary = enrichCurrentGlossaryFromDB(flowContext, glossaryFromLastChapter, namesExtractedByNLP);
         var currentChapterGlossary = chapterGlossaryService.findGlossary(resolveChapterNumber(flowContext), namesExtractedByNLP, resolveBookId(flowContext));
 
         //Run again
-        return glossaryExtractor.secondExtract(flowContext.rearrange(FlowContext::glossaryArg, FlowContextActions.glossary(fullGlossary))
-                        .rearrange(FlowContext::oldGlossaryArg, FlowContextActions.glossary(glossaryFromLastChapter).asObsolete())
-                        .rearrange(FlowContext::consolidatedGlossaryArg, consolidatedGlossary(fullGlossary))
-                        .addArgs(FlowContextActions.glossary(currentChapterGlossary).asAlternative())
+        return glossaryExtractor.secondExtract(flowContext.rearrange(AppFlowActions::glossaryArg, AppFlowActions.glossary(fullGlossary))
+                        .rearrange(AppFlowActions::oldGlossaryArg, AppFlowActions.glossary(glossaryFromLastChapter).asObsolete())
+                        .rearrange(AppFlowActions::consolidatedGlossaryArg, AppFlowActions.consolidatedGlossary(fullGlossary))
+                        .addArgs(AppFlowActions.glossary(currentChapterGlossary).asAlternative())
                 )
                 .then(ctx -> {
-                    var chapterNames = new ArrayList<>(ctx.glossary());
+                    var chapterNames = new ArrayList<>(AppFlowActions.glossary(ctx));
 
                     for (ObjectName name : namesExtractedByNLP) {
                         var objectNameFromDB = findBy(fullGlossary, ObjectName::getName, name.getName());
@@ -83,15 +83,15 @@ public class Glossary {
                         }
                     }
 
-                    return ctx.replace(FlowContext::glossaryArg, FlowContextActions.glossary(chapterNames));
+                    return ctx.replace(AppFlowActions::glossaryArg, AppFlowActions.glossary(chapterNames));
                 })
-                .removeArgs(FlowContextActions.alt(FlowContext::glossaryArg));
+                .removeArgs(FlowContextActions.alt(AppFlowActions::glossaryArg));
     }
 
     public FlowContext<Chapter> glossaryTranslateWithCache(FlowContext<Chapter> flowContext) {
         var list = withCache(flowContext);
 
-        return glossaryJsonTranslate.translateWithCache(flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(list)));
+        return glossaryJsonTranslate.translateWithCache(flowContext.replace(AppFlowActions::glossaryArg, AppFlowActions.glossary(list)));
     }
 
     public FlowContext<Chapter> glossaryTranslate(FlowContext<Chapter> flowContext) {
@@ -101,9 +101,9 @@ public class Glossary {
     public FlowContext<Chapter> glossaryTranslateWithCacheExternal(FlowContext<Chapter> flowContext) {
         var list = withCache(flowContext);
         try {
-            return externalGlossaryTranslater.translate(flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(list)));
+            return externalGlossaryTranslater.translate(flowContext.replace(AppFlowActions::glossaryArg, AppFlowActions.glossary(list)));
         } catch (TranslationException te) {
-            return glossaryJsonTranslate.translateWithCache(flowContext.replace(FlowContext::glossaryArg, FlowContextActions.glossary(te.getObjectNames())));
+            return glossaryJsonTranslate.translateWithCache(flowContext.replace(AppFlowActions::glossaryArg, AppFlowActions.glossary(te.getObjectNames())));
         } catch (AppIllegalStateException aese) {
             return glossaryTranslateWithCache(flowContext);
         }
@@ -121,7 +121,7 @@ public class Glossary {
                     var bookId = resolveBookId(ctx);
 
                     // Load from db for the terms who just founded
-                    var references = ctx.optionalValue(FlowContext::glossaryArg)
+                    var references = ctx.optionalValue(AppFlowActions::glossaryArg)
                             .map(glossary -> glossary.stream()
                                     .flatMap(objectName -> objectName.getReferences().stream()
                                             .map(ObjectName::forName)
@@ -166,7 +166,7 @@ public class Glossary {
     private List<ObjectName> withCache(FlowContext<Chapter> flowContext) {
         var list = new ArrayList<ObjectName>();
 
-        var names = flowContext.glossary();
+        var names = AppFlowActions.glossary(flowContext);
         var translatedNames = chapterGlossaryService.findTranslations(flowContext.getCurrentItem().getBookId(), names);
 
         for (var name : names) {

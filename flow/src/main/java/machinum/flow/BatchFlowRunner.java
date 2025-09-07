@@ -1,18 +1,18 @@
 package machinum.flow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import machinum.service.BookProcessor;
-import machinum.processor.core.HashSupport;
-import machinum.util.JavaUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import machinum.flow.Flow.State;
+import machinum.flow.model.HashSupport;
+import machinum.flow.util.FlowUtil;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static machinum.config.Constants.*;
-import static machinum.processor.core.HashSupport.hashStringWithCRC32;
+import static machinum.flow.FlowConstants.*;
+import static machinum.flow.model.HashSupport.hashStringWithCRC32;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -20,9 +20,10 @@ public class BatchFlowRunner<T> implements FlowRunner<T> {
 
     private final FlowRunner<T> flowRunner;
     private final Integer chunkSize;
+    private final State defaultState;
 
     @Override
-    public void run(Flow.State currentState) {
+    public void run(State currentState) {
         log.debug("Executing flow in batches for given state: {}, batchSize={}", currentState, chunkSize);
         try {
             doRun(currentState);
@@ -31,13 +32,13 @@ public class BatchFlowRunner<T> implements FlowRunner<T> {
         }
     }
 
-    private void doRun(Flow.State currentState) {
+    private void doRun(State currentState) {
         var processedChunks = new ArrayList<String>();
         var flow = flowRunner.getFlow().metadata(EXTEND_ENABLED, Boolean.TRUE);
         var stateManager = flow.getStateManager();
         var metadata = flow.getMetadata();
         var source = flow.getSource();
-        var chunks = JavaUtil.toChunks(source, chunkSize);
+        var chunks = FlowUtil.toChunks(source, chunkSize);
         var history = new ArrayList<List<T>>();
         history.add(Collections.emptyList());
 
@@ -57,9 +58,9 @@ public class BatchFlowRunner<T> implements FlowRunner<T> {
         }
     }
 
-    private Flow.State execute(List<T> chunk, StateManager stateManager, Map<String, Object> metadata,
+    private State execute(List<T> chunk, StateManager stateManager, Map<String, Object> metadata,
                                List<String> processedChunks, List<List<T>> history, Flow<T> flow,
-                               Flow.State initState) {
+                          State initState) {
         var hashString = hashChunk(chunk);
         var isChunkProcessed = stateManager.isChunkProcessed(metadata, hashString);
 
@@ -78,14 +79,15 @@ public class BatchFlowRunner<T> implements FlowRunner<T> {
             return b;
         });
 
-        var runner = flowRunner.recreate(subFlow);
+        //TODO: fix bug with measure
+        var runner = flowRunner.recreate(subFlow, Runnable::run);
         runner.run(initState);
 
         stateManager.setChunkIsProcessed(metadata, hashString);
         processedChunks.add(hashString);
         history.add(chunk);
 
-        return BookProcessor.ProcessorState.defaultState();
+        return defaultState;
     }
 
     /* ============= */

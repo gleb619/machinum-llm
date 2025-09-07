@@ -3,6 +3,7 @@ package machinum.extract.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import machinum.extract.TranslationScoring;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
@@ -44,7 +45,7 @@ public abstract class AbstractTranslationScoringTest extends NormalTest {
                     translatedText(translatedText),
                     text(chapterText),
                     context(contextText),
-                    glossary(glossary)
+                    AppFlowActions.glossary(glossary)
             ));
         }).mutate(ctx -> ctx.arg(SCORE).stringValue());
 

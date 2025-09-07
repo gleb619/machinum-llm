@@ -8,6 +8,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
@@ -21,9 +23,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static machinum.flow.OneStepRunner.Window.tumbling;
-import static machinum.util.TestUtil.spyLambda;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class FlowTest {
@@ -62,22 +61,22 @@ class FlowTest {
                 (metadata, string) -> testStateManager.getFlowChunkState(string));
 
         counter = new AtomicInteger();
-        beforeAllMock = spyLambda(Consumer.class, (ctx -> {
+        beforeAllMock = FlowTestUtil.spyLambda(Consumer.class, (ctx -> {
             String msg = "%s before".formatted(ctx.getState());
             log.add(msg);
             System.out.println(msg);
         }));
-        afterAllMock = spyLambda(Consumer.class, (ctx -> {
+        afterAllMock = FlowTestUtil.spyLambda(Consumer.class, (ctx -> {
             String msg = "%s after".formatted(ctx.getState());
             log.add(msg);
             System.out.println(msg);
         }));
-        exceptionActionMock = spyLambda(BiConsumer.class, ((ctx, e) -> {
+        exceptionActionMock = FlowTestUtil.spyLambda(BiConsumer.class, ((ctx, e) -> {
             String msg = "%s exception, %s".formatted(ctx.getState(), ctx.getCurrentItem());
             log.add(msg);
             System.out.println(msg);
         }));
-        aroundEachMock = spyLambda(BiFunction.class, ((ctx, fn) -> {
+        aroundEachMock = FlowTestUtil.spyLambda(BiFunction.class, ((ctx, fn) -> {
             var result = fn.apply(ctx);
             var value = result.optionalValue(FlowContext::textArg).orElse("<null>");
             var msg = "%s invocation=%s, item=%s, result=%s".formatted(result.getState(), counter.get(), result.getCurrentItem(), value);
@@ -86,9 +85,9 @@ class FlowTest {
 
             return result;
         }));
-        aroundAllMock = spyLambda(BiConsumer.class, ((ctx, run) -> run.run()));
-        aroundEachStateMock = spyLambda(BiConsumer.class, ((ctx, run) -> run.run()));
-        refreshMock = spyLambda(Function.class, ((ctx) -> {
+        aroundAllMock = FlowTestUtil.spyLambda(BiConsumer.class, ((ctx, run) -> run.run()));
+        aroundEachStateMock = FlowTestUtil.spyLambda(BiConsumer.class, ((ctx, run) -> run.run()));
+        refreshMock = FlowTestUtil.spyLambda(Function.class, ((ctx) -> {
             var currentItem = ctx.getCurrentItem();
             var msg = "%s refresh=%s, item=%s".formatted(ctx.getState(), counter.getAndIncrement(), ctx.getCurrentItem());
             log.add(msg);
@@ -96,14 +95,14 @@ class FlowTest {
 
             return currentItem;
         }));
-        bootstrapMock = spyLambda(Function.class, ((ctx) -> {
+        bootstrapMock = FlowTestUtil.spyLambda(Function.class, ((ctx) -> {
             var msg = "%s bootstrap=%s, item=%s".formatted(ctx.getState(), counter.get(), ctx.getCurrentItem());
             log.add(msg);
             System.out.println(msg);
 
             return ctx;
         }));
-        sinkMock = spyLambda(Consumer.class, (ctx -> {
+        sinkMock = FlowTestUtil.spyLambda(Consumer.class, (ctx -> {
             String msg = "%s sink=%s, item=%s".formatted(ctx.getState(), counter.get(), ctx.getCurrentItem());
             log.add(msg);
             System.out.println(msg);
@@ -131,7 +130,7 @@ class FlowTest {
 
         runnerForMocks = new OneStepRunner(flowWithMocks);
         runnerForState = new OneStepRunner(flowWithState);
-        recursiveRunnerForState = new RecursiveFlowRunner<>(runnerForState);
+        recursiveRunnerForState = new RecursiveFlowRunner<>(runnerForState, Runnable::run);
         currentStep = TestState.STEP1;
         nextStep = TestState.STEP2;
     }
@@ -140,28 +139,28 @@ class FlowTest {
     void testMainMethods_success() {
         runnerForMocks.run(currentStep);
 
-        verify(beforeAllMock, times(1))
-                .accept(any());
+        Mockito.verify(beforeAllMock, Mockito.times(1))
+                .accept(ArgumentMatchers.any());
 
-        verify(refreshMock, times(2))
-                .apply(any());
+        Mockito.verify(refreshMock, Mockito.times(2))
+                .apply(ArgumentMatchers.any());
 
-        verify(aroundAllMock, times(1))
-                .accept(any(), any());
+        Mockito.verify(aroundAllMock, Mockito.times(1))
+                .accept(ArgumentMatchers.any(), ArgumentMatchers.any());
 
-        verify(aroundEachStateMock, times(2))
-                .accept(any(), any());
+        Mockito.verify(aroundEachStateMock, Mockito.times(2))
+                .accept(ArgumentMatchers.any(), ArgumentMatchers.any());
 
-        verify(aroundEachMock, times(2))
-                .apply(any(), any());
+        Mockito.verify(aroundEachMock, Mockito.times(2))
+                .apply(ArgumentMatchers.any(), ArgumentMatchers.any());
 
-        verify(afterAllMock, times(1))
-                .accept(any());
+        Mockito.verify(afterAllMock, Mockito.times(1))
+                .accept(ArgumentMatchers.any());
 
-        verify(sinkMock, times(2))
-                .accept(any());
+        Mockito.verify(sinkMock, Mockito.times(2))
+                .accept(ArgumentMatchers.any());
 
-        verify(testBean, times(2))
+        Mockito.verify(testBean, Mockito.times(2))
                 .firstString();
     }
 
@@ -180,10 +179,10 @@ class FlowTest {
         new OneStepRunner(flow)
                 .run(currentStep);
 
-        verify(aroundEachMock, atLeast(1))
-                .andThen(any());
+        Mockito.verify(aroundEachMock, Mockito.atLeast(1))
+                .andThen(ArgumentMatchers.any());
 
-        assertThat(counter)
+        Assertions.assertThat(counter)
                 .hasValue(2);
     }
 
@@ -199,28 +198,28 @@ class FlowTest {
         testStateManager.setState(currentStep);
         runnerForState.run(currentStep);
 
-        verify(beforeAllMock, times(1))
-                .accept(any());
+        Mockito.verify(beforeAllMock, Mockito.times(1))
+                .accept(ArgumentMatchers.any());
 
-        verify(refreshMock, times(2))
-                .apply(any());
+        Mockito.verify(refreshMock, Mockito.times(2))
+                .apply(ArgumentMatchers.any());
 
-        verify(aroundAllMock, times(1))
-                .accept(any(), any());
+        Mockito.verify(aroundAllMock, Mockito.times(1))
+                .accept(ArgumentMatchers.any(), ArgumentMatchers.any());
 
-        verify(aroundEachStateMock, times(2))
-                .accept(any(), any());
+        Mockito.verify(aroundEachStateMock, Mockito.times(2))
+                .accept(ArgumentMatchers.any(), ArgumentMatchers.any());
 
-        verify(aroundEachMock, times(2))
-                .apply(any(), any());
+        Mockito.verify(aroundEachMock, Mockito.times(2))
+                .apply(ArgumentMatchers.any(), ArgumentMatchers.any());
 
-        verify(afterAllMock, times(1))
-                .accept(any());
+        Mockito.verify(afterAllMock, Mockito.times(1))
+                .accept(ArgumentMatchers.any());
 
-        verify(sinkMock, times(2))
-                .accept(any());
+        Mockito.verify(sinkMock, Mockito.times(2))
+                .accept(ArgumentMatchers.any());
 
-        verify(testBean, times(2))
+        Mockito.verify(testBean, Mockito.times(2))
                 .firstString();
     }
 
@@ -229,40 +228,40 @@ class FlowTest {
         testStateManager.setState(nextStep);
         runnerForState.run(nextStep);
 
-        verify(beforeAllMock, times(1))
-                .accept(any());
+        Mockito.verify(beforeAllMock, Mockito.times(1))
+                .accept(ArgumentMatchers.any());
 
-        verify(refreshMock, times(2))
-                .apply(any());
+        Mockito.verify(refreshMock, Mockito.times(2))
+                .apply(ArgumentMatchers.any());
 
-        verify(aroundAllMock, times(1))
-                .accept(any(), any());
+        Mockito.verify(aroundAllMock, Mockito.times(1))
+                .accept(ArgumentMatchers.any(), ArgumentMatchers.any());
 
-        verify(aroundEachStateMock, times(2))
-                .accept(any(), any());
+        Mockito.verify(aroundEachStateMock, Mockito.times(2))
+                .accept(ArgumentMatchers.any(), ArgumentMatchers.any());
 
-        verify(aroundEachMock, times(4))
-                .apply(any(), any());
+        Mockito.verify(aroundEachMock, Mockito.times(4))
+                .apply(ArgumentMatchers.any(), ArgumentMatchers.any());
 
-        verify(afterAllMock, times(1))
-                .accept(any());
+        Mockito.verify(afterAllMock, Mockito.times(1))
+                .accept(ArgumentMatchers.any());
 
-        verify(sinkMock, times(4))
-                .accept(any());
+        Mockito.verify(sinkMock, Mockito.times(4))
+                .accept(ArgumentMatchers.any());
 
-        verify(testBean, times(0))
+        Mockito.verify(testBean, Mockito.times(0))
                 .firstString();
 
-        verify(testBean, times(2))
+        Mockito.verify(testBean, Mockito.times(2))
                 .secondMethod();
 
-        verify(testBean, times(2))
+        Mockito.verify(testBean, Mockito.times(2))
                 .thirdMethod();
     }
 
     @Test
     void testStateWithException_success() {
-        when(testBean.firstString())
+        Mockito.when(testBean.firstString())
                 .thenReturn("abc123")
                 .thenThrow(NullPointerException.class)
                 .thenReturn("123abc");
@@ -276,7 +275,7 @@ class FlowTest {
         int processedItem = testStateManager.getLastProcessedItem();
         int lastProcessedPipe = testStateManager.getLastProcessedPipe();
 
-        assertThat(List.of(processedItem, lastProcessedPipe))
+        Assertions.assertThat(List.of(processedItem, lastProcessedPipe))
                 .isNotEmpty()
                 .isEqualTo(List.of(1, 0));
     }
@@ -290,11 +289,11 @@ class FlowTest {
         int processedItem = testStateManager.getLastProcessedItem();
         int lastProcessedPipe = testStateManager.getLastProcessedPipe();
 
-        assertThat(List.of(processedItem, lastProcessedPipe))
+        Assertions.assertThat(List.of(processedItem, lastProcessedPipe))
                 .isNotEmpty()
                 .isEqualTo(List.of(2, 0));
 
-        assertThat(String.join("\n", log))
+        Assertions.assertThat(String.join("\n", log))
                 .isEqualTo("""
                         STEP1 before
                         STEP1 bootstrap=0, item=item1
@@ -324,7 +323,7 @@ class FlowTest {
                         STEP2 sink=5, item=item2
                         STEP2 after""");
 
-        assertThat(counter.get())
+        Assertions.assertThat(counter.get())
                 .isEqualTo(5);
     }
 
@@ -345,7 +344,7 @@ class FlowTest {
 
         runner.run(nextStep);
 
-        assertThat(String.join("\n", log))
+        Assertions.assertThat(String.join("\n", log))
                 .isEqualTo("""
                         STEP2 before
                         STEP2 bootstrap=0, item=item1
@@ -359,7 +358,7 @@ class FlowTest {
                         STEP2 sink=2, item=item2
                         STEP2 after""");
 
-        assertThat(counter.get())
+        Assertions.assertThat(counter.get())
                 .isEqualTo(2);
     }
 
@@ -376,7 +375,7 @@ class FlowTest {
         private final String text;
 
         public static TestObject testObject(String text) {
-            return spy(new TestObject(text));
+            return Mockito.spy(new TestObject(text));
         }
 
         public String firstString() {

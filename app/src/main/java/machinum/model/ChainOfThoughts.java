@@ -1,15 +1,18 @@
 package machinum.model;
 
-import machinum.exception.AppIllegalStateException;
-import machinum.model.core.Mergeable;
-import machinum.processor.core.JsonSupport.JsonDescription;
-import machinum.processor.core.JsonSupport.SchemaIgnore;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import machinum.exception.AppIllegalStateException;
+import machinum.flow.model.Mergeable;
+import machinum.processor.core.JsonSupport.JsonDescription;
+import machinum.processor.core.JsonSupport.SchemaIgnore;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 

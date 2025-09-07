@@ -2,7 +2,7 @@ package machinum.extract.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import machinum.extract.Splitter;
-import machinum.model.Chunks;
+import machinum.flow.model.Chunks;
 import machinum.processor.core.SplitStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +14,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static machinum.flow.FlowContextActions.*;
+import static machinum.flow.FlowContextActions.of;
+import static machinum.flow.FlowContextActions.text;
 
 
 class SplitterTest {

@@ -1,10 +1,8 @@
 package machinum.flow;
 
-import machinum.model.Chunks;
-import machinum.model.Chunks.ChunkItem;
-import machinum.model.ObjectName;
-import machinum.processor.core.ArgumentException;
-import machinum.processor.core.ChapterWarning;
+import machinum.flow.exception.ArgumentException;
+import machinum.flow.model.Chunks;
+import machinum.flow.model.Chunks.ChunkItem;
 
 import java.util.List;
 import java.util.Optional;
@@ -50,14 +48,6 @@ public interface FlowContextArgs {
         return arg(CONSOLIDATED_CONTEXT_PARAM);
     }
 
-    default FlowArgument<List<ObjectName>> glossaryArg() {
-        return arg(GLOSSARY_PARAM);
-    }
-
-    default FlowArgument<List<ObjectName>> consolidatedGlossaryArg() {
-        return arg(CONSOLIDATED_GLOSSARY_PARAM);
-    }
-
     default FlowArgument<String> proofreadArg() {
         return arg(PROOFREAD_PARAM);
     }
@@ -94,10 +84,6 @@ public interface FlowContextArgs {
         return arg(RESULT_PARAM);
     }
 
-    default FlowArgument<ChapterWarning> warningArg() {
-        return arg(WARNING_PARAM);
-    }
-
     // Old argument getters
     default FlowArgument<String> oldTextArg() {
         return oldArg(TEXT_PARAM);
@@ -113,10 +99,6 @@ public interface FlowContextArgs {
 
     default FlowArgument<String> oldConsolidatedContextArg() {
         return oldArg(CONSOLIDATED_CONTEXT_PARAM);
-    }
-
-    default FlowArgument<List<ObjectName>> oldGlossaryArg() {
-        return oldArg(GLOSSARY_PARAM);
     }
 
     default FlowArgument<String> oldProofreadArg() {
@@ -155,10 +137,6 @@ public interface FlowContextArgs {
         return oldArg(RESULT_PARAM);
     }
 
-    default FlowArgument<ChapterWarning> oldWarningArg() {
-        return oldArg(WARNING_PARAM);
-    }
-
     // Value getters
     default String text() {
         return textArg().getValue();
@@ -174,14 +152,6 @@ public interface FlowContextArgs {
 
     default String consolidatedContext() {
         return consolidatedContextArg().getValue();
-    }
-
-    default List<ObjectName> glossary() {
-        return glossaryArg().getValue();
-    }
-
-    default List<ObjectName> consolidatedGlossary() {
-        return consolidatedGlossaryArg().getValue();
     }
 
     default String proofread() {
@@ -220,10 +190,6 @@ public interface FlowContextArgs {
         return (U) resultArg().getValue();
     }
 
-    default ChapterWarning warning() {
-        return warningArg().getValue();
-    }
-
     // Old value getters
     default String oldText() {
         return oldTextArg().getValue();
@@ -239,10 +205,6 @@ public interface FlowContextArgs {
 
     default String oldConsolidatedContext() {
         return oldConsolidatedContextArg().getValue();
-    }
-
-    default List<ObjectName> oldGlossary() {
-        return oldGlossaryArg().getValue();
     }
 
     default String oldProofread() {
@@ -279,10 +241,6 @@ public interface FlowContextArgs {
 
     default <U> U oldResult() {
         return (U) oldResultArg().getValue();
-    }
-
-    default ChapterWarning oldWarning() {
-        return oldWarningArg().getValue();
     }
 
     /* ============= */

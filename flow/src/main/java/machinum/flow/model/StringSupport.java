@@ -1,4 +1,4 @@
-package machinum.processor.core;
+package machinum.flow.model;
 
 public interface StringSupport {
 

@@ -50,14 +50,19 @@ public class Constants {
 
     public static final String FLOW_TYPE = "FLOW_TYPE";
 
+    @Deprecated(forRemoval = true)
     public static final String PREVENT_SINK = "PREVENT_SINK";
 
+    @Deprecated(forRemoval = true)
     public static final String PREVENT_STATE_UPDATE = "PREVENT_STATE_UPDATE";
 
+    @Deprecated(forRemoval = true)
     public static final String PROCESSED_CHUNKS = "PROCESSED_CHUNKS";
 
+    @Deprecated(forRemoval = true)
     public static final String PROCESSED_CHUNK = "PROCESSED_CHUNK";
 
+    @Deprecated(forRemoval = true)
     public static final String EXTEND_ENABLED = "EXTEND_ENABLED";
 
     public static final String IGNORE_CACHE_MODE = "IGNORE_CACHE_MODE";

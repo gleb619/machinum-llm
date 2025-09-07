@@ -2,8 +2,8 @@ package machinum.flow;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import machinum.processor.core.ArgumentException;
-import machinum.util.JavaUtil;
+import machinum.flow.exception.ArgumentException;
+import machinum.flow.util.FlowUtil;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -11,11 +11,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static machinum.config.Constants.PREVENT_SINK;
-import static machinum.config.Constants.PREVENT_STATE_UPDATE;
+import static machinum.flow.FlowConstants.PREVENT_SINK;
+import static machinum.flow.FlowConstants.PREVENT_STATE_UPDATE;
 import static machinum.flow.FlowContextConstants.COPY_FLAG;
 import static machinum.flow.FlowContextConstants.NEW_FLAG;
-import static machinum.util.JavaUtil.newId;
+import static machinum.flow.util.FlowUtil.newId;
 
 @Slf4j
 @Data
@@ -150,7 +150,7 @@ public class FlowContext<T> implements FlowContextArgs {
                 .map(FlowArgument::copy)
                 .sorted(Comparator.comparing(FlowArgument::getName))
                 .sorted(Comparator.comparing(FlowArgument::getType))
-                .sorted(JavaUtil.comparingReverse(FlowArgument::getTimestamp))
+                .sorted(FlowUtil.comparingReverse(FlowArgument::getTimestamp))
                 .collect(Collectors.toList()));
 
         return result;

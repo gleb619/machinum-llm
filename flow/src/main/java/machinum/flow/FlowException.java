@@ -2,7 +2,6 @@ package machinum.flow;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.experimental.SuperBuilder;
 
 import java.util.function.Function;
 

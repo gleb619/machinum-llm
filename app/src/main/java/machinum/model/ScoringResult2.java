@@ -4,8 +4,8 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import machinum.flow.model.StringSupport;
 import machinum.processor.core.JsonSupport.JsonDescription;
-import machinum.processor.core.StringSupport;
 
 import java.util.Objects;
 

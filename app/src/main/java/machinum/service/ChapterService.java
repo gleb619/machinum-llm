@@ -12,6 +12,7 @@ import machinum.controller.ChapterController.ChapterSearchRequest;
 import machinum.converter.ChapterMapper;
 import machinum.entity.ChapterEntity;
 import machinum.exception.AppIllegalStateException;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
 import machinum.flow.Pack;
 import machinum.listener.ChapterEntityListener;
@@ -237,7 +238,7 @@ public class ChapterService {
                         });
             }
             case GLOSSARY -> {
-                ctx.optionalValue(FlowContext::glossaryArg)
+                ctx.optionalValue(AppFlowActions::glossaryArg)
                         .ifPresent(glossary -> {
                             ctx.getCurrentItem().setNames(glossary);
                             var glossaryText = objectMapperHolder.execute(mapper -> toJsonString(mapper, glossary));
@@ -259,7 +260,7 @@ public class ChapterService {
                         });
             }
             case TRANSLATE_GLOSSARY -> {
-                ctx.optionalValue(FlowContext::glossaryArg)
+                ctx.optionalValue(AppFlowActions::glossaryArg)
                         .ifPresent(glossary -> {
                             ctx.getCurrentItem().setNames(glossary);
                             var glossaryText = objectMapperHolder.execute(mapper -> toJsonString(mapper, glossary));
@@ -440,7 +441,7 @@ public class ChapterService {
     public void addWarning(FlowContext<Chapter> ctx) {
         var chapterInfo = ctx.getCurrentItem();
 
-        ctx.optionalValue(FlowContext::warningArg)
+        ctx.optionalValue(AppFlowActions::warningArg)
                 .ifPresent(warning -> {
                     var warnings = ctx.getCurrentItem().addWarning(warning).getWarnings();
                     var warningText = objectMapperHolder.execute(mapper -> toJsonString(mapper, warnings));

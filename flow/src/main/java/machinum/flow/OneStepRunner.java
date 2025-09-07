@@ -2,16 +2,17 @@ package machinum.flow;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import machinum.exception.AppIllegalStateException;
+import machinum.flow.exception.AppFlowException;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static machinum.config.Constants.*;
+import static machinum.flow.FlowConstants.*;
 import static machinum.flow.FlowContextActions.iteration;
 import static machinum.flow.FlowContextActions.result;
 
@@ -228,7 +229,7 @@ public class OneStepRunner<T> implements FlowRunner<T> {
     }
 
     @Override
-    public FlowRunner<T> recreate(Flow<T> subFlow) {
+    public FlowRunner<T> recreate(Flow<T> subFlow, Consumer<Runnable> measureWrapper) {
         return new OneStepRunner<>(subFlow);
     }
 
@@ -514,7 +515,7 @@ public class OneStepRunner<T> implements FlowRunner<T> {
                     .map(pipe -> (WindowedPipe<T>) pipe)
                     .filter(wp -> windowId.equals(wp.getWindowId()))
                     .findFirst()
-                    .orElseThrow(() -> new AppIllegalStateException("Window for given id not found: %s", windowId));
+                    .orElseThrow(() -> new AppFlowException("Window for given id not found: %s", windowId));
         }
 
     }

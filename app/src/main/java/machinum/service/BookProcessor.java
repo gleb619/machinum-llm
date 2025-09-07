@@ -324,8 +324,9 @@ public class BookProcessor {
 
         public FlowRunner<Chapter> createRunner(BookOperationRequest request, Flow<Chapter> flow) {
             var runner = new OneStepRunner<>(flow);
-            var recursiveRunner = new RecursiveFlowRunner<>(runner);
-            var batchRunner = new BatchFlowRunner<>(recursiveRunner, batchSize);
+
+            var recursiveRunner = new RecursiveFlowRunner<>(runner, runnable -> DurationMeasureUtil.measure("flowRun", runnable));
+            var batchRunner = new BatchFlowRunner<>(recursiveRunner, batchSize, BookProcessor.ProcessorState.defaultState());
 
             if (TextUtil.isNotEmpty(request.getRunner())) {
                 return switch (request.getRunner()) {

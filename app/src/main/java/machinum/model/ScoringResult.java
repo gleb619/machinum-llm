@@ -1,8 +1,8 @@
 package machinum.model;
 
 import lombok.*;
+import machinum.flow.model.StringSupport;
 import machinum.processor.core.JsonSupport.JsonDescription;
-import machinum.processor.core.StringSupport;
 
 import java.util.*;
 import java.util.stream.Collectors;

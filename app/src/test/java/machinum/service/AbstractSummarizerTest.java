@@ -3,6 +3,7 @@ package machinum.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import machinum.extract.Summarizer;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
 import machinum.flow.FlowContextActions;
 import machinum.model.Chapter;
@@ -53,7 +54,7 @@ public abstract class AbstractSummarizerTest extends NormalTest {
             return summarizer.summarize((FlowContext<Chapter>) of(
                     text(chapterText),
                     context(contextText),
-                    glossary(glossary)
+                    AppFlowActions.glossary(glossary)
             ));
         }).mutate(FlowContext::context);
 

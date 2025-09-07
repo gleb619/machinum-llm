@@ -2,6 +2,7 @@ package machinum.service;
 
 import io.github.artsok.RepeatedIfExceptionsTest;
 import machinum.extract.GlossaryExtractor;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.util.DurationMeasureUtil;
@@ -29,7 +30,7 @@ public abstract class AbstractGlossaryExtractorTest extends NormalTest {
 
         var glossary = DurationMeasureUtil.measure("glossaryExtractor", () -> {
             return this.glossaryExtractor.firstExtract((FlowContext<Chapter>) of(text(chapterText), context(contextText)));
-        }).mutate(FlowContext::glossary);
+        }).mutate(AppFlowActions::glossary);
 
         withReport(jsonText("glossaryExtractor", glossary), () -> {
             assertCharacterCount(glossary.stringResult(), (int) calculatePart(10, chapterText));

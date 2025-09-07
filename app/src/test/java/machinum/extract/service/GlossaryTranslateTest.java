@@ -3,6 +3,7 @@ package machinum.extract.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import machinum.TestApplication;
 import machinum.extract.GlossaryJsonTranslate;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
@@ -58,8 +59,8 @@ class GlossaryTranslateTest extends NormalTest {
         });
 
         var glossary = DurationMeasureUtil.measure("glossaryTranslate", () -> {
-            return glossaryTranslate.translateWithCache((FlowContext<Chapter>) of(text(cleanText), context(summaryText), glossary(glossaryJson)));
-        }).mutate(FlowContext::glossary);
+            return glossaryTranslate.translateWithCache((FlowContext<Chapter>) of(text(cleanText), context(summaryText), AppFlowActions.glossary(glossaryJson)));
+        }).mutate(AppFlowActions::glossary);
 
         withReport(jsonText("glossaryTranslate", glossary), () -> {
             assertCharacterCount(glossary.stringResult(), (int) calculatePart(10, cleanText));

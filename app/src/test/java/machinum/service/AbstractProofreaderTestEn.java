@@ -2,6 +2,7 @@ package machinum.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import machinum.extract.ProofreaderEnXml;
+import machinum.flow.AppFlowActions;
 import machinum.flow.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
@@ -34,7 +35,7 @@ public class AbstractProofreaderTestEn extends NormalTest {
             return proofreaderEn.proofread((FlowContext<Chapter>)
                     of(text(chapterText),
                             context(contextText),
-                            glossary(glossary)));
+                            AppFlowActions.glossary(glossary)));
         }).mutate(FlowContext::proofread);
 
         withReport(data("proofread", chapterText, proofread), () -> {

@@ -41,7 +41,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import static machinum.processor.core.HashSupport.hashStringWithCRC32;
+import static machinum.flow.model.HashSupport.hashStringWithCRC32;
 
 @Slf4j
 @RestController
