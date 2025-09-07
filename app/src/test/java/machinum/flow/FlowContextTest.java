@@ -1,6 +1,8 @@
 package machinum.flow;
 
 import machinum.config.Constants;
+import machinum.flow.argument.FlowArgument;
+import machinum.flow.core.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import org.junit.jupiter.api.Assertions;
@@ -13,8 +15,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Map;
 
-import static machinum.flow.FlowContextActions.consolidatedContext;
-import static machinum.flow.FlowContextActions.of;
+import static machinum.flow.action.FlowContextActions.consolidatedContext;
+import static machinum.flow.action.FlowContextActions.of;
 
 @ExtendWith(MockitoExtension.class)
 class FlowContextTest {

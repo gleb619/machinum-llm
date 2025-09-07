@@ -2,7 +2,7 @@ package org.springframework.retry;
 
 import lombok.RequiredArgsConstructor;
 import machinum.exception.StopException;
-import machinum.flow.FlowException;
+import machinum.flow.exception.FlowException;
 import machinum.processor.client.GeminiClient.BusinessGeminiException;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.retry.backoff.FixedBackOffPolicy;

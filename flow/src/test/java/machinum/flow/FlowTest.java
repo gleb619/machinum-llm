@@ -2,7 +2,13 @@ package machinum.flow;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import machinum.flow.Flow.State;
+import machinum.flow.action.FlowContextActions;
+import machinum.flow.core.Flow;
+import machinum.flow.core.Flow.State;
+import machinum.flow.core.FlowContext;
+import machinum.flow.core.StateManager;
+import machinum.flow.runner.OneStepRunner;
+import machinum.flow.runner.RecursiveFlowRunner;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -22,7 +28,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static machinum.flow.OneStepRunner.Window.tumbling;
+import static machinum.flow.runner.OneStepRunner.Window.tumbling;
 
 @ExtendWith(MockitoExtension.class)
 class FlowTest {
@@ -52,14 +58,6 @@ class FlowTest {
 
     @BeforeEach
     void setUp() {
-        var stateManager = StateManager.create(
-                testStateManager::saveState,
-                testStateManager::getLastProcessedItem,
-                testStateManager::getLastProcessorIndex,
-                testStateManager::getState,
-                (metadata, string1) -> testStateManager.saveFlowChunkState(string1),
-                (metadata, string) -> testStateManager.getFlowChunkState(string));
-
         counter = new AtomicInteger();
         beforeAllMock = FlowTestUtil.spyLambda(Consumer.class, (ctx -> {
             String msg = "%s before".formatted(ctx.getState());
@@ -122,7 +120,7 @@ class FlowTest {
                 .pipe(ctx -> ctx.addArgs(FlowContextActions.text(testBean.firstString())))
                 .sink(sinkMock);
 
-        flowWithState = flowWithMocks.withStateManager(stateManager)
+        flowWithState = flowWithMocks.withStateManager(testStateManager)
                 .onState(TestState.STEP2)
                 .pipe(ctx -> ctx.addArgs(FlowContextActions.text(testBean.secondMethod())))
                 .pipe(ctx -> ctx.addArgs(FlowContextActions.text(testBean.thirdMethod())))
@@ -397,7 +395,7 @@ class FlowTest {
     }
 
     @Data
-    public static class TestStateManager {
+    public static class TestStateManager implements StateManager {
 
         int lastProcessedItem = 0;
         int lastProcessedPipe = 0;
@@ -428,6 +426,17 @@ class FlowTest {
 
         public boolean getFlowChunkState(String string) {
             return chunkProcessed;
+        }
+
+        @Override
+        public boolean isChunkProcessed(Map<String, Object> metadata, String hashString) {
+            saveFlowChunkState(hashString);
+            return getFlowChunkState(hashString);
+        }
+
+        @Override
+        public void setChunkIsProcessed(Map<String, Object> metadata, String hashString) {
+            getFlowChunkState(hashString);
         }
 
     }

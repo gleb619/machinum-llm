@@ -9,7 +9,7 @@ import machinum.config.Holder;
 import machinum.converter.BookMapper;
 import machinum.entity.BookEntity;
 import machinum.exception.AppIllegalStateException;
-import machinum.flow.Flow.State;
+import machinum.flow.core.Flow.State;
 import machinum.model.Book;
 import machinum.model.Book.BookState;
 import machinum.model.ObjectName;

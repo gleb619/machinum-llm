@@ -9,7 +9,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
 import machinum.flow.AppFlowActions;
-import machinum.flow.FlowContext;
+import machinum.flow.core.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.processor.client.AiClient;

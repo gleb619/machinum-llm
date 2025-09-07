@@ -9,7 +9,7 @@ import machinum.controller.BookOperationController.BookOperationRequest;
 import machinum.exception.AppIllegalStateException;
 import machinum.extract.Glossary;
 import machinum.flow.AppFlowActions;
-import machinum.flow.FlowContext;
+import machinum.flow.core.FlowContext;
 import machinum.flow.model.Chunks;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import static machinum.flow.AppFlowActions.glossary;
-import static machinum.flow.FlowContextActions.iteration;
+import static machinum.flow.action.FlowContextActions.iteration;
 import static machinum.service.BookProcessor.ProcessorState.defaultState;
 import static machinum.service.BookWindowProcessor.Operations.TRANSLATE_GLOSSARY;
 

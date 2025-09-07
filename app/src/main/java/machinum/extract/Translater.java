@@ -2,8 +2,8 @@ package machinum.extract;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import machinum.flow.FlowContext;
-import machinum.flow.FlowContextActions;
+import machinum.flow.action.FlowContextActions;
+import machinum.flow.core.FlowContext;
 import machinum.flow.model.Chunks;
 import machinum.model.Chapter;
 import machinum.model.ScoringResult;
@@ -18,8 +18,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static machinum.config.Constants.SCORE;
-import static machinum.flow.FlowContextActions.translatedChunk;
-import static machinum.flow.FlowContextActions.translatedChunks;
+import static machinum.flow.action.FlowContextActions.translatedChunk;
+import static machinum.flow.action.FlowContextActions.translatedChunks;
 
 @Slf4j
 @Component

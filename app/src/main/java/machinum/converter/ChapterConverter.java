@@ -2,7 +2,7 @@ package machinum.converter;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import machinum.flow.FlowContext;
+import machinum.flow.core.FlowContext;
 import machinum.model.Chapter;
 import machinum.service.ChapterService;
 import machinum.service.TemplateAiFacade;

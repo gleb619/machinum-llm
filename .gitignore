@@ -81,3 +81,5 @@ Thumbs.db
 /app/out/
 /flow/build/
 /flow/out/
+/app/src/main/generated/
+/flow/src/main/generated/

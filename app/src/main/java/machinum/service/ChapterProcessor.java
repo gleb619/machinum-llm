@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.config.Constants;
 import machinum.controller.ChapterOperationController.ChapterOperationRequest;
 import machinum.exception.AppIllegalStateException;
-import machinum.flow.FlowContext;
+import machinum.flow.core.FlowContext;
 import machinum.model.Chapter;
 import machinum.service.BookProcessor.ProcessorState;
 import org.springframework.async.AsyncHelper;
@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import static machinum.flow.FlowContextActions.iteration;
+import static machinum.flow.action.FlowContextActions.iteration;
 import static machinum.service.BookProcessor.ProcessorState.*;
 import static machinum.service.ChapterProcessor.Operations.*;
 import static machinum.service.ChapterProcessor.Operations.TRANSLATE;

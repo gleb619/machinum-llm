@@ -2,7 +2,7 @@ package machinum.service;
 
 import io.github.artsok.RepeatedIfExceptionsTest;
 import machinum.extract.RewriterXml;
-import machinum.flow.FlowContext;
+import machinum.flow.core.FlowContext;
 import machinum.model.Chapter;
 import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.DisplayName;
@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import static machinum.flow.FlowContextActions.*;
+import static machinum.flow.action.FlowContextActions.*;
 import static machinum.service.NormalTest.ReportInput.data;
 import static machinum.util.JavaUtil.calculatePart;
 import static machinum.util.TextProcessingTestUtil.assertCharacterCount;

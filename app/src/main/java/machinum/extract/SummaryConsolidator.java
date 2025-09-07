@@ -3,7 +3,7 @@ package machinum.extract;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import machinum.flow.FlowContext;
+import machinum.flow.core.FlowContext;
 import machinum.model.Chapter;
 import machinum.processor.core.Assistant;
 import machinum.processor.core.AssistantContext;
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static machinum.flow.FlowContextActions.consolidatedContext;
+import static machinum.flow.action.FlowContextActions.consolidatedContext;
 import static machinum.util.JavaUtil.calculatePart;
 import static machinum.util.TextUtil.*;
 

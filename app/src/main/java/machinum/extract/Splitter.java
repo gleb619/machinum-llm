@@ -2,8 +2,8 @@ package machinum.extract;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import machinum.flow.FlowContext;
-import machinum.flow.FlowContextActions;
+import machinum.flow.action.FlowContextActions;
+import machinum.flow.core.FlowContext;
 import machinum.flow.model.Chunks;
 import machinum.flow.model.Chunks.ChunkItem;
 import machinum.model.Chapter;

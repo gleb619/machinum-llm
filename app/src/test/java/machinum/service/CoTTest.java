@@ -2,8 +2,8 @@ package machinum.service;
 
 import machinum.TestApplication;
 import machinum.extract.CoT;
-import machinum.flow.FlowContext;
-import machinum.flow.FlowContextActions;
+import machinum.flow.action.FlowContextActions;
+import machinum.flow.core.FlowContext;
 import machinum.model.Chapter;
 import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.Test;
@@ -13,8 +13,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import static machinum.flow.FlowContextActions.context;
-import static machinum.flow.FlowContextActions.text;
+import static machinum.flow.action.FlowContextActions.context;
+import static machinum.flow.action.FlowContextActions.text;
 import static machinum.service.NormalTest.ReportInput.onlyNewText;
 import static machinum.util.JavaUtil.calculatePart;
 import static machinum.util.TextProcessingTestUtil.assertCharacterCount;

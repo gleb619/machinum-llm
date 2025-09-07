@@ -2,8 +2,8 @@ package machinum.service;
 
 import machinum.TestApplication;
 import machinum.extract.SummaryExtractor;
-import machinum.flow.FlowContext;
-import machinum.flow.FlowContextActions;
+import machinum.flow.action.FlowContextActions;
+import machinum.flow.core.FlowContext;
 import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import static machinum.flow.FlowContextActions.text;
+import static machinum.flow.action.FlowContextActions.text;
 import static machinum.service.NormalTest.ReportInput.data;
 import static machinum.util.JavaUtil.calculatePart;
 import static machinum.util.TextProcessingTestUtil.assertCharacterCount;

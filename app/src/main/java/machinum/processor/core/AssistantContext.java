@@ -1,8 +1,8 @@
 package machinum.processor.core;
 
 import lombok.*;
-import machinum.flow.FlowContext;
-import machinum.flow.FlowContextActions;
+import machinum.flow.action.FlowContextActions;
+import machinum.flow.core.FlowContext;
 import machinum.flow.model.Mergeable;
 import machinum.model.ObjectName;
 import machinum.processor.client.AiClient;

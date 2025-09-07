@@ -5,7 +5,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Constants;
 import machinum.exception.AppIllegalStateException;
-import machinum.flow.FlowContext;
+import machinum.flow.core.FlowContext;
 import machinum.processor.core.AssistantContext.OutputType;
 import machinum.processor.exception.NoDataException;
 import machinum.util.CodeBlockExtractor;

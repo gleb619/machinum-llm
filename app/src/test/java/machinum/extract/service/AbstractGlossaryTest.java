@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.artsok.RepeatedIfExceptionsTest;
 import machinum.extract.Glossary;
 import machinum.flow.AppFlowActions;
-import machinum.flow.FlowContext;
+import machinum.flow.core.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.service.DbTest;
@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
-import static machinum.flow.FlowContextActions.*;
+import static machinum.flow.action.FlowContextActions.*;
 import static machinum.service.NormalTest.ReportInput.jsonText;
 import static machinum.util.JavaUtil.calculatePart;
 import static machinum.util.TextProcessingTestUtil.assertCharacterCount;

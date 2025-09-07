@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
 import machinum.exception.AppIllegalStateException;
 import machinum.flow.AppFlowActions;
-import machinum.flow.FlowContext;
+import machinum.flow.core.FlowContext;
 import machinum.flow.model.StringSupport;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;

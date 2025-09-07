@@ -1,7 +1,7 @@
 package machinum.flow.exception;
 
 import lombok.Getter;
-import machinum.flow.FlowArgument;
+import machinum.flow.argument.FlowArgument;
 
 @Getter
 public class ArgumentException extends IllegalArgumentException {

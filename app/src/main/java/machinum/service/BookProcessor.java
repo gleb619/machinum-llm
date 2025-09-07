@@ -7,8 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.controller.BookOperationController.BookOperationRequest;
 import machinum.converter.ChapterConverter;
 import machinum.exception.AppIllegalStateException;
-import machinum.flow.*;
-import machinum.flow.OneStepRunner.Aggregation;
+import machinum.flow.core.Flow;
+import machinum.flow.core.FlowRunner;
+import machinum.flow.runner.BatchFlowRunner;
+import machinum.flow.runner.OneStepRunner;
+import machinum.flow.runner.OneStepRunner.Aggregation;
+import machinum.flow.runner.RecursiveFlowRunner;
 import machinum.model.Chapter;
 import machinum.util.DurationMeasureUtil;
 import machinum.util.TextUtil;
@@ -32,10 +36,10 @@ import java.util.function.Function;
 import static machinum.config.Constants.*;
 import static machinum.controller.BookOperationController.BookOperationRequest.RuleConfig.RuleType.ALL;
 import static machinum.controller.BookOperationController.BookOperationRequest.RuleConfig.RuleType.RANGE;
-import static machinum.flow.Flow.FlowPredicateResult.accept;
-import static machinum.flow.Flow.FlowPredicateResult.reject;
-import static machinum.flow.OneStepRunner.Window.tumbling;
-import static machinum.flow.Pack.anArgument;
+import static machinum.flow.core.Flow.FlowPredicateResult.accept;
+import static machinum.flow.core.Flow.FlowPredicateResult.reject;
+import static machinum.flow.model.Pack.anArgument;
+import static machinum.flow.runner.OneStepRunner.Window.tumbling;
 
 @Slf4j
 @Service

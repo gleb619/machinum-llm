@@ -2,9 +2,9 @@ package machinum.extract;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import machinum.flow.FlowArgument;
-import machinum.flow.FlowContext;
-import machinum.flow.FlowContextActions;
+import machinum.flow.action.FlowContextActions;
+import machinum.flow.argument.FlowArgument;
+import machinum.flow.core.FlowContext;
 import machinum.model.Chapter;
 import machinum.processor.core.ChunkSupport;
 import machinum.processor.core.FlowSupport;
