@@ -1,0 +1,76 @@
+[
+  {
+    "name": "Scroll",
+    "category": "Object",
+    "description": "A message delivered by the messenger to Griswold, containing information that shifts his focus and hints at a larger narrative.",
+    "references": [
+      "Messenger",
+      "Griswold"
+    ],
+    "ruName": "Свиток"
+  },
+  {
+    "name": "Vayne",
+    "category": "Character",
+    "description": "A character who mocks Kael’s attempts to learn the Soulforge ability.",
+    "references": [],
+    "ruName": "Вэйн"
+  },
+  {
+    "name": "Kael",
+    "category": "Character",
+    "description": "The protagonist of the story, newly discovered the Soulforge ability and is learning to control it.",
+    "references": [
+      "Soulforge",
+      "Griswold"
+    ],
+    "ruName": "Каэль"
+  },
+  {
+    "name": "Blacksmith’s Guild",
+    "category": "Location",
+    "description": "The location where Kael and Griswold work and where Kael is learning to use the Soulforge ability.",
+    "references": [
+      "Kael",
+      "Griswold"
+    ],
+    "ruName": "Гильдия кузнецов"
+  },
+  {
+    "name": "Forge Fatigue",
+    "category": "Condition",
+    "description": "A warning sign experienced when using the Soulforge ability, indicating overexertion and the need for control.",
+    "references": [
+      "Soulforge"
+    ],
+    "ruName": "Усталость от ковки"
+  },
+  {
+    "name": "Griswold",
+    "category": "Character",
+    "description": "Kael’s mentor and a skilled blacksmith who guides him in learning the Soulforge ability.",
+    "references": [
+      "Kael",
+      "Soulforge"
+    ],
+    "ruName": "Грисволд"
+  },
+  {
+    "name": "Messenger",
+    "category": "Character",
+    "description": "Delivers a scroll to Griswold, altering his demeanor and hinting at future events.",
+    "references": [
+      "Griswold"
+    ],
+    "ruName": "Гонец"
+  },
+  {
+    "name": "Soulforge",
+    "category": "Ability",
+    "description": "A newly discovered magical ability that Kael possesses, allowing him to imbue objects with magical energy.",
+    "references": [
+      "Kael"
+    ],
+    "ruName": "Духоковка"
+  }
+]

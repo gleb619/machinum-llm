@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Layout -->
+<div th:fragment="report" th:remove="tag">
+    <template x-if="bookActiveTab === 'report'">
+        <div class="h-full">
+            <div class="container mx-auto">
+                <template x-if="summary">
+                    <div class="px-4 py-4">
+
+                        <!-- Summary Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Total Chapters</h3>
+                                <p class="text-3xl font-bold text-blue-600" x-text="summary?.totalChapters || 0"></p>
+                            </div>
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Titles</h3>
+                                <p :class="getColorClassForPercentage(getPercentage('title'))"
+                                   class="text-3xl font-bold"
+                                   x-text="getCompleteCount('title')"></p>
+                                <p class="text-sm text-gray-500"
+                                   x-text="getPercentage('title') + '% of chapters has a title'"></p>
+                            </div>
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Translated Titles</h3>
+                                <p :class="getColorClassForPercentage(getPercentage('translatedTitle'))"
+                                   class="text-3xl font-bold "
+                                   x-text="getCompleteCount('translatedTitle')"></p>
+                                <p class="text-sm text-gray-500"
+                                   x-text="getPercentage('translatedTitle') + '% of titles is translated'"></p>
+                            </div>
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Summaries</h3>
+                                <p :class="getColorClassForPercentage(getPercentage('summary'))"
+                                   class="text-3xl font-bold "
+                                   x-text="getCompleteCount('summary', 'emptySummaries')"></p>
+                                <p class="text-sm text-gray-500"
+                                   x-text="getPercentage('summary') + '% of chapters has a summary'"></p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Texts</h3>
+                                <p :class="getColorClassForPercentage(getPercentage('text'))"
+                                   class="text-3xl font-bold "
+                                   x-text="getCompleteCount('text')"></p>
+                                <p class="text-sm text-gray-500"
+                                   x-text="getPercentage('text') + '% of chapters has origin text'"></p>
+                            </div>
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Translated Texts</h3>
+                                <p :class="getColorClassForPercentage(getPercentage('translatedText'))"
+                                   class="text-3xl font-bold "
+                                   x-text="getCompleteCount('translatedText')"></p>
+                                <p class="text-sm text-gray-500"
+                                   x-text="getPercentage('translatedText') + '% of texts is translated'"></p>
+                            </div>
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Names<small
+                                        class="ml-1 text-xs text-gray-300">(glossary)</small></h3>
+                                <p class="text-3xl font-bold text-gray-200">
+                                <span :class="getColorClassForPercentage(getPercentage('names'))"
+                                      title="Original names in glossary"
+                                      x-text="getCompleteCount('names', 'emptyNames')"></span>/<span
+                                        :class="getColorClassForPercentage(getPercentage('translatedNames'))"
+                                        title="Translated names in glossary"
+                                        x-text="getCompleteCount('translatedNames', 'emptyTranslatedNames')"></span>
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                <span title="Original names in glossary"
+                                      x-text="getPercentage('names') + '% of names is extracted'"></span>/<span
+                                        title="Translated names in glossary"
+                                        x-text="getPercentage('translatedNames') + '% of names is translated'"></span>
+                                </p>
+                            </div>
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Warnings</h3>
+                                <p :class="getColorClassForPercentage(100 - getPercentage('warnings', 'warningsPercentage'))"
+                                   class="text-3xl font-bold "
+                                   x-text="getCompleteCount('warnings', 'emptyWarnings')"></p>
+                                <p class="text-sm text-gray-500"
+                                   x-text="100 - getPercentage('warnings', 'warningsPercentage') + '% free of warnings'"></p>
+                            </div>
+                        </div>
+
+                        <!-- Charts Section -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- Completion Overview Chart -->
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-xl font-semibold text-gray-800 mb-4">Completion Overview</h3>
+                                <canvas height="300" id="completionChart" width="400"></canvas>
+                            </div>
+
+                            <!-- Missing Data Chart -->
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-xl font-semibold text-gray-800 mb-4">Book Contents Breakdown</h3>
+                                <canvas height="300" id="missingDataChart" width="400"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <template x-if="!summary">
+                    <!-- Error/No Data State -->
+                    <div class="bg-white rounded-lg shadow-md p-12 text-center">
+                        <div class="text-gray-400 mb-4">
+                            <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                                      stroke-linecap="round" stroke-linejoin="round"
+                                      stroke-width="2"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No Data Available</h3>
+                        <p class="text-gray-600">Please select a book to view chapter analysis.</p>
+                    </div>
+                </template>
+
+                <template x-if="heatmapData">
+                    <div class="px-4 py-4">
+                        <h2 class="text-xl font-bold m-3">Analysis Results</h2>
+                        <!-- Statistics Overview -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Average Readiness</h3>
+                                <p :class="getColorClassForPercentage(heatmapData.averageReadiness)"
+                                   class="text-3xl font-bold"
+                                   x-text="Math.round(heatmapData.averageReadiness) + '%'"></p>
+                            </div>
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Total Chapters</h3>
+                                <p class="text-3xl font-bold text-blue-600" x-text="heatmapData.totalChapters"></p>
+                            </div>
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Ready Chapters</h3>
+                                <p :class="getColorClassForPercentage(Math.round(((getStatusCount('excellent') + getStatusCount('good')) / heatmapData.totalChapters) * 100))"
+                                   class="text-3xl font-bold"
+                                   x-text="getStatusCount('excellent') + getStatusCount('good')"></p>
+                                <p class="text-sm text-gray-500"
+                                   x-text="Math.round(((getStatusCount('excellent') + getStatusCount('good')) / heatmapData.totalChapters) * 100) + '% ready'"></p>
+                            </div>
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Need Work</h3>
+                                <p :class="getColorClassForPercentage(100 - Math.round(((getStatusCount('critical') + getStatusCount('poor')) / heatmapData.totalChapters) * 100))"
+                                   class="text-3xl font-bold"
+                                   x-text="getStatusCount('critical') + getStatusCount('poor')"></p>
+                                <p class="text-sm text-gray-500"
+                                   x-text="Math.round(((getStatusCount('critical') + getStatusCount('poor')) / heatmapData.totalChapters) * 100) + '% need attention'"></p>
+                            </div>
+                        </div>
+
+                        <!-- Heatmap Grid -->
+                        <div class="bg-white rounded-t-lg shadow-md p-6 border-b-2 border-gray-500">
+                            <div class="flex justify-between items-center mb-6">
+                                <div class="inline-block">
+                                    <h3 class="text-xl font-semibold text-gray-800 inline-block">Chapter Readiness
+                                        Heatmap</h3>
+                                    <button @click="bookReportLoadHeatmapData(true)"
+                                            class="relative top-2 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 hover:bg-blue-100 active:bg-blue-200">
+                                        <svg class="w-6 h-6 text-gray-400 transition-colors duration-200 text-gray-400"
+                                             fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                             xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                                  stroke-linecap="round" stroke-linejoin="round"
+                                                  stroke-width="2"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="flex gap-2 items-center">
+                                    <label class="text-sm text-gray-600">Chapters per row:</label>
+                                    <select class="px-2 py-1 border border-gray-300 rounded text-sm"
+                                            x-model="chaptersPerRow">
+                                        <option value="10">10</option>
+                                        <option value="15">15</option>
+                                        <option value="20">20</option>
+                                        <option value="25">25</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="relative">
+                                <div
+                                        :style="`grid-template-columns: repeat(${chaptersPerRow}, minmax(0, 1fr))`"
+                                        class="grid gap-2">
+                                    <template :key="chapter.chapterNumber" x-for="chapter in heatmapData.chapters">
+                                        <div
+                                                :class="getHeatmapCellClass(chapter.readinessIndex)"
+                                                @click="selectChapter(chapter)"
+                                                @mouseenter="showTooltip($event, chapter)"
+                                                class="heatmap-cell relative w-8 h-8 rounded cursor-pointer flex items-center justify-center text-xs font-semibold text-white"
+                                                x-text="chapter.chapterNumber"
+                                        ></div>
+                                        <!--@mouseleave="hideTooltip()"-->
+                                    </template>
+                                </div>
+
+                                <!-- Tooltip -->
+                                <div
+                                        :style="`left: ${tooltipX}px; top: ${tooltipY}px`"
+                                        class="tooltip"
+                                        x-html="tooltipContent"
+                                        x-show="tooltipVisible"
+                                        x-transition
+                                ></div>
+                            </div>
+                            <template x-if="!heatmapData || heatmapData?.chapters?.length == 0">
+                                <div class="text-center py-10">
+                                    <h3 class="mt-2 text-sm font-medium text-gray-900">No data available</h3>
+                                    <p class="mt-1 text-sm text-gray-500">Changes fetch settings or pick another book
+                                        instead.</p>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Selected Chapter Details -->
+                        <div class="fixed z-10 bg-white rounded-lg shadow-md p-6 w-2/4 lg:w-1/4"
+                             style="top: 10px; left: 8px;"
+                             x-show="selectedChapter">
+
+                            <button @click="selectedChapter = null"
+                                    class="absolute top-5 right-5 text-gray-500 hover:text-gray-700">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                     xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"
+                                          stroke-width="2"></path>
+                                </svg>
+                            </button>
+
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                                Chapter <span x-text="selectedChapter?.chapterNumber"></span> Details
+
+                                <a class="inline-flex items-center gap-2 p-1 text-gray-500 hover:text-blue-700 font-medium"
+                                   href="#"
+                                   x-bind:href="`/chapters?chapterId=${selectedChapter?.id}`">
+                                    <svg fill="none" height="16" viewBox="0 0 24 24" width="16"
+                                         xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                              stroke="currentColor"
+                                              stroke-linecap="round"
+                                              stroke-linejoin="round"
+                                              stroke-width="2"/>
+                                    </svg>
+                                </a>
+
+                            </h3>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 class="text-lg font-medium text-gray-700 mb-3">Readiness Score</h4>
+                                    <div class="flex items-center gap-4 mb-4">
+                                        <div class="flex-1 bg-gray-200 rounded-full h-4">
+                                            <div
+                                                    :class="getReadinessBarClass(selectedChapter?.readinessIndex)"
+                                                    :style="`width: ${selectedChapter?.readinessIndex}%`"
+                                                    class="h-4 rounded-full transition-all duration-500"></div>
+                                        </div>
+                                        <span :class="getColorClassForPercentage(selectedChapter?.readinessIndex)"
+                                              class="text-2xl font-bold">
+                                    <span x-text="Math.round(selectedChapter?.readinessIndex)"></span>%
+                                </span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-4">
+                                        Status: <span :class="getStatusTextClass(selectedChapter?.status)"
+                                                      class="font-medium capitalize"
+                                                      x-text="selectedChapter?.status"></span>
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <h4 class="text-lg font-medium text-gray-700 mb-3">Field Completion</h4>
+                                    <div class="space-y-2">
+                                        <template :key="field" x-for="(status, field) in fieldStatus(selectedChapter)">
+                                            <div class="flex items-center justify-between">
+                                            <span class="text-sm capitalize"
+                                                  x-text="field.replace(/([A-Z])/g, ' $1').trim()"></span>
+                                                <span
+                                                        :class="status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                                                        class="px-2 py-1 rounded-full text-xs font-medium"
+                                                        x-text="status ? 'Complete' : 'Missing'"
+                                                ></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 gap-6" x-show="selectedChapter?.chapterWarnings?.length > 0">
+                                <div class="mt-6">
+                                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                        <div class="flex items-center gap-2 mb-3">
+                                            <svg class="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path clip-rule="evenodd"
+                                                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                                      fill-rule="evenodd"></path>
+                                            </svg>
+                                            <h4 class="text-lg font-medium text-amber-800">
+                                                Chapter Warnings
+                                                <span class="ml-1 px-2 py-0.5 bg-amber-200 text-amber-800 text-sm rounded-full"
+                                                      x-text="selectedChapter?.chapterWarnings?.length"></span>
+                                            </h4>
+                                        </div>
+
+                                        <div class="space-y-2 max-h-48 overflow-y-auto">
+                                            <template :key="`${warning.type}-${index}`"
+                                                      x-for="(warning, index) in selectedChapter?.chapterWarnings">
+                                                <div class="flex items-start gap-3 p-3 bg-white rounded-md border border-amber-100">
+                                                    <div class="flex-shrink-0 mt-0.5">
+                                                    <span :class="{
+                                                              'bg-red-100 text-red-700': warning.type === 'EMPTY_FIELD',
+                                                              'bg-blue-100 text-blue-700': warning.type === 'LANGUAGE',
+                                                              'bg-yellow-100 text-yellow-700': warning.type === 'PUNCTUATION',
+                                                              'bg-purple-100 text-purple-700': warning.type === 'R18_CONTENT',
+                                                              'bg-gray-100 text-gray-700': warning.type === 'OTHER'
+                                                          }"
+                                                          class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                                                          x-text="warning.type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())">
+                                                    </span>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="text-sm text-gray-800 break-words"
+                                                           x-text="warning.text"></p>
+                                                        <div class="mt-2 text-xs text-gray-500"
+                                                             x-show="warning.metadata && Object.keys(warning.metadata).length > 0">
+                                                            <template
+                                                                    :key="key"
+                                                                    x-for="[key, value] in Object.entries(warning.metadata || {})">
+                                                            <span class="inline-block mr-3">
+                                                                <span class="font-medium" x-text="key"></span>:
+                                                                <span x-text="value"></span>
+                                                            </span>
+                                                            </template>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="h-px my-8 bg-gray-200 border-0 dark:bg-gray-700">
+
+                            <div class="flex justify-between items-center">
+                                <button @click="setFromChap(selectedChapter)"
+                                        class="p-2 border text-xs text-gray-500 hover:text-gray-700">
+                                    <svg class="h-5 w-5 inline-block" fill="none" viewBox="0 0 24 24"
+                                         xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M9.66411 6.8359L3.414 0.585785L0.585571 3.41421L6.83568 9.66432L4.00002 12.5L5.50002 14H14V5.49999L12.5 3.99999L9.66411 6.8359Z"
+                                              fill="#000000"/>
+                                    </svg>
+                                    <span x-text="`Process from ${selectedChapter?.chapterNumber} chapter`"></span>
+                                </button>
+                                <button @click="setToChap(selectedChapter)"
+                                        class="p-2 border text-xs text-gray-500 hover:text-gray-700">
+                                    <svg class="h-5 w-5 inline-block" fill="none" viewBox="0 0 24 24"
+                                         xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M9.16421 9.66421L15.4142 3.41421L12.5858 0.585785L6.33579 6.83578L3.5 4L2 5.5V14H10.5L12 12.5L9.16421 9.66421Z"
+                                              fill="#000000"/>
+                                    </svg>
+                                    <span x-text="`Process to ${selectedChapter?.chapterNumber} chapter`"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Legend -->
+                        <div class="bg-white rounded-b-lg shadow-md p-6 mb-4">
+                            <h3 class="text-lg font-semibold mb-3">Readiness Index Legend</h3>
+                            <div class="flex flex-wrap gap-4 items-center text-sm">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-4 h-4 bg-red-500 rounded"></div>
+                                    <span>Critical (0-29%)</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-4 h-4 bg-yellow-500 rounded"></div>
+                                    <span>Poor (30-49%)</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-4 h-4 bg-yellow-300 rounded"></div>
+                                    <span>Fair (50-69%)</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-4 h-4 bg-blue-500 rounded"></div>
+                                    <span>Good (70-89%)</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-4 h-4 bg-green-500 rounded"></div>
+                                    <span>Excellent (90-100%)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- No Data State -->
+                <template x-if="!heatmapData">
+                    <div class="bg-white rounded-lg shadow-md p-12 text-center">
+                        <div class="text-gray-400 mb-4">
+                            <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                                      stroke-linecap="round" stroke-linejoin="round"
+                                      stroke-width="2"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No Heatmap Data</h3>
+                        <p class="text-gray-600">Please select a book to visualize chapter readiness.</p>
+                    </div>
+                </template>
+
+            </div>
+        </div>
+    </template>
+</div>
+</body>
+</html>

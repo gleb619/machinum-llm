@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Layout -->
+<div th:fragment="chart" th:remove="tag">
+
+    <div class="h-full" x-show="bookActiveTab === 'chart'">
+        <!-- Date Filter -->
+        <div class="bg-white rounded-lg pl-6 pr-6 mt-1 mb-1">
+            <div class="flex flex-wrap items-center justify-between">
+                <div class="flex justify-center mt-4 mb-4 space-x-2">
+                    <div class="w-full md:w-auto mb-4 md:mb-0">
+                        <label class="block text-sm font-medium text-gray-700 mb-1" for="dateFilter">Date
+                            Filter:</label>
+                        <input
+                                @change="fetchStatisticsData()"
+                                class="border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                id="dateFilter"
+                                type="date"
+                                x-model="selectedDate">
+                    </div>
+                    <div class="flex items-end">
+                        <button :class="{'animate-spin': autoRefresh}"
+                                :disabled="autoRefresh"
+                                @click="fetchStatisticsData()"
+                                class="p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-200 hover:bg-blue-100 active:bg-blue-200">
+                            <div class="rotate-mirror">
+                                <svg
+                                        :class="{'text-gray-400': !autoRefresh, 'text-blue-600': autoRefresh}"
+                                        class="w-6 h-6 transition-colors duration-200"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                    ></path>
+                                </svg>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="mt-6">
+                    <div class="flex items-center mt-3">
+                        <input
+                                @change="toggleAutoRefresh()"
+                                class="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                                id="autoRefresh"
+                                type="checkbox"
+                                x-model="autoRefresh">
+                        <label class="ml-2 text-sm text-gray-700" for="autoRefresh">Update every minute</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg p-6 mb-8" x-show="!statistics || statistics.length == 0">
+            <div class="text-medium italic mt-4 mb-4 w-full text-center">
+                No data
+            </div>
+        </div>
+        <div class="bg-white rounded-lg p-6 mb-8" x-show="statistics && statistics.length > 0">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="bg-blue-50 p-4 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-700">Total Tokens</h3>
+                    <p class="text-3xl font-bold text-blue-600" x-text="totalTokens"></p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg shadow"
+                     title="Average percentage of filling the context window">
+                    <h3 class="text-lg font-semibold text-gray-700">Avg Conversion</h3>
+                    <p class="text-3xl font-bold text-green-600" x-text="avgConversion + '%'"></p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-700">Total Operations</h3>
+                    <p class="text-3xl font-bold text-purple-600" x-text="statistics.length"></p>
+                </div>
+                <div class="bg-amber-50 p-4 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold text-gray-700">Operations time</h3>
+                    <p class="text-3xl font-bold text-amber-600" x-text="operationsTime"></p>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Token Usage Over Time</h2>
+                <div class="w-full h-64 md:h-80">
+                    <canvas id="tokenChart"></canvas>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Time taken to perform operations</h2>
+                <div class="w-full h-64 md:h-80">
+                    <canvas id="timeChart"></canvas>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Operation Types</h2>
+                    <div class="w-full h-64">
+                        <canvas id="operationTypeChart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Input vs Output Tokens</h2>
+                    <div class="w-full h-64">
+                        <canvas id="tokensComparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg mt-6 mb-3 overflow-x-auto">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Recent Operations</h2>
+
+                <!-- Table Controls -->
+                <div class="mt-4 mb-2 pl-1 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div class="relative">
+                        <input
+                                @input="statisticCurrentPage = 1"
+                                class="w-full md:w-80 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Search operation..."
+                                type="text"
+                                x-model="statisticSearchTerm"
+                        >
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      stroke-width="2"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                        <span>Show</span>
+                        <select
+                                @change="statisticCurrentPage = 1"
+                                class="mx-2 border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                x-model="statisticPageSize">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                        </select>
+                        <span>entries</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Operation
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Type
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Time
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Tokens
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Words
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Id info
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Time
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                    <template :key="statIndex" x-for="(stat, statIndex) in paginatedData">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                <p x-text="stat.operationName"></p>
+                                <button @click="statisticOpenModal(stat.id)"
+                                        class="text-gray-400 hover:text-blue-900 mt-2">
+                                    Open details
+                                </button>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                x-text="stat.operationType"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                x-text="stat.operationTimeString"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                x-text="stat.outputHistoryTokens"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                x-text="stat.outputHistoryWords"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <div class="pt-1 pb-1 text-xs">
+                                    <div class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <span class="font-semibold">Statistic ID:</span> <span
+                                            x-text="stat.id"></span>
+                                    </div>
+                                    <div class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <span class="font-semibold">Run ID:</span> <span x-text="stat.runId"></span>
+                                    </div>
+                                    <div class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <span class="font-semibold">RayId:</span> <span x-text="stat.rayId"></span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                x-text="formatDate(stat.operationDate)"></td>
+                        </tr>
+                    </template>
+                    </tbody>
+                </table>
+            </div>
+
+
+            <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+
+                <div class="flex-1 flex justify-between sm:hidden">
+                    <button
+                            :class="{ 'opacity-50 cursor-not-allowed': statisticCurrentPage === 1 }"
+                            :disabled="statisticCurrentPage === 1"
+                            @click="prevPage()"
+                            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Previous
+                    </button>
+                    <button
+                            :class="{ 'opacity-50 cursor-not-allowed': statisticCurrentPage === statisticTotalPages }"
+                            :disabled="statisticCurrentPage === statisticTotalPages"
+                            @click="nextPage()"
+                            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Next
+                    </button>
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-gray-700">
+                            Showing
+                            <span class="font-medium"
+                                  x-text="(statisticCurrentPage - 1) * statisticPageSize + 1"></span>
+                            to
+                            <span class="font-medium"
+                                  x-text="Math.min(statisticCurrentPage * statisticPageSize, statisticFilteredData.length)"></span>
+                            of
+                            <span class="font-medium" x-text="statisticFilteredData.length"></span>
+                            results
+                        </p>
+                    </div>
+                    <div>
+                        <nav aria-label="Pagination"
+                             class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                            <button
+                                    :class="{ 'opacity-50 cursor-not-allowed': statisticCurrentPage === 1 }"
+                                    :disabled="statisticCurrentPage === 1"
+                                    @click="statisticCurrentPage = 1"
+                                    class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">First</span>
+                                <svg aria-hidden="true" class="h-5 w-5" fill="currentColor"
+                                     viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path clip-rule="evenodd"
+                                          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                                          fill-rule="evenodd"/>
+                                    <path clip-rule="evenodd"
+                                          d="M8.707 5.293a1 1 0 010 1.414L5.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                                          fill-rule="evenodd"/>
+                                </svg>
+                            </button>
+                            <button
+                                    :class="{ 'opacity-50 cursor-not-allowed': statisticCurrentPage === 1 }"
+                                    :disabled="statisticCurrentPage === 1"
+                                    @click="prevPage()"
+                                    class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Previous</span>
+                                <svg aria-hidden="true" class="h-5 w-5" fill="currentColor"
+                                     viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path clip-rule="evenodd"
+                                          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                                          fill-rule="evenodd"/>
+                                </svg>
+                            </button>
+
+                            <template :key="page" x-for="page in paginationPages()">
+                                <button
+                                        :class="{ 'bg-blue-50 border-blue-500 text-blue-600': page === statisticCurrentPage, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': page !== statisticCurrentPage }"
+                                        @click="statisticCurrentPage = page"
+                                        class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
+                                        x-text="page"
+                                ></button>
+                            </template>
+
+                            <button
+                                    :class="{ 'opacity-50 cursor-not-allowed': statisticCurrentPage === statisticTotalPages }"
+                                    :disabled="statisticCurrentPage === statisticTotalPages"
+                                    @click="nextPage()"
+                                    class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Next</span>
+                                <svg aria-hidden="true" class="h-5 w-5" fill="currentColor"
+                                     viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path clip-rule="evenodd"
+                                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                          fill-rule="evenodd"/>
+                                </svg>
+                            </button>
+                            <button
+                                    :class="{ 'opacity-50 cursor-not-allowed': statisticCurrentPage === statisticTotalPages }"
+                                    :disabled="statisticCurrentPage === statisticTotalPages"
+                                    @click="statisticCurrentPage = statisticTotalPages"
+                                    class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">Last</span>
+                                <svg aria-hidden="true" class="h-5 w-5" fill="currentColor"
+                                     viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path clip-rule="evenodd"
+                                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                          fill-rule="evenodd"/>
+                                    <path clip-rule="evenodd"
+                                          d="M11.293 14.707a1 1 0 010-1.414L14.586 10l-3.293-3.293a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                          fill-rule="evenodd"/>
+                                </svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistic Modal -->
+        <div th:remove="tag" th:replace="~{components/book/book-statistic-modal::modal}">
+            <p>
+                Here placed content of components/book/book-statistic-modal.html page,
+                tag `th:fragment="modal"`
+            </p>
+        </div>
+
+
+    </div>
+</div>
+
+</body>
+</html>

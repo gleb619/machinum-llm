@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Layout -->
+<div th:fragment="sidebar" th:remove="tag">
+    <!-- Toggle Button -->
+    <button @click="changeState('isSidebarCollapsed')"
+            class="flex items-center justify-center w-full px-2 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             x-show="!isSidebarCollapsed" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </svg>
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             x-show="isSidebarCollapsed" xmlns="http://www.w3.org/2000/svg">
+            <path d="M11 19l7-7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </svg>
+    </button>
+
+    <!-- Actions Table -->
+    <div x-show="!isSidebarCollapsed">
+        <h2 class="text-xl font-bold mt-4 mb-4">
+            Actions
+            <small class="ms-2 font-semibold text-gray-500" x-show="isExecuting"
+                   x-text="timePassed"></small>
+        </h2>
+
+        <!-- Panel Header -->
+        <div :disabled="isExecuting"
+             @click="actionSettingsOpen = !actionSettingsOpen"
+             class="bg-blue-600 text-white p-1 cursor-pointer flex justify-between items-center disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed">
+            <h2 class="text-xs font-semibold">Settings</h2>
+            <svg :class="actionSettingsOpen ? 'transform rotate-180' : ''"
+                 class="w-5 h-5 transition-transform duration-200"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            </svg>
+        </div>
+
+        <!-- Panel Content -->
+        <div :disabled="isExecuting"
+             class="p-6 border-t border-gray-200 transition ease-out duration-50 disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+             x-show="actionSettingsOpen">
+            <div class="space-y-4">
+                <div>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input
+                                @change="persistTemplate()"
+                                class="form-checkbox text-blue-500"
+                                type="checkbox"
+                                x-model="requestTemplate.shouldPersist"/>
+                        <span class="ml-2 font-medium">Should Persist</span>
+                    </label>
+
+                    <p class="text-xs text-gray-600 ml-6 mt-1">
+                        If checked, data will be persisted and will affect the current state.
+                        <span x-text="requestTemplate.shouldPersist ? 'Persist is enabled.' : 'Persist is disabled.'"></span>
+                    </p>
+                </div>
+                <div>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input
+                                @change="persistTemplate()"
+                                class="form-checkbox text-blue-500"
+                                type="checkbox"
+                                x-model="requestTemplate.ignoreCache"/>
+                        <span class="ml-2 font-medium">Ignore cache</span>
+                    </label>
+
+                    <p class="text-xs text-gray-600 ml-6 mt-1">
+                        If checked, will use cache to restore previous execution state.
+                        <span x-text="requestTemplate.ignoreCache ? 'Work without cache.' : 'Cache is enabled.'"></span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="mt-4 space-y-2">
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
+                        @click="executeOperation('copyEdit')"
+                        class="w-full bg-white text-red-300 px-4 py-2 rounded border-2 border-red-300 disabled:text-red-100 disabled:opacity-75 disabled:cursor-not-allowed"
+                        title="Rewrite the error-prone source text and return a clean text with corrections.">
+                    <span>Rewrite</span>
+                </button>
+            </div>
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
+                        @click="executeOperation('summarize')"
+                        class="w-full bg-purple-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+                        title="Provide a brief statement and/or account of the main points of chapter's text.">
+                    <span>Summarize</span>
+                </button>
+            </div>
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
+                        @click="executeOperation('glossaryExtract')"
+                        class="w-full bg-purple-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+                        title="Extract list of term with description from clean text.">
+                    <span>Glossary extract</span>
+                </button>
+            </div>
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
+                        @click="executeOperation('proofreadEn')"
+                        class="w-full bg-purple-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+                        title="Find and correct mistakes in origin text.">
+                    <span>Proofread text</span>
+                </button>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
+                        @click="executeOperation('translate')"
+                        class="w-full bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+                        title="Translate original text.">
+                    <span>Translate</span>
+                </button>
+            </div>
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
+                        @click="executeOperation('scoreAndTranslate')"
+                        class="w-full bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed border-r-4 border-red-400"
+                        title="Provide scoring for translated text and then try to correct translation.">
+                    <span>Score and translate</span>
+                </button>
+            </div>
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
+                        @click="executeOperation('fixGrammar')"
+                        class="w-full bg-green-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+                        title="Correct grammar for fixed translated text.">
+                    <span>Fix grammar</span>
+                </button>
+            </div>
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
+                        @click="executeOperation('scoreAndFix')"
+                        class="w-full bg-green-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed border-r-4 border-red-400"
+                        title="Provide scoring for fixed translated text and then try to correct grammar.">
+                    <span>Score and fix grammar</span>
+                </button>
+            </div>
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
+                        @click="executeOperation('proofreadRu')"
+                        class="w-full bg-green-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+                        title="Find and correct mistakes in fixed translated text.">
+                    <span>Proofread translated text</span>
+                </button>
+            </div>
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
+                        @click="executeOperation('convertToSSML')"
+                        class="w-full bg-red-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed hidden"
+                        title="Convert text to xml format, with SSML tags.">
+                    <span>Convert to SSML format(for audio book)</span>
+                </button>
+            </div>
+            <div class="flex items-center justify-between">
+                <button :disabled="isExecuting"
+                        @click="executeOperation('synthesize')"
+                        class="w-full bg-red-500 text-white px-4 py-2 rounded disabled:bg-gray-400 disabled:opacity-75 disabled:cursor-not-allowed"
+                        title="Converts written text into spoken audio.">
+                    <span>Convert to MP3 format(audio book)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Field Selection (Radio Group) -->
+    <div x-show="!isSidebarCollapsed">
+        <h2 class="text-xl font-bold mt-4 mb-4">Select Field</h2>
+        <div class="space-y-2">
+            <label class="flex items-center cursor-pointer">
+                <input @change="selectField('text')" class="hidden" name="field"
+                       type="radio"
+                       value="text"
+                       x-model="selectedField"/>
+                <div :class="selectedField === 'text' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+                     class="w-full px-4 py-2 rounded">
+                    Original Text
+                </div>
+            </label>
+            <label class="flex items-center cursor-pointer">
+                <input @change="selectField('translatedText')" class="hidden" name="field"
+                       type="radio"
+                       value="translatedText"
+                       x-model="selectedField"/>
+                <div :class="selectedField === 'translatedText' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+                     class="w-full px-4 py-2 rounded">
+                    Translated Text
+                </div>
+            </label>
+            <hr/>
+            <label class="flex items-center cursor-pointer" title="Temporary disabled">
+                <input @change="selectField('translatedTextChunks')" class="hidden" disabled
+                       name="field"
+                       type="radio"
+                       value="translatedTextChunks"
+                       x-model="selectedField"/>
+                <div :class="selectedField === 'translatedTextChunks' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+                     class="w-full px-4 py-2 rounded">
+                    Translated Text Chunks <small>(disabled)</small>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <!-- History -->
+    <div x-show="!isSidebarCollapsed">
+        <h2 class="text-xl font-bold mt-4 mb-4">Edit History</h2>
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Version
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                </th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+            <template :key="index" x-for="(version, index) in history">
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                        x-text="`Version ${version.number}`"></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button @click="selectVersion(version.number)"
+                                class="text-indigo-600 hover:text-indigo-900 mr-2">Revert
+                        </button>
+                    </td>
+                </tr>
+            </template>
+            </tbody>
+        </table>
+        <div class="text-sm italic mt-4 mb-4 w-full text-center" x-show="!history || history.length == 0">
+            No historical data
+        </div>
+    </div>
+</div>
+</body>
+</html>

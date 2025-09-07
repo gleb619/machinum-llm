@@ -3,3 +3,6 @@
  */
 
 rootProject.name = 'machinum-llm'
+
+include 'app'
+include 'flow'

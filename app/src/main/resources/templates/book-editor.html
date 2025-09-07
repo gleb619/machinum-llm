@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Layout -->
+<div th:fragment="editor" th:remove="tag">
+
+    <!-- New Section with Two Panels -->
+    <div class="mt-8 flex gap-4">
+        <!-- Left Panel: Collapsible -->
+        <div :class="bookEditorCollapsed ? 'w-[50px]' : 'w-1/4'"
+             class="bg-white rounded-lg shadow-md p-2 transition-all duration-300 overflow-hidden min-w-[50px]">
+
+            <div th:remove="tag" th:replace="~{components/book/book-editor-sidebar::processor-settings}">
+                <p>
+                    Here placed content of templates/components/book/book-editor-sidebar.html page, tag
+                    `th:fragment="processor-settings"`
+                </p>
+            </div>
+        </div>
+
+        <!-- Central Panel: Diagram -->
+        <div :class="bookEditorCollapsed ? 'w-full' : 'w-3/4'"
+             class="bg-white rounded-lg shadow-md relative transition-all duration-300"
+             x-data="{ bookActiveTab: 'report' }" x-init="loadValue('bookActiveTab', 'report')">
+
+            <div class="border-b border-gray-200">
+                <!-- Tabs -->
+                <nav aria-label="Tabs" class="flex space-x-4 p-4">
+                    <button :class="{
+                                'text-gray-500 border-transparent': bookActiveTab !== 'report',
+                                'text-blue-600 border-blue-600': bookActiveTab === 'report'
+                            }"
+                            @click="changeValue('bookActiveTab', 'report')"
+                            class="font-bold border-b-2 pb-2">Report
+                    </button>
+                    <button :class="{
+                                'text-gray-500 border-transparent': bookActiveTab !== 'chart',
+                                'text-blue-600 border-blue-600': bookActiveTab === 'chart'
+                            }"
+                            @click="changeValue('bookActiveTab', 'chart')"
+                            class="font-bold border-b-2 pb-2">Chart
+                    </button>
+                    <button :class="{
+                                'text-gray-500 border-transparent': bookActiveTab !== 'titles',
+                                'text-blue-600 border-blue-600': bookActiveTab === 'titles'
+                            }"
+                            @click="changeValue('bookActiveTab', 'titles')"
+                            class="font-bold border-b-2 pb-2">Titles
+                    </button>
+                    <button :class="{
+                                'text-gray-500 border-transparent': bookActiveTab !== 'glossary',
+                                'text-blue-600 border-blue-600': bookActiveTab === 'glossary'
+                            }"
+                            @click="changeValue('bookActiveTab', 'glossary')"
+                            class="font-bold border-b-2 pb-2">Glossary
+                    </button>
+                    <button :class="{
+                                'text-gray-500 border-transparent': bookActiveTab !== 'import-export',
+                                'text-blue-600 border-blue-600': bookActiveTab === 'import-export'
+                            }"
+                            @click="changeValue('bookActiveTab', 'import-export')"
+                            class="font-bold border-b-2 pb-2">Import/Export
+                    </button>
+                </nav>
+            </div>
+
+            <div class="h-full overflow-hidden">
+                <!-- Report Tab -->
+                <div th:remove="tag" th:replace="~{components/book/book-tab-book-report::report}">
+                    <p>
+                        Here placed content of components/book/book-tab-book-report.html page,
+                        tag `th:fragment="report"`
+                    </p>
+                </div>
+
+                <!-- Statistic Tab -->
+                <div th:remove="tag" th:replace="~{components/book/book-chart::chart}">
+                    <p>
+                        Here placed content of templates/components/book/book-chart.html page, tag `th:fragment="chart"`
+                    </p>
+                </div>
+
+                <!-- Titles Tab -->
+                <div th:remove="tag" th:replace="~{components/book/book-tab-title-list::title-list}">
+                    <p>
+                        Here placed content of templates/components/book/book-tab-title-list.html page,
+                        tag `th:fragment="title-list"`
+                    </p>
+                </div>
+
+                <!-- Glossary Tab -->
+                <div th:remove="tag" th:replace="~{components/book/book-tab-glossary-list::glossary-list}">
+                    <p>
+                        Here placed content of templates/components/book/book-tab-glossary-list.html page,
+                        tag `th:fragment="glossary-list"`
+                    </p>
+                </div>
+
+                <!-- Import/Export Tab -->
+                <div th:remove="tag" th:replace="~{components/book/book-tab-import-export::import-export}">
+                    <p>
+                        Here placed content of templates/components/book/book-tab-import-export.html page,
+                        tag `th:fragment="import-export"`
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

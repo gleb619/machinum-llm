@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta content="1;url=/books" http-equiv="refresh">
+    <title>Redirecting...</title>
+    <link href="../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .manual-link {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .manual-link:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+<div class="splash-screen" id="splashScreen">
+    <div class="splash-logo text-blue-500">...</div>
+    <div class="splash-spinner border-4 border-blue-200 border-t-blue-500"></div>
+    <div>
+        <a class="manual-link" href="/books">Open Books Page</a>
+        <a class="manual-link" href="/chapters">Open Chapters Page</a>
+    </div>
+</div>
+<script>
+    const splashScreen = document.getElementById('splashScreen');
+    splashScreen.style.display = 'flex';
+    splashScreen.style.opacity = '1';
+
+    setTimeout(() => {
+            splashScreen.style.opacity = '0';
+    }, 1000);
+
+    setTimeout(() => {
+        window.location.href = "/books";
+    }, 10);
+</script>
+</body>
+</html>
