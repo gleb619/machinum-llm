@@ -2,13 +2,13 @@ package machinum.flow.runner;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import machinum.flow.action.FlowContextActions;
-import machinum.flow.core.Flow;
-import machinum.flow.core.FlowContext;
 import machinum.flow.core.FlowRunner;
 import machinum.flow.core.StateManager;
 import machinum.flow.exception.AppFlowException;
+import machinum.flow.model.Flow;
+import machinum.flow.model.FlowContext;
 import machinum.flow.model.Pack;
+import machinum.flow.model.helper.FlowContextActions;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,17 +18,45 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static machinum.flow.action.FlowContextActions.iteration;
-import static machinum.flow.action.FlowContextActions.result;
 import static machinum.flow.constant.FlowConstants.*;
+import static machinum.flow.model.helper.FlowContextActions.iteration;
+import static machinum.flow.model.helper.FlowContextActions.result;
 
+/**
+ * Implementation of FlowRunner that executes flow operations one step at a time.
+ * This runner processes items sequentially through configured pipes, supporting
+ * windowing operations, state management, and various aggregation functions.
+ * It handles complex flow execution including bootstrap, refresh, and sink actions.
+ *
+ * <p>Key features:</p>
+ * <ul>
+ *   <li>Sequential item processing with state transitions</li>
+ *   <li>Windowed operations (tumbling, sliding, session windows)</li>
+ *   <li>Aggregation functions (sum, count, average, custom)</li>
+ *   <li>Error handling and exception strategies</li>
+ *   <li>Performance measurement and monitoring</li>
+ * </ul>
+ *
+ * @param <T> the type of items being processed in the flow
+ */
 @Slf4j
 @RequiredArgsConstructor
 public class OneStepRunner<T> implements FlowRunner<T> {
 
+    /**
+     * The flow configuration containing pipes, state definitions, and metadata.
+     */
     @Getter
     private final Flow<T> flow;
 
+    /**
+     * Executes the flow starting from the specified state, processing items one by one.
+     * This method initializes the runner context, executes bootstrap actions, processes
+     * all items through configured pipes, handles windowed operations, and manages
+     * state transitions.
+     *
+     * @param currentState the initial state to start flow execution from
+     */
     @Override
     public void run(@NonNull Flow.State currentState) {
         log.debug("Executing flow for given state: {}", currentState);
@@ -234,6 +262,15 @@ public class OneStepRunner<T> implements FlowRunner<T> {
         }
     }
 
+    /**
+     * Creates a new OneStepRunner instance with the specified sub-flow.
+     * This method allows for creating specialized runners for sub-flows.
+     * The measureWrapper parameter is ignored in this implementation.
+     *
+     * @param subFlow        the sub-flow to execute
+     * @param measureWrapper wrapper function for performance measurement (ignored)
+     * @return a new OneStepRunner instance configured for the sub-flow
+     */
     @Override
     public FlowRunner<T> recreate(Flow<T> subFlow, Consumer<Runnable> measureWrapper) {
         return new OneStepRunner<>(subFlow);
@@ -242,26 +279,67 @@ public class OneStepRunner<T> implements FlowRunner<T> {
     /* ============= */
 
     /**
-     * Window definition to be used with aggregate operations
+     * Window definition to be used with aggregate operations.
+     * Defines different types of windows for data aggregation including
+     * tumbling windows (non-overlapping), sliding windows (overlapping),
+     * and session windows (activity-based).
      */
     public sealed interface Window permits Window.SessionWindow, Window.SlidingWindow, Window.TumblingWindow {
 
+        /**
+         * Creates a tumbling window of the specified size.
+         * Tumbling windows are non-overlapping and trigger when the window is full.
+         *
+         * @param size the size of the tumbling window
+         * @return a new TumblingWindow instance
+         */
         static Window tumbling(int size) {
             return new TumblingWindow(size);
         }
 
+        /**
+         * Creates a sliding window with the specified size and slide interval.
+         * Sliding windows overlap and move by the slide amount when triggered.
+         *
+         * @param size the size of the sliding window
+         * @param slide the slide interval for the window
+         * @return a new SlidingWindow instance
+         */
         static Window sliding(int size, int slide) {
             return new SlidingWindow(size, slide);
         }
 
+        /**
+         * Creates a session window with the specified timeout.
+         * Session windows group events that occur within a timeout period.
+         *
+         * @param timeout the timeout period for the session window
+         * @return a new SessionWindow instance
+         */
         static Window session(int timeout) {
             return new SessionWindow(timeout);
         }
 
+        /**
+         * Returns the size of the window.
+         *
+         * @return the window size
+         */
         int getSize();
 
+        /**
+         * Returns the slide interval of the window.
+         *
+         * @return the slide interval
+         */
         int getSlide();
 
+        /**
+         * Represents a tumbling window that processes data in non-overlapping chunks.
+         * When the window reaches its size, it triggers processing and then clears.
+         *
+         * @param size the size of the tumbling window
+         */
         record TumblingWindow(int size) implements Window {
             @Override
             public int getSize() {
@@ -274,6 +352,13 @@ public class OneStepRunner<T> implements FlowRunner<T> {
             }
         }
 
+        /**
+         * Represents a sliding window that processes data in overlapping chunks.
+         * The window moves by the slide amount after each trigger.
+         *
+         * @param size the size of the sliding window
+         * @param slide the slide interval for the window
+         */
         record SlidingWindow(int size, int slide) implements Window {
             @Override
             public int getSize() {
@@ -286,6 +371,12 @@ public class OneStepRunner<T> implements FlowRunner<T> {
             }
         }
 
+        /**
+         * Represents a session window that groups events within a timeout period.
+         * Useful for processing bursts of activity with gaps.
+         *
+         * @param timeout the timeout period for the session window
+         */
         record SessionWindow(int timeout) implements Window {
             @Override
             public int getSize() {
@@ -301,18 +392,50 @@ public class OneStepRunner<T> implements FlowRunner<T> {
     }
 
     /**
-     * Windowed pipe for processing data in windows
+     * Windowed pipe for processing data in windows.
+     * Extends Function to allow integration with regular pipes while providing
+     * windowing capabilities for aggregating data over time-based or count-based windows.
+     *
+     * @param <T> the type of items being processed
      */
     public interface WindowedPipe<T> extends Function<FlowContext<T>, FlowContext<T>> {
 
+        /**
+         * Returns the unique identifier for this windowed pipe.
+         *
+         * @return the window ID
+         */
         String getWindowId();
 
+        /**
+         * Returns the window configuration for this pipe.
+         *
+         * @return the window definition
+         */
         Window getWindow();
 
+        /**
+         * Determines whether the window should trigger processing based on the current contexts.
+         *
+         * @param contexts the list of contexts in the current window
+         * @return true if the window should trigger processing, false otherwise
+         */
         boolean shouldTrigger(List<FlowContext<T>> contexts);
 
+        /**
+         * Determines whether the window should be cleared after triggering.
+         * Typically true for tumbling windows, false for sliding windows.
+         *
+         * @return true if the window should be cleared after trigger, false otherwise
+         */
         boolean shouldClearAfterTrigger();
 
+        /**
+         * Aggregates the contexts in the window and returns the result.
+         *
+         * @param contexts the list of contexts to aggregate
+         * @return the aggregated flow context
+         */
         FlowContext<T> aggregate(List<FlowContext<T>> contexts);
 
         @Override
@@ -321,6 +444,13 @@ public class OneStepRunner<T> implements FlowRunner<T> {
             return context;
         }
 
+        /**
+         * Determines whether the state should be updated even if processing hasn't triggered.
+         * Useful for sliding windows that need to update state incrementally.
+         *
+         * @param contexts the list of contexts in the current window
+         * @return true if state should be updated, false otherwise
+         */
         default boolean shouldUpdateState(List<FlowContext<T>> contexts) {
             return false;
         }
@@ -328,11 +458,22 @@ public class OneStepRunner<T> implements FlowRunner<T> {
     }
 
     /**
-     * Aggregation function to be used with windows
+     * Aggregation function to be used with windows.
+     * Provides common aggregation operations like sum, count, average, and custom mappings
+     * for processing collections of FlowContext objects within windows.
+     *
+     * @param <T> the type of items being processed
      */
     @FunctionalInterface
     public interface Aggregation<T> {
 
+        /**
+         * Creates an aggregation that sums numeric values extracted from contexts.
+         *
+         * @param <T> the type of items in the contexts
+         * @param extractor function to extract numeric values from contexts
+         * @return an aggregation function that computes the sum
+         */
         static <T> Aggregation<T> sum(Function<FlowContext<T>, Number> extractor) {
             return contexts -> {
                 if (contexts.isEmpty()) return null;
@@ -345,10 +486,23 @@ public class OneStepRunner<T> implements FlowRunner<T> {
             };
         }
 
+        /**
+         * Creates an aggregation that counts the number of contexts in the window.
+         *
+         * @param <T> the type of items in the contexts
+         * @return an aggregation function that returns the count
+         */
         static <T> Aggregation<T> count() {
             return contexts -> contexts.getLast().rearrange(FlowContext::resultArg, result((long) contexts.size()));
         }
 
+        /**
+         * Creates an aggregation that computes the average of numeric values extracted from contexts.
+         *
+         * @param <T> the type of items in the contexts
+         * @param extractor function to extract numeric values from contexts
+         * @return an aggregation function that computes the average
+         */
         static <T> Aggregation<T> avg(Function<FlowContext<T>, Number> extractor) {
             return contexts -> {
                 if (contexts.isEmpty()) return null;
@@ -362,6 +516,14 @@ public class OneStepRunner<T> implements FlowRunner<T> {
             };
         }
 
+        /**
+         * Creates an aggregation that maps contexts to a list of extracted values.
+         *
+         * @param <I> the type of items in the contexts
+         * @param <U> the type of values to extract
+         * @param extractor function to extract values from contexts
+         * @return an aggregation function that returns a list of extracted values
+         */
         static <I, U> Aggregation<I> map(Function<FlowContext<I>, U> extractor) {
             return contexts -> {
                 var result = contexts.stream()
@@ -372,20 +534,52 @@ public class OneStepRunner<T> implements FlowRunner<T> {
             };
         }
 
+        /**
+         * Creates an aggregation that packs contexts into Pack objects.
+         *
+         * @param <I> the type of items in the contexts
+         * @param <U> the type of values to pack
+         * @param extractor function to extract Pack objects from contexts
+         * @return an aggregation function that returns a list of Pack objects
+         */
         static <I, U> Aggregation<I> pack(Function<FlowContext<I>, Pack<I, U>> extractor) {
             return map(extractor);
         }
 
+        /**
+         * Creates an aggregation that collects all current items from contexts.
+         *
+         * @param <T> the type of items in the contexts
+         * @return an aggregation function that returns a list of all items
+         */
         static <T> Aggregation<T> items() {
             return map(FlowContext::getCurrentItem);
         }
 
+        /**
+         * Applies the aggregation to a list of contexts.
+         *
+         * @param contexts the list of contexts to aggregate
+         * @return the aggregated flow context
+         */
         FlowContext<T> apply(List<FlowContext<T>> contexts);
 
+        /**
+         * Chains this aggregation with another aggregation.
+         *
+         * @param after the aggregation to apply after this one
+         * @return a new aggregation that applies this aggregation first, then the after aggregation
+         */
         default Aggregation<T> andThen(Aggregation<T> after) {
             return contexts -> after.apply(List.of(apply(contexts)));
         }
 
+        /**
+         * Applies a function to the result of this aggregation.
+         *
+         * @param function the function to apply to the aggregation result
+         * @return a new aggregation that applies the function to the result
+         */
         default Aggregation<T> onResult(Function<FlowContext<T>, FlowContext<T>> function) {
             return contexts -> {
                 var context = apply(contexts);
@@ -397,17 +591,52 @@ public class OneStepRunner<T> implements FlowRunner<T> {
 
     }
 
+    /**
+     * Internal context holder for flow execution.
+     * Encapsulates all the state and configuration needed during flow processing,
+     * including flow configuration, current state, metadata, and window buffers.
+     * Provides methods to execute various flow actions and manage state transitions.
+     *
+     * @param <T> the type of items being processed
+     */
     @Value
     @AllArgsConstructor
     @Builder(toBuilder = true)
     private static class RunnerContext<T> {
 
+        /**
+         * The flow configuration being executed.
+         */
         Flow<T> flow;
+
+        /**
+         * The current state of the flow execution.
+         */
         Flow.State currentState;
+
+        /**
+         * The state manager for persisting execution state.
+         */
         StateManager sm;
+
+        /**
+         * Metadata associated with the flow execution.
+         */
         Map<String, Object> metadata;
+
+        /**
+         * Whether extend actions are enabled.
+         */
         boolean extendEnabled;
+
+        /**
+         * Reference to the current flow context, updated during execution.
+         */
         AtomicReference<FlowContext<T>> flowContextRef;
+
+        /**
+         * Buffer for managing windowed operations.
+         */
         WindowBuffer<T> windowBuffer;
 
         public static <U> RunnerContext<U> of(Function<RunnerContextBuilder<U>, RunnerContextBuilder<U>> creator) {
@@ -527,24 +756,54 @@ public class OneStepRunner<T> implements FlowRunner<T> {
     }
 
     /**
-     * Buffer to store contexts for windowed operations
+     * Buffer to store contexts for windowed operations.
+     * Manages multiple windows concurrently, allowing contexts to be added to specific windows,
+     * retrieved, and manipulated for sliding window operations.
+     *
+     * @param <T> the type of items being processed
      */
     private static class WindowBuffer<T> {
 
+        /**
+         * Thread-safe map storing windows by their IDs.
+         */
         private final Map<String, List<FlowContext<T>>> windows = new ConcurrentHashMap<>();
 
+        /**
+         * Adds a context to the specified window.
+         *
+         * @param windowId the ID of the window to add to
+         * @param context the context to add
+         */
         public void add(String windowId, FlowContext<T> context) {
             windows.computeIfAbsent(windowId, k -> new ArrayList<>()).add(context);
         }
 
+        /**
+         * Retrieves all contexts for the specified window.
+         *
+         * @param windowId the ID of the window to retrieve
+         * @return the list of contexts in the window, or empty list if window doesn't exist
+         */
         public List<FlowContext<T>> getWindow(String windowId) {
             return windows.getOrDefault(windowId, List.of());
         }
 
+        /**
+         * Clears all contexts from the specified window.
+         *
+         * @param windowId the ID of the window to clear
+         */
         public void clearWindow(String windowId) {
             windows.remove(windowId);
         }
 
+        /**
+         * Slides the window by removing the specified number of elements from the beginning.
+         *
+         * @param windowId the ID of the window to slide
+         * @param slideSize the number of elements to remove from the beginning
+         */
         public void slideWindow(String windowId, int slideSize) {
             var window = windows.get(windowId);
             if (window != null && slideSize > 0 && slideSize <= window.size()) {
@@ -552,10 +811,18 @@ public class OneStepRunner<T> implements FlowRunner<T> {
             }
         }
 
+        /**
+         * Returns a copy of all windows and their contexts.
+         *
+         * @return a map of window IDs to their context lists
+         */
         public Map<String, List<FlowContext<T>>> getAllWindows() {
             return new HashMap<>(windows);
         }
 
+        /**
+         * Clears all windows and their contexts.
+         */
         public void clear() {
             windows.clear();
         }
@@ -563,14 +830,29 @@ public class OneStepRunner<T> implements FlowRunner<T> {
     }
 
     /**
-     * Base implementation of a windowed pipe
+     * Base implementation of a windowed pipe.
+     * Provides a standard implementation of WindowedPipe with configurable window and aggregation.
+     * Triggers when the window reaches its configured size and clears tumbling windows after processing.
+     *
+     * @param <T> the type of items being processed
      */
     @Value
     @RequiredArgsConstructor
     public static class BaseWindowedPipe<T> implements WindowedPipe<T> {
 
+        /**
+         * The unique identifier for this windowed pipe.
+         */
         String windowId;
+
+        /**
+         * The window configuration defining size and behavior.
+         */
         Window window;
+
+        /**
+         * The aggregation function to apply to windowed contexts.
+         */
         Aggregation<T> aggregation;
 
         @Override
@@ -591,14 +873,32 @@ public class OneStepRunner<T> implements FlowRunner<T> {
     }
 
     /**
-     * Extension methods for Flow to support windowing operations
+     * Extension methods for Flow to support windowing operations.
+     * Provides factory methods for creating windowed pipes with various configurations.
      */
     public static class FlowExtensions {
 
+        /**
+         * Creates a windowed pipe with the specified window ID, window configuration, and aggregation.
+         *
+         * @param <T> the type of items being processed
+         * @param windowId the unique identifier for the window
+         * @param window the window configuration
+         * @param aggregation the aggregation function to apply
+         * @return a new WindowedPipe instance
+         */
         public static <T> WindowedPipe<T> window(String windowId, Window window, Aggregation<T> aggregation) {
             return new BaseWindowedPipe<>(windowId, window, aggregation);
         }
 
+        /**
+         * Creates a windowed pipe with an auto-generated window ID.
+         *
+         * @param <T> the type of items being processed
+         * @param window the window configuration
+         * @param aggregation the aggregation function to apply
+         * @return a new WindowedPipe instance with auto-generated ID
+         */
         public static <T> WindowedPipe<T> aggregate(Window window, Aggregation<T> aggregation) {
             String windowId = UUID.randomUUID().toString();
             return window(windowId, window, aggregation);

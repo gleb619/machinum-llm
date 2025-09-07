@@ -1,8 +1,9 @@
-package machinum.flow.argument;
+package machinum.flow.model.helper;
 
 import machinum.flow.exception.ArgumentException;
 import machinum.flow.model.Chunks;
 import machinum.flow.model.Chunks.ChunkItem;
+import machinum.flow.model.FlowArgument;
 
 import java.util.List;
 import java.util.Optional;

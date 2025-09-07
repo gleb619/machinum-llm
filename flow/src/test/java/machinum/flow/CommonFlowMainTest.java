@@ -1,7 +1,7 @@
 package machinum.flow;
 
-import machinum.flow.core.Flow;
-import machinum.flow.core.FlowContext;
+import machinum.flow.model.Flow;
+import machinum.flow.model.FlowContext;
 import machinum.flow.runner.OneStepRunner;
 import machinum.flow.runner.RecursiveFlowRunner;
 import org.junit.jupiter.api.Test;
@@ -11,7 +11,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class FlowMainTest {
+public class CommonFlowMainTest {
 
     private static List<Integer> aSomeCollectionOrFiles() {
         return List.of(1, 2, 3);
@@ -34,7 +34,7 @@ public class FlowMainTest {
     }
 
     private static void logInfo(String s, Object... args) {
-        System.out.println("FlowMainTest.logInfo: " + Stream.of(args).map(Object::toString).collect(Collectors.joining(", ")));
+        System.out.println("CommonFlowMainTest.logInfo: " + Stream.of(args).map(Object::toString).collect(Collectors.joining(", ")));
     }
 
     @Test
@@ -67,7 +67,7 @@ public class FlowMainTest {
                     var ctx2 = printCurrentItem(ctx, ctx.getCurrentItem());
                     return ctx2.copy(Function.identity());
                 })
-                .sink(FlowMainTest::saveResultToDb);
+                .sink(CommonFlowMainTest::saveResultToDb);
 
         var runner = new OneStepRunner(flow);
         var runner2 = new RecursiveFlowRunner<>(runner, Runnable::run);

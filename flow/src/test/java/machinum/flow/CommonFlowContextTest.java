@@ -1,7 +1,7 @@
 package machinum.flow;
 
-import machinum.flow.argument.FlowArgument;
-import machinum.flow.core.FlowContext;
+import machinum.flow.model.FlowArgument;
+import machinum.flow.model.FlowContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,10 +11,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.function.Function;
 
-import static machinum.flow.action.FlowContextActions.*;
+import static machinum.flow.model.helper.FlowContextActions.*;
 
 @ExtendWith(MockitoExtension.class)
-class FlowContextTest {
+class CommonFlowContextTest {
 
     @Mock
     List<FlowArgument> arguments;

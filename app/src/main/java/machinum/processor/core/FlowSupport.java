@@ -2,8 +2,8 @@ package machinum.processor.core;
 
 import lombok.*;
 import machinum.flow.AppFlowActions;
-import machinum.flow.argument.FlowArgument;
-import machinum.flow.core.FlowContext;
+import machinum.flow.model.FlowArgument;
+import machinum.flow.model.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.processor.HistoryService.TokenBudget;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static machinum.flow.action.FlowContextActions.alt;
+import static machinum.flow.model.helper.FlowContextActions.alt;
 import static machinum.util.JavaUtil.*;
 import static machinum.util.TextUtil.countHistoryTokens;
 import static machinum.util.TextUtil.countTokens;

@@ -2,8 +2,8 @@ package machinum.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import machinum.flow.core.Flow.State;
 import machinum.flow.core.StateManager;
+import machinum.flow.model.Flow.State;
 import machinum.repository.BookRepository;
 import machinum.service.BookProcessor.ProcessorState;
 import org.springframework.stereotype.Component;

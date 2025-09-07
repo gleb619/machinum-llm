@@ -2,9 +2,9 @@ package machinum.flow;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import machinum.flow.action.FlowContextActions;
-import machinum.flow.argument.FlowArgument;
-import machinum.flow.core.FlowContext;
+import machinum.flow.model.FlowArgument;
+import machinum.flow.model.FlowContext;
+import machinum.flow.model.helper.FlowContextActions;
 import machinum.model.ObjectName;
 import machinum.processor.core.ChapterWarning;
 

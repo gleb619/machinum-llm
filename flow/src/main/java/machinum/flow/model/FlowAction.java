@@ -1,6 +1,4 @@
-package machinum.flow.action;
-
-import machinum.flow.core.FlowContext;
+package machinum.flow.model;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;

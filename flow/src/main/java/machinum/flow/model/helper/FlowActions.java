@@ -1,4 +1,4 @@
-package machinum.flow.action;
+package machinum.flow.model.helper;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

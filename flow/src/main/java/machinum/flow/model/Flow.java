@@ -1,13 +1,15 @@
-package machinum.flow.core;
+package machinum.flow.model;
 
 import lombok.Builder;
 import lombok.Singular;
 import lombok.ToString;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import machinum.flow.action.FlowAction;
-import machinum.flow.action.FlowActions;
+import machinum.flow.core.ErrorStrategy;
+import machinum.flow.core.StateBuilder;
+import machinum.flow.core.StateManager;
 import machinum.flow.function.TriFunction;
+import machinum.flow.model.helper.FlowActions;
 
 import java.util.*;
 import java.util.function.BiConsumer;

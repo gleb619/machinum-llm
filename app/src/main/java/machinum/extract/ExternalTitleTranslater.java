@@ -3,9 +3,9 @@ package machinum.extract;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.exception.AppIllegalStateException;
-import machinum.flow.action.FlowContextActions;
-import machinum.flow.core.FlowContext;
+import machinum.flow.model.FlowContext;
 import machinum.flow.model.Pack;
+import machinum.flow.model.helper.FlowContextActions;
 import machinum.model.Chapter;
 import org.springframework.stereotype.Service;
 

@@ -2,6 +2,7 @@ package machinum.flow.core;
 
 import lombok.extern.slf4j.Slf4j;
 import machinum.flow.exception.FlowException;
+import machinum.flow.model.FlowContext;
 
 import java.util.Objects;
 

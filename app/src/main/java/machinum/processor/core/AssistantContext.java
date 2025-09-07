@@ -1,9 +1,9 @@
 package machinum.processor.core;
 
 import lombok.*;
-import machinum.flow.action.FlowContextActions;
-import machinum.flow.core.FlowContext;
+import machinum.flow.model.FlowContext;
 import machinum.flow.model.Mergeable;
+import machinum.flow.model.helper.FlowContextActions;
 import machinum.model.ObjectName;
 import machinum.processor.client.AiClient;
 import org.springframework.ai.chat.messages.Message;

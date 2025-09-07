@@ -2,11 +2,11 @@ package machinum.flow;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import machinum.flow.action.FlowContextActions;
-import machinum.flow.core.Flow;
-import machinum.flow.core.Flow.State;
-import machinum.flow.core.FlowContext;
 import machinum.flow.core.StateManager;
+import machinum.flow.model.Flow;
+import machinum.flow.model.Flow.State;
+import machinum.flow.model.FlowContext;
+import machinum.flow.model.helper.FlowContextActions;
 import machinum.flow.runner.OneStepRunner;
 import machinum.flow.runner.RecursiveFlowRunner;
 import org.assertj.core.api.Assertions;
@@ -31,7 +31,7 @@ import java.util.function.Function;
 import static machinum.flow.runner.OneStepRunner.Window.tumbling;
 
 @ExtendWith(MockitoExtension.class)
-class FlowTest {
+class CommonFlowTest {
 
     private final TestObject testBean = TestObject.testObject("abc123");
     private final TestStateManager testStateManager = new TestStateManager();

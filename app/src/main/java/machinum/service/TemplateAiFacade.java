@@ -6,16 +6,16 @@ import machinum.config.Constants;
 import machinum.exception.AppIllegalStateException;
 import machinum.extract.*;
 import machinum.flow.AppFlowActions;
-import machinum.flow.action.FlowContextActions;
-import machinum.flow.core.FlowContext;
 import machinum.flow.model.Chunks;
+import machinum.flow.model.FlowContext;
+import machinum.flow.model.helper.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.util.TextUtil;
 import org.springframework.stereotype.Service;
 
 import static machinum.config.Constants.TITLE;
 import static machinum.config.Constants.TRANSLATED_TITLE;
-import static machinum.flow.action.FlowContextActions.*;
+import static machinum.flow.model.helper.FlowContextActions.*;
 import static machinum.util.TextUtil.isNotEmpty;
 
 @Slf4j

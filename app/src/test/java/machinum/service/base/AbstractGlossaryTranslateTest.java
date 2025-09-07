@@ -5,7 +5,7 @@ import io.github.artsok.RepeatedIfExceptionsTest;
 import machinum.extract.GlossaryJsonTranslate;
 import machinum.extract.GlossaryTranslate;
 import machinum.flow.AppFlowActions;
-import machinum.flow.core.FlowContext;
+import machinum.flow.model.FlowContext;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.service.NormalTest;
@@ -19,7 +19,7 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.function.Function;
 
-import static machinum.flow.action.FlowContextActions.*;
+import static machinum.flow.model.helper.FlowContextActions.*;
 import static machinum.service.NormalTest.ReportInput.jsonText;
 import static machinum.util.JavaUtil.calculatePart;
 import static machinum.util.TextProcessingTestUtil.assertCharacterCount;

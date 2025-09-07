@@ -1,7 +1,7 @@
 package machinum.model;
 
 import lombok.*;
-import machinum.flow.core.Flow;
+import machinum.flow.model.Flow;
 import machinum.service.BookProcessor;
 
 import java.util.ArrayList;

@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.exception.AppIllegalStateException;
-import machinum.flow.core.FlowContext;
+import machinum.flow.model.FlowContext;
 import machinum.model.Chapter;
 import machinum.processor.core.AssistantContext;
 import machinum.util.CodeBlockExtractor;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static machinum.flow.action.FlowContextActions.text;
+import static machinum.flow.model.helper.FlowContextActions.text;
 import static org.apache.commons.lang3.StringEscapeUtils.escapeXml;
 
 @Slf4j

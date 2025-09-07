@@ -13,7 +13,7 @@ import machinum.converter.ChapterMapper;
 import machinum.entity.ChapterEntity;
 import machinum.exception.AppIllegalStateException;
 import machinum.flow.AppFlowActions;
-import machinum.flow.core.FlowContext;
+import machinum.flow.model.FlowContext;
 import machinum.flow.model.Pack;
 import machinum.listener.ChapterEntityListener;
 import machinum.model.Chapter;
