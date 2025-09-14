@@ -41,28 +41,27 @@ for optimal translation quality.
 
 The Machinum LLM app greets new users with a clean, intuitive interface for managing book translations:
 
-1. **Initial Setup**
+- **Initial Setup**
 
-- Empty dashboard displays "No books found" with guided prompts
-- All analysis tabs (Report, Chart, Glossary) show "No Data Available" initially
+  - Empty dashboard displays "No books found" with guided prompts
+  - All analysis tabs (Report, Chart, Glossary) show "No Data Available" initially
 
-2. **Key Navigation**
+- **Key Navigation**
 
-- **Top Header**: Breadcrumbs, search bar, and Actions menu
-- **Tabs Section**: Report, Chart, Titles, Glossary, and Import/Export
-- **Sidebar**: Workflow options (Simple/Complex Flow) and Settings
+  - **Top Header**: Breadcrumbs, search bar, and Actions menu
+  - **Tabs Section**: Report, Chart, Titles, Glossary, and Import/Export
+  - **Sidebar**: Workflow options (Simple/Complex Flow) and Settings
 
-3. **Get Started**
+- **Get Started**
 
-- First step: Use the **Import/Export tab** to add books
-- Manage books via **Actions column** (edit/delete)
-- Press `Ctrl+E` to quickly edit chapters (hotkey tip shows in Help section)
+  - First step: Use the **Import/Export tab** to add books
+  - Manage books via **Actions column** (edit/delete)
+  - Press `Ctrl+E` to quickly edit chapters (hotkey tip shows in Help section)
 
-4. **Essential Workflows**
-
-- Choose **Simple Flow** for quick translations
-- Opt for **Complex Flow** for detailed projects
-- Glossary tab prepares terminology database
+- **Essential Workflows**
+  - Choose **Simple Flow** for quick translations
+  - Opt for **Complex Flow** for detailed projects
+  - Glossary tab prepares terminology database
 
 ![Second](img/image_2.png "Working with a book")
 
@@ -100,10 +99,10 @@ JSON, JSONL, CSV, and ZIP for bundled content
 
 **Key Workflows**
 
-1. **Import** external content for translation
-2. **Export** chapters/translations for backup or sharing
-3. **Manage states** via sidebar processor filters (SUMMARY, GLOSSARY etc.)
-4. Configure processing flows in Settings
+- **Import** external content for translation
+- **Export** chapters/translations for backup or sharing
+- **Manage states** via sidebar processor filters (SUMMARY, GLOSSARY etc.)
+- Configure processing flows in Settings
 
 **Additional Tools**
 
@@ -125,14 +124,14 @@ The **Chapter Editor** provides a dedicated workspace for editing and refining b
 **Multi-Layer Editing Interface**  
 Switch between specialized tabs for different content types:
 
-1. **Core Content**:
+- **Core Content**:
 
 - `Original Text`: Raw text editing with warnings for suspicious content
 - `Transcribed Text`: Speech-to-text refinement
 
-2. **Summaries**: Concise chapter abstracts
-3. **Glossaries**: Term definitions and consistency management
-4. **Translation Layers**:
+- **Summaries**: Concise chapter abstracts
+- **Glossaries**: Term definitions and consistency management
+- **Translation Layers**:
 
 - Base translations → Proofread translations (dual-layer verification)
 
@@ -201,13 +200,13 @@ word: "disappointment") and text complexity.
 
 To run the application:
 
-1. Ensure PostgreSQL with pgvector extension is installed and configured.
-2. Start Ollama or other LLM services locally.
-3. Run the Spring Boot app:
+- Ensure PostgreSQL with pgvector extension is installed and configured.
+- Start Ollama or other LLM services locally. (e.g. docker-compose.yml)
+- Run the Spring Boot app:
    ```bash
    ./gradlew bootRun
    ```
-4. Access via API endpoints or integrate with frontend tools for book upload and translation.
+- Access via API endpoints or integrate with frontend tools for book upload and translation.
 
 ## License
 

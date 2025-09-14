@@ -43,20 +43,22 @@ export function lineListApp() {
         },
 
         get filteredLines() {
-            if (!this.lineObject.lineFilter) return this.lineObject.lines;
+            if (!this.lineObject.lineFilter) return this.lines;
 
             const filterText = this.lineObject.lineFilter;
             const matchCase = this.lineObject.lineFilteredMatchCase;
 
-            return this.lineObject.lines.filter(line => {
+            return this.lines.filter(line => {
                 const originalLine = line?.originalLine || '';
                 const translatedLine = line?.translatedLine || '';
 
                 if (this.lineObject.lineFilteredUseRegex) {
                     try {
                         const regex = new RegExp(filterText, matchCase ? '' : 'i');
-                        return regex.test(originalLine) || regex.test(translatedLine);
+                        const result = regex.test(originalLine) || regex.test(translatedLine);
+                        return result;
                     } catch (e) {
+                        console.error(`[filteredLines] Invalid regex pattern: "${filterText}"`);
                         return false;
                     }
                 }
@@ -80,16 +82,28 @@ export function lineListApp() {
                         return result;
                     }
 
-                    return findWholeWord(originalLine, filterText, matchCase) ||
+                    // This part seems to be unreachable due to the early returns above
+                    // But keeping it for consistency with original logic
+                    const findWholeWord = (text, word, caseSensitive) => {
+                        const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const flags = caseSensitive ? 'u' : 'iu';
+                        const regex = new RegExp(`(?:^|\s|[.,!?"'])\\b${escapedWord}\\b(?:$|\s|[.,!?"'])`, flags);
+                        return regex.test(text);
+                    };
+
+                    const finalResult = findWholeWord(originalLine, filterText, matchCase) ||
                            findWholeWord(translatedLine, filterText, matchCase);
+                    return finalResult;
                 }
 
                 if (matchCase) {
-                    return originalLine.includes(filterText) || translatedLine.includes(filterText);
+                    const result = originalLine.includes(filterText) || translatedLine.includes(filterText);
+                    return result;
                 } else {
                     const lowerFilter = filterText.toLowerCase();
-                    return originalLine.toLowerCase().includes(lowerFilter) ||
+                    const result = originalLine.toLowerCase().includes(lowerFilter) ||
                            translatedLine.toLowerCase().includes(lowerFilter);
+                    return result;
                 }
             });
         },
@@ -180,7 +194,7 @@ export function lineListApp() {
                 })
                 .then(response => {
                     if (response.ok) {
-                        this.lineObject.lines.splice(index, 1);
+                        this.lines.splice(index, 1);
                         this.showToast('Line removed successfully!');
                     } else {
                         response.json()
@@ -206,7 +220,7 @@ export function lineListApp() {
         },
 
         removeAllLines(fields = ['text', 'translatedText']) {
-            if(!this.lines || this.lineObject.lines.length == 0) {
+            if(!this.lines || this.lines.length == 0) {
                 return;
             }
 
@@ -218,7 +232,7 @@ export function lineListApp() {
                     },
                     body: JSON.stringify({
                         fields: fields,
-                        ids: this.lineObject.lines.map(line => line.id)
+                        ids: this.lines.map(line => line.id)
                     })
                 })
                 .then(response => {
@@ -271,18 +285,18 @@ export function lineListApp() {
     
         editLine(lineId) {
             this.lineObject.editingLineId = lineId;
-            const line = this.lineObject.lines.find(l => l.id === lineId);
+            const line = this.lines.find(l => l.id === lineId);
             line.originalLineContent = line.originalLine;
             line.translatedLineContent = line.translatedLine;
         },
 
         removeLineItem(lineId) {
-            this.lines = this.lineObject.lines.filter(line => line.id !== lineId);
+            this.lines = this.lines.filter(line => line.id !== lineId);
         },
 
         async applyReplaceChanges(lineId) {
             this.replaceLoading = true;
-            const line = this.lineObject.lines.find(l => l.id === lineId);
+            const line = this.lines.find(l => l.id === lineId);
             const temp = {
                 originalLine: '',
                 translatedLine: '',
@@ -308,7 +322,7 @@ export function lineListApp() {
         },
 
         async saveLine(lineId, originalText, translatedText) {
-            const line = this.lineObject.lines.find(l => l.id === lineId);
+            const line = this.lines.find(l => l.id === lineId);
             const request = {
                 id: lineId,
                 originalLine: originalText,
@@ -343,7 +357,7 @@ export function lineListApp() {
                         return Promise.reject(new Error(rsp.message || rsp.detail));
                     }
                 } else {
-                    this.removeById(this.lineObject.lines, lineId);
+                    this.removeById(this.lines, lineId);
                     this.showToast('Line updated successfully!');
                     await this.pullChapterContentChangesById(line.chapterId);
                 }
@@ -376,7 +390,7 @@ export function lineListApp() {
         get linePaginatedLines() {
             const start = this.lineCurrentPage * this.linePageSize;
             const end = start + this.linePageSize;
-            return this.lineObject.lines.slice(start, end);
+            return this.lines.slice(start, end);
         },
 
         get lineStartIndex() {

@@ -41,6 +41,7 @@ public class ChapterController implements ControllerTrait {
 
     @GetMapping("/api/chapters")
     public ResponseEntity<List<Chapter>> getAllChapters(ChapterSearchRequest request) {
+        log.info("Getting all chapters with search request: {}", request);
         var result = doSearch(request)
                 .map(chapterMapper::checkForWarnings);
 
@@ -49,6 +50,7 @@ public class ChapterController implements ControllerTrait {
 
     @GetMapping("/api/chapters/{id}")
     public ResponseEntity<Chapter> getChapterById(@PathVariable("id") String id) {
+        log.info("Getting chapter by ID: {}", id);
         return chapterService.getChapterById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -56,11 +58,13 @@ public class ChapterController implements ControllerTrait {
 
     @PostMapping("/api/chapters")
     public ResponseEntity<Chapter> createChapter(@RequestBody Chapter chapter) {
+        log.info("Creating new chapter: {}", chapter);
         return ResponseEntity.ok(chapterService.createChapter(chapter));
     }
 
     @PutMapping("/api/chapters/{id}")
     public ResponseEntity<Chapter> updateChapter(@PathVariable("id") String id, @RequestBody Chapter updatedChapter) {
+        log.info("Updating chapter with ID: {} and data: {}", id, updatedChapter);
         if (!Objects.equals(id, updatedChapter.getId())) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .build();
@@ -71,6 +75,7 @@ public class ChapterController implements ControllerTrait {
 
     @DeleteMapping("/api/chapters/{id}")
     public ResponseEntity<Void> deleteChapter(@PathVariable("id") String id) {
+        log.info("Deleting chapter with ID: {}", id);
         chapterService.deleteChapter(id);
         return ResponseEntity.noContent().build();
     }
@@ -98,9 +103,10 @@ public class ChapterController implements ControllerTrait {
             @PathVariable("bookId") String bookId,
             @RequestParam("page") int page,
             @RequestParam("size") int size,
-            @RequestParam(value = "missingTranslation", defaultValue = "false") boolean missingTranslation,
-            @RequestParam(value = "aberrationTranslation", defaultValue = "false") boolean aberrationTranslation) {
-        log.debug("Fetching chapters titles for bookId: {}", bookId);
+            @RequestParam(name = "missingTranslation", defaultValue = "false") boolean missingTranslation,
+            @RequestParam(name = "aberrationTranslation", defaultValue = "false") boolean aberrationTranslation) {
+
+        log.info("Fetching chapters titles for bookId: {}", bookId);
         var result = doSearchChaptersTitles(bookId, page, size, missingTranslation, aberrationTranslation);
 
         return pageResponse(result);
@@ -110,6 +116,9 @@ public class ChapterController implements ControllerTrait {
     public ResponseEntity<Chapter> updateTitleFields(
             @PathVariable("id") String id,
             @RequestBody Chapter updatedChapter) {
+
+        log.info("Updating title fields for chapter with ID: {}, from title: {} to translated title: {}",
+                id, updatedChapter.getTitle(), updatedChapter.getTranslatedTitle());
 
         chapterService.updateTitleFields(id, updatedChapter.getTitle(), updatedChapter.getTranslatedTitle());
 
@@ -121,10 +130,10 @@ public class ChapterController implements ControllerTrait {
             @PathVariable("bookId") String bookId,
             @RequestParam("page") int page,
             @RequestParam("size") int size,
-            @RequestParam(value = "translationMode", defaultValue = "all") String translationMode,
+            @RequestParam(name = "translationMode", defaultValue = "all") String translationMode,
             @RequestParam(name = "fromChapter", required = false) Integer fromChapterNumber,
             @RequestParam(name = "toChapter", required = false) Integer toChapterNumber) {
-        log.debug("Fetching chapters names for bookId: {}", bookId);
+        log.info("Fetching chapters names for bookId: {}", bookId);
 
         Page<ChapterGlossary> result = switch (translationMode) {
             case MISSING_MODE ->
@@ -142,14 +151,17 @@ public class ChapterController implements ControllerTrait {
 
     @GetMapping("/api/books/{bookId}/glossary/search")
     public ResponseEntity<List<ChapterGlossary>> searchGlossary(
-            @RequestParam String bookId,
-            @RequestParam String searchText,
-            @RequestParam(defaultValue = "1") Integer chapterStart,
-            @RequestParam(defaultValue = "999999") Integer chapterEnd,
-            @RequestParam(defaultValue = "20") Integer topK,
-            @RequestParam(defaultValue = "0.1") Float minScore) {
+            @PathVariable("bookId") String bookId,
+            @RequestParam("searchText") String searchText,
+            @RequestParam(name = "chapterStart", defaultValue = "1") Integer chapterStart,
+            @RequestParam(name = "chapterEnd", defaultValue = "999999") Integer chapterEnd,
+            @RequestParam(name = "topK", defaultValue = "20") Integer topK,
+            @RequestParam(name = "minScore", defaultValue = "0.1") Float minScore) {
 
+        log.info("Searching glossary for bookId: {}, searchText: {}, chapterStart: {}, chapterEnd: {}, topK: {}, minScore: {}",
+                bookId, searchText, chapterStart, chapterEnd, topK, minScore);
         var result = chapterGlossaryService.searchGlossary(bookId, searchText, chapterStart, chapterEnd, topK, minScore);
+
         return ResponseEntity.ok(result);
     }
 
@@ -158,44 +170,45 @@ public class ChapterController implements ControllerTrait {
             @PathVariable("chapterId") String chapterId,
             @RequestBody ChapterGlossary updatedChapterGlossary) {
 
+        log.info("Updating glossary for chapter with ID: {}", chapterId);
         chapterFacade.updateGlossary(chapterId, updatedChapterGlossary);
 
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/replace-text")
-    public void replaceText(@RequestBody ReplaceTextRequest request) {
+    @PostMapping("/api/books/{bookId}/replace-text")
+    public void replaceText(@PathVariable("bookId") String bookId, @RequestBody ReplaceTextRequest request) {
         log.info("Replacing text in bookId: {}, search: {}, replacement: {}",
-                request.bookId(), request.search(), request.replacement());
-        chapterGlossaryService.replaceText(request.bookId(), request.search(), request.replacement());
+                bookId, request.search(), request.replacement());
+        chapterGlossaryService.replaceText(bookId, request.search(), request.replacement());
     }
 
-    @PostMapping("/replace-text-by-id")
-    public void replaceTextById(@RequestBody ReplaceTextByIdRequest request) {
+    @PostMapping("/api/chapters/{chapterId}/replace-text-by-id")
+    public void replaceTextById(@PathVariable("chapterId") String chapterId, @RequestBody ReplaceTextByIdRequest request) {
         log.info("Replacing text by id in chapterId: {}, search: {}, replacement: {}",
-                request.chapterId(), request.search(), request.replacement());
-        chapterGlossaryService.replaceTextById(request.chapterId(), request.search(), request.replacement());
+                chapterId, request.search(), request.replacement());
+        chapterGlossaryService.replaceTextById(chapterId, request.search(), request.replacement());
     }
 
-    @PostMapping("/replace-text-for-column")
-    public void replaceTextForColumn(@RequestBody ReplaceTextForColumnRequest request) {
+    @PostMapping("/api/chapters/{chapterId}/replace-text-for-column")
+    public void replaceTextForColumn(@PathVariable("chapterId") String chapterId, @RequestBody ReplaceTextForColumnRequest request) {
         log.info("Replacing text for column in chapterId: {}, columnName: {}, search: {}, replacement: {}",
-                request.chapterId(), request.columnName(), request.search(), request.replacement());
-        chapterGlossaryService.replaceTextForColumn(request.chapterId(), request.columnName(), request.search(), request.replacement());
+                chapterId, request.columnName(), request.search(), request.replacement());
+        chapterGlossaryService.replaceTextForColumn(chapterId, request.columnName(), request.search(), request.replacement());
     }
 
-    @PostMapping("/replace-summary")
-    public void replaceSummary(@RequestBody ReplaceSummaryRequest request) {
+    @PostMapping("/api/books/{bookId}/replace-summary")
+    public void replaceSummary(@PathVariable("bookId") String bookId, @RequestBody ReplaceSummaryRequest request) {
         log.info("Replacing summary in bookId: {}, search: {}, replacement: {}",
-                request.bookId(), request.search(), request.replacement());
-        chapterGlossaryService.replaceSummary(request.bookId(), request.search(), request.replacement());
+                bookId, request.search(), request.replacement());
+        chapterGlossaryService.replaceSummary(bookId, request.search(), request.replacement());
     }
 
-    @PutMapping("/update-ru-name")
-    public void updateGlossaryRuName(@RequestBody UpdateGlossaryRuNameRequest request) {
+    @PutMapping("/api/books/{bookId}/update-ru-name")
+    public void updateGlossaryRuName(@PathVariable("bookId") String bookId, @RequestBody UpdateGlossaryRuNameRequest request) {
         log.info("Updating glossary ru name for bookId: {}, oldRuName: {}, newRuName: {}, returnIds: {}",
-                request.bookId(), request.oldRuName(), request.newRuName(), request.returnIds());
-        chapterGlossaryService.updateGlossaryRuName(request.bookId(), request.oldRuName(), request.newRuName(), request.returnIds());
+                bookId, request.oldRuName(), request.newRuName(), request.returnIds());
+        chapterGlossaryService.updateGlossaryRuName(bookId, request.oldRuName(), request.newRuName(), request.returnIds());
     }
 
     @PostMapping("/api/tokens")
@@ -281,19 +294,19 @@ public class ChapterController implements ControllerTrait {
 
     }
 
-    public record ReplaceTextRequest(String bookId, String search, String replacement) {
+    public record ReplaceTextRequest(String search, String replacement) {
     }
 
-    public record ReplaceTextByIdRequest(String chapterId, String search, String replacement) {
+    public record ReplaceTextByIdRequest(String search, String replacement) {
     }
 
-    public record ReplaceTextForColumnRequest(String chapterId, String columnName, String search, String replacement) {
+    public record ReplaceTextForColumnRequest(String columnName, String search, String replacement) {
     }
 
-    public record ReplaceSummaryRequest(String bookId, String search, String replacement) {
+    public record ReplaceSummaryRequest(String search, String replacement) {
     }
 
-    public record UpdateGlossaryRuNameRequest(String bookId, String oldRuName, String newRuName, Boolean returnIds) {
+    public record UpdateGlossaryRuNameRequest(String oldRuName, String newRuName, Boolean returnIds) {
     }
 
 }

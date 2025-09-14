@@ -3,12 +3,18 @@
 <body>
 <!-- Layout -->
 <div th:fragment="tr" th:remove="tag">
-    <tr class="bg-gray-50 border-b border-gray-200">
+    <tr class="bg-gray-50 border-b border-gray-200" x-show="!glossary.details.jobLoading">
         <td colspan="5">
             <div class="px-2 py-3 space-y-2 w-full">
                 <!-- Tabs -->
                 <div class="border-b border-gray-200">
                     <nav class="-mb-px flex space-x-4">
+                        <button :class="glossaryConfigTabs.activeTab === 'info' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                @click="glossaryConfigTabs.activeTab = 'info'; changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                                class="whitespace-nowrap pb-2 px-1 border-b-2 font-medium text-xs"
+                                type="button">
+                            Name info
+                        </button>
                         <button :class="glossaryConfigTabs.activeTab === 'current' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                                 @click="glossaryConfigTabs.activeTab = 'current'; changeValue('glossaryConfigTabs', glossaryConfigTabs)"
                                 class="whitespace-nowrap pb-2 px-1 border-b-2 font-medium text-xs"
@@ -49,6 +55,135 @@
                 </div>
 
                 <!-- Tab Content -->
+                <div x-show="glossaryConfigTabs.activeTab === 'info'">
+                    <div class="relative bg-white rounded-xl shadow-xl p-6">
+                        <!-- Items Comparison -->
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <!-- Item 1 -->
+                            <div class="space-y-4" x-show="glossary?.details?.compareData?.item1">
+                                <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border-l-4 border-blue-400">
+                                    <h3 class="text-xl font-bold text-blue-900"
+                                        x-text="glossary?.details?.compareData?.item1?.name"></h3>
+                                    <span class="inline-block bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">Ch. <span
+                                            x-text="glossary?.details?.compareData?.item1?.chapterNumber"></span></span>
+                                </div>
+
+                                <div class="space-y-3">
+                                    <template
+                                            x-for="[key, label] in [['category', 'Category'], ['description', 'Description'], ['ruName', 'Russian Name']]">
+                                        <div>
+                                            <dt class="text-xs font-semibold text-gray-600 uppercase tracking-wide"
+                                                x-text="label"></dt>
+                                            <dd class="text-sm text-gray-800 mt-1"
+                                                x-text="glossary?.details?.compareData?.item1?.[key] || 'No data'"></dd>
+                                        </div>
+                                    </template>
+
+                                    <div x-show="glossary?.details?.compareData?.item1?.references?.length">
+                                        <dt class="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                            References
+                                        </dt>
+                                        <dd class="flex flex-wrap gap-1 mt-1">
+                                            <template x-for="ref in glossary?.details?.compareData?.item1?.references">
+                                                <span class="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-xs font-medium"
+                                                      x-text="ref"></span>
+                                            </template>
+                                        </dd>
+                                    </div>
+                                    <div x-show="!glossary?.details?.compareData?.item1?.references?.length">
+                                        <dt class="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                            References
+                                        </dt>
+                                        <dd class="mt-1">
+                                            <span class="text-gray-500 italic">No references available</span>
+                                        </dd>
+                                    </div>
+
+                                    <div class="flex items-center gap-2">
+                                        <dt class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Unique
+                                        </dt>
+                                        <dd class="flex items-center gap-1">
+                                            <div :class="glossary?.details?.compareData?.item1?.unique ? 'bg-green-400' : 'bg-red-400'"
+                                                 class="w-3 h-3 rounded-full"></div>
+                                            <span class="text-sm font-medium"
+                                                  x-text="glossary?.details?.compareData?.item1?.unique ? 'Yes' : 'No'"></span>
+                                        </dd>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Item 2 -->
+                            <div class="space-y-4" x-show="glossary?.details?.compareData?.item2">
+                                <div class="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border-l-4 border-green-400">
+                                    <h3 class="text-xl font-bold text-green-900"
+                                        x-text="glossary?.details?.compareData?.item2?.name"></h3>
+                                    <span class="inline-block bg-green-200 text-green-800 px-2 py-1 rounded-full text-xs font-medium">Ch. <span
+                                            x-text="glossary?.details?.compareData?.item2?.chapterNumber"></span></span>
+                                </div>
+
+                                <div class="space-y-3">
+                                    <template
+                                            x-for="[key, label] in [['category', 'Category'], ['description', 'Description'], ['ruName', 'Russian Name']]">
+                                        <div>
+                                            <dt class="text-xs font-semibold text-gray-600 uppercase tracking-wide"
+                                                x-text="label"></dt>
+                                            <dd class="text-sm text-gray-800 mt-1"
+                                                x-text="glossary?.details?.compareData?.item2?.[key] || 'No data'"></dd>
+                                        </div>
+                                    </template>
+
+                                    <div x-show="glossary?.details?.compareData?.item2?.references?.length">
+                                        <dt class="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                            References
+                                        </dt>
+                                        <dd class="flex flex-wrap gap-1 mt-1">
+                                            <template x-for="ref in glossary?.details?.compareData?.item2?.references">
+                                                <span class="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-xs font-medium"
+                                                      x-text="ref"></span>
+                                            </template>
+                                        </dd>
+                                    </div>
+                                    <div x-show="!glossary?.details?.compareData?.item2?.references?.length">
+                                        <dt class="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                            References
+                                        </dt>
+                                        <dd class="mt-1">
+                                            <span class="text-gray-500 italic">No references available</span>
+                                        </dd>
+                                    </div>
+
+                                    <div class="flex items-center gap-2">
+                                        <dt class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Unique
+                                        </dt>
+                                        <dd class="flex items-center gap-1">
+                                            <div :class="glossary?.details?.compareData?.item2?.unique ? 'bg-green-400' : 'bg-red-400'"
+                                                 class="w-3 h-3 rounded-full"></div>
+                                            <span class="text-sm font-medium"
+                                                  x-text="glossary?.details?.compareData?.item2?.unique ? 'Yes' : 'No'"></span>
+                                        </dd>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Summary -->
+                        <div class="mt-8 pt-6 border-t border-gray-200"
+                             x-show="glossary?.details?.compareData?.summary?.length">
+                            <h4 class="text-lg font-bold text-gray-900 mb-3">Summary</h4>
+                            <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+                                <ul class="space-y-2">
+                                    <template x-for="point in glossary?.details?.compareData?.summary">
+                                        <li class="flex items-start gap-2 text-sm text-gray-700">
+                                            <div class="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 flex-shrink-0"></div>
+                                            <span x-text="point"></span>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div x-show="glossaryConfigTabs.activeTab === 'current'">
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
@@ -156,7 +291,7 @@
                             </button>
                         </div>
 
-                        <a :href="`/chapters?chapterId=${glossary.details.chapterId}&lineSearchQuery=${glossary.details.lineSearchTerm}`"
+                        <a :href="`/chapters?chapterId=${glossary.chapterId}&lineSearchQuery=${glossary.details.lineSearchTerm}`"
                            class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded px-4 py-1.5 mb-1 transition duration-150">
                             Open in Chapter Editor
                         </a>
@@ -168,9 +303,9 @@
                         </div>
                     </template>
 
-                    <div x-show="!glossary.details.loadingLines && glossary?.relatedLines && glossary?.relatedLines?.length > 0">
+                    <div x-show="!glossary.details.loadingLines && glossary?.details?.relatedLines && glossary?.details?.relatedLines?.length > 0">
                         <ul class="divide-y divide-gray-200">
-                            <template :key="line.id" x-for="(line, index) in glossary?.relatedLines">
+                            <template :key="line.id" x-for="(line, index) in glossary?.details?.relatedLines">
                                 <li class="py-4 hover:bg-gray-50 transition duration-150 rounded-lg">
                                     <!-- View Mode -->
                                     <div class="relative px-4">
@@ -179,9 +314,9 @@
                                                 <a class="inline-flex items-center gap-2 p-1 bg-gray-100 rounded text-gray-500 hover:text-blue-700 font-medium mr-2"
                                                    href="#"
                                                    x-bind:href="`/chapters?chapterId=${line?.chapterId}&lineNumber=${line.lineIndex}`">
-                                                    <span class="text-xs font-medium px-2 py-1">Line #<span
-                                                            x-text="line.lineIndex"></span> | Ch. <span
-                                                            x-text="line.number"></span>
+                                                    <span class="text-xs font-medium px-2 py-1"
+                                                          x-text="`Line #${line.lineIndex} | Ch. ${line.number}`">
+                                                        Line #1 | Ch. 2`
                                                     </span>
 
                                                     <svg fill="none" height="16" viewBox="0 0 24 24" width="16"
@@ -204,9 +339,8 @@
                                             <div>
                                                 <div class="flex items-center mb-1">
                                                     <span class="text-xs font-medium text-gray-500">Original</span>
-                                                    <span
-                                                            class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800"
-                                                            x-show="!line.originalLine">
+                                                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800"
+                                                          x-show="!line.originalLine">
                                                         Missing
                                                     </span>
                                                 </div>
@@ -218,15 +352,13 @@
                                             <div>
                                                 <div class="flex items-center mb-1">
                                                     <span class="text-xs font-medium text-gray-500">Translation</span>
-                                                    <span
-                                                            class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800"
-                                                            x-show="!line.translatedLine">
+                                                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800"
+                                                          x-show="!line.translatedLine">
                                                         Missing
                                                     </span>
                                                 </div>
-                                                <p
-                                                        :class="!line.translatedLine ? 'border-red-300 bg-red-50 italic text-red-500' : 'border-gray-200 text-gray-700'"
-                                                        class="text-sm p-2 rounded-lg border">
+                                                <p :class="!line.translatedLine ? 'border-red-300 bg-red-50 italic text-red-500' : 'border-gray-200 text-gray-700'"
+                                                   class="text-sm p-2 rounded-lg border">
                                                     <span x-text="line?.translatedLine || 'No translation text'"></span>
                                                 </p>
                                             </div>
@@ -238,7 +370,7 @@
 
                         <!-- No results message -->
                         <div class="text-center py-8"
-                             x-show="glossary?.relatedLines?.length === 0">
+                             x-show="glossary?.details?.relatedLines?.length === 0">
                             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor"
                                  viewBox="0 0 24 24"
                                  xmlns="http://www.w3.org/2000/svg">
@@ -259,14 +391,14 @@
                             <label class="block font-medium text-gray-700 text-xs">Search Term</label>
                             <input class="mt-1 block w-full border border-gray-300 rounded shadow-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
                                    type="text"
-                                   x-model="glossaryConfigTabs.replaceTextSearch">
+                                   x-model="glossary.details.replaceTextSearch">
                         </div>
                         <div>
                             <label class="block font-medium text-gray-700 text-xs">Replacement</label>
                             <input class="mt-1 block w-full border border-gray-300 rounded shadow-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
-                                   x-model="glossaryConfigTabs.replaceTextReplacement">
+                                   x-model="glossary.details.replaceTextReplacement">
                         </div>
-                        <button @click="replaceText(); changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                        <button @click="replaceGlossaryText(); changeValue('glossaryConfigTabs', glossaryConfigTabs)"
                                 class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500">
                             Replace
                         </button>
@@ -274,7 +406,7 @@
                     <div>
                         <h4 class="font-medium text-gray-900 text-sm">Info</h4>
                         <p class="mt-1 text-xs text-gray-600">Search and replace specific terms across glossary
-                            entries.</p>
+                            entries. Will call <code>mt_replace_text_for_column</code> function</p>
                     </div>
                 </div>
 
@@ -286,12 +418,12 @@
                             <label class="block font-medium text-gray-700 text-xs">Search Term</label>
                             <input class="mt-1 block w-full border border-gray-300 rounded shadow-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
                                    type="text"
-                                   x-model="glossaryConfigTabs.replaceSummarySearch">
+                                   x-model="glossary.details.replaceSummarySearch">
                         </div>
                         <div>
                             <label class="block font-medium text-gray-700 text-xs">Replacement</label>
                             <input class="mt-1 block w-full border border-gray-300 rounded shadow-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
-                                   x-model="glossaryConfigTabs.replaceSummaryReplacement">
+                                   x-model="glossary.details.replaceSummaryReplacement">
                         </div>
                         <button @click="replaceSummary(); changeValue('glossaryConfigTabs', glossaryConfigTabs)"
                                 class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500">
@@ -300,7 +432,8 @@
                     </div>
                     <div>
                         <h4 class="font-medium text-gray-900 text-sm">Info</h4>
-                        <p class="mt-1 text-xs text-gray-600">Update summary content for glossary entries.</p>
+                        <p class="mt-1 text-xs text-gray-600">Update summary content for glossary entries. Will call
+                            <code>mt_replace_summary</code> function</p>
                     </div>
                 </div>
 
@@ -312,13 +445,13 @@
                             <label class="block font-medium text-gray-700 text-xs">Old RU Name</label>
                             <input class="mt-1 block w-full border border-gray-300 rounded shadow-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
                                    type="text"
-                                   x-model="glossaryConfigTabs.updateTranslatedNameOldRuName">
+                                   x-model="glossary.details.updateRuNameOldRuName">
                         </div>
                         <div>
                             <label class="block font-medium text-gray-700 text-xs">New RU Name</label>
                             <input class="mt-1 block w-full border border-gray-300 rounded shadow-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
                                    type="text"
-                                   x-model="glossaryConfigTabs.updateTranslatedNameNewRuName">
+                                   x-model="glossary.details.updateRuNameNewRuName">
                         </div>
                         <button @click="updateGlossaryRuName()"
                                 class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500">
@@ -327,7 +460,8 @@
                     </div>
                     <div>
                         <h4 class="font-medium text-gray-900 text-sm">Info</h4>
-                        <p class="mt-1 text-xs text-gray-600">Modify Russian names of glossary entries.</p>
+                        <p class="mt-1 text-xs text-gray-600">Modify Russian names of glossary entries. Will call <code>mt_update_glossary_runame</code>
+                            function</p>
                     </div>
                 </div>
 
@@ -397,19 +531,56 @@
                                             </div>
                                         </td>
                                         <td class="px-3 py-2 whitespace-nowrap text-right">
-                                            <button @click="changeGlossaryName(glossary, item)"
-                                                    class="text-indigo-600 hover:text-indigo-900 mr-2">Copy Name
-                                            </button>
-                                            <button @click="changeGlossaryTranslatedName(glossary, item)"
-                                                    class="text-blue-600 hover:text-blue-900">Copy Translated
-                                            </button>
+                                            <div class="flex gap-1 justify-end">
+                                                <button @click="changeGlossaryName(glossary, item)"
+                                                        class="text-indigo-600 hover:text-indigo-900 p-1"
+                                                        title="Replace Name">
+                                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                                                    </svg>
+                                                </button>
+                                                <button @click="changeGlossaryTranslatedName(glossary, item)"
+                                                        class="text-blue-600 hover:text-blue-900 p-1"
+                                                        title="Replace Translated Name">
+                                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                                                    </svg>
+                                                </button>
+                                                <button @click="changeGlossaryText(glossary, item)"
+                                                        class="text-green-600 hover:text-green-900 p-1"
+                                                        title="Replace Text">
+                                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M12 3V21M9 21H15M19 6V3H5V6" stroke="currentColor"
+                                                              stroke-linecap="round" stroke-linejoin="round"
+                                                              stroke-width="2"/>
+                                                    </svg>
+                                                </button>
+                                                <button @click="changeGlossarySummary(glossary, item)"
+                                                        class="text-yellow-600 hover:text-yellow-900 p-1"
+                                                        title="Replace Summary">
+                                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M12 3V21M9 21H15M19 6V3H5V6" stroke="currentColor"
+                                                              stroke-linecap="round" stroke-linejoin="round"
+                                                              stroke-width="2"/>
+                                                    </svg>
+                                                </button>
+                                                <button @click="applyAllGlossaryChanges(glossary, item)"
+                                                        class="text-purple-600 hover:text-purple-900 p-1"
+                                                        title="Apply All">
+                                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                              fill-rule="evenodd"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 </template>
                                 </tbody>
                             </table>
                         </div>
-                        <div x-show="!glossary.details.searching && (!glossary.details.relatedItems || glossary.details.relatedItems.length === 0)">
+                        <div class="min-w-full text-center"
+                             x-show="!glossary.details.searching && (!glossary.details.relatedItems || glossary.details.relatedItems.length === 0)">
                             <p class="text-xs text-gray-500">No related items found.</p>
                         </div>
                     </div>

@@ -185,7 +185,7 @@ export function glossaryListApp() {
             }
         },
 
-        saveGlossaryChanges(glossary) {
+        async saveGlossaryChanges(glossary) {
             // Check if glossary has actually changed by comparing with backup
             const originalGlossary = this.glossaryListBackup.find(t => t.id === glossary.id);
             if (!originalGlossary) return;
@@ -212,10 +212,18 @@ export function glossaryListApp() {
             this.setSaveState(localGlossary.id, 'saving');
 
             // Set new timer (debounce to avoid too many requests)
-            this.glossaryDebounceTimers[localGlossary.id] = setTimeout(() => {
-                this.updateGlossaryChanges(localGlossary);
-                delete this.glossaryDebounceTimers[localGlossary.id];
-            }, 500);
+            return new Promise((resolve) => {
+                this.glossaryDebounceTimers[localGlossary.id] = setTimeout(async () => {
+                    try {
+                        await this.updateGlossaryChanges(localGlossary);
+                        delete this.glossaryDebounceTimers[localGlossary.id];
+                        resolve();
+                    } catch (error) {
+                        delete this.glossaryDebounceTimers[localGlossary.id];
+                        reject(error);
+                    }
+                }, 500);
+            });
         },
 
         async updateGlossaryChanges(glossary) {
@@ -261,7 +269,7 @@ export function glossaryListApp() {
                 glossary.ruName = data;
 
                 // Save the changes
-                this.saveGlossaryChanges(glossary);
+                await this.saveGlossaryChanges(glossary);
 
                 this.showToast('Translation completed', false);
             } catch (error) {
@@ -286,6 +294,9 @@ export function glossaryListApp() {
             } else {
                 this.cancelEditName(glossary);
             }
+
+            // Return a promise that resolves when the operation completes
+            return Promise.resolve();
         },
 
         cancelEditName(glossary) {
