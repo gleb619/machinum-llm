@@ -4,11 +4,15 @@
 export function glossaryDetailsApp() {
     return {
         glossaryConfigTabs: {
-            activeTab: 'current',
+            activeTab: 'config',
             chapterStart: 1,
             chapterEnd: 999999,
-            topK: 5,
+            topK: 20,
             minScore: 0.1,
+            showConfigInputs: true,
+            glossaryMatchCase: false,
+            glossaryWholeWord: false,
+            glossaryUseRegex: false,
             lineMatchCase: false,
             lineMatchWholeWord: false,
             lineUseRegex: false
@@ -21,9 +25,14 @@ export function glossaryDetailsApp() {
         async toggleGlossaryDetails(glossary) {
             glossary.details.expanded = !glossary.details.expanded;
             glossary.details.searchText = glossary.name;
+            glossary.details.filterText = '';
             glossary.details.lineSearchTerm = glossary.name;
             this.glossary.details.replaceTextSearch = glossary.name;
             this.glossary.details.replaceSummarySearch = glossary.name;
+            glossary.details.updateRuNameOldRuName = glossary.ruName || '';
+            glossary.details.updateRuNameNewRuName = '';
+            glossary.details.updateRuNameNameFilter = '';
+            glossary.details.updateRuNameAffectedChapters = [];
 
             if (glossary.details.expanded && !glossary.details.relatedItems) {
                 this.fetchRelatedLines(glossary);
@@ -34,17 +43,27 @@ export function glossaryDetailsApp() {
             }
         },
 
+        resetGlossaryConfig() {
+            Object.assign(this.glossaryConfigTabs, {
+                chapterStart: 1,
+                chapterEnd: 999999,
+                topK: 20,
+                minScore: 0.1,
+                glossaryMatchCase: false,
+                glossaryWholeWord: false,
+                glossaryUseRegex: false
+            });
+            this.changeValue('glossaryConfigTabs', this.glossaryConfigTabs);
+        },
+
         async fetchRelatedGlossaryItems(glossary) {
             glossary.details.searching = true;
             if (!this.activeId) return;
 
-            let {chapterStart, chapterEnd, topK, minScore} = this.glossaryConfigTabs;
-            if (this.glossaryConfigTabs.activeTab !== 'current') {
-                chapterStart = parseInt(chapterStart) || 1;
-                chapterEnd = parseInt(chapterEnd) || 999999;
-                topK = parseInt(topK) || 5;
-                minScore = parseFloat(minScore) || 0.1;
-            }
+            const chapterStart = parseInt(this.glossaryConfigTabs.chapterStart) || 1;
+            const chapterEnd = parseInt(this.glossaryConfigTabs.chapterEnd) || 999999;
+            const topK = parseInt(this.glossaryConfigTabs.topK) || 20;
+            const minScore = parseFloat(this.glossaryConfigTabs.minScore) || 0.1;
 
             const params = new URLSearchParams({
                 bookId: this.activeId,
@@ -169,23 +188,68 @@ export function glossaryDetailsApp() {
             }
         },
 
+        async previewUpdateRuName() {
+            const {updateRuNameOldRuName, updateRuNameNewRuName, updateRuNameNameFilter} = this.glossary.details;
+            if (!updateRuNameOldRuName || !updateRuNameNewRuName) {
+                this.showToast('Old Russian Name and New Russian Name are required', true);
+                return Promise.resolve();
+            }
+
+            try {
+                const requestBody = {
+                    bookId: this.activeId,
+                    oldRuName: updateRuNameOldRuName,
+                    newRuName: updateRuNameNewRuName
+                };
+                if (updateRuNameNameFilter?.trim()) {
+                    requestBody.nameFilter = updateRuNameNameFilter.trim();
+                }
+
+                const response = await fetch(`/api/books/${this.activeId}/preview-update-ru-name`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    this.showToast(`Error: ${error.message || 'Failed to preview affected chapters'}`, true);
+                    return Promise.resolve();
+                }
+
+                const affectedChapters = await response.json();
+                this.glossary.details.updateRuNameAffectedChapters = [...affectedChapters];
+                this.showToast(`Preview complete: ${affectedChapters.length} chapters will be affected`, false);
+                return Promise.resolve();
+            } catch (error) {
+                console.error('Error previewing chapters:', error);
+                this.showToast(`Failed to preview chapters: ${error.message || error}`, true);
+                return Promise.reject(error);
+            }
+        },
+
         async updateGlossaryRuName() {
-            const {updateRuNameOldRuName, updateRuNameNewRuName} = this.glossary.details;
+            const {updateRuNameOldRuName, updateRuNameNewRuName, updateRuNameNameFilter} = this.glossary.details;
             if (!updateRuNameOldRuName || !updateRuNameNewRuName) {
                 this.showToast('Book ID, Old Russian Name and New Russian Name are required', true);
                 return Promise.resolve();
             }
 
             try {
+                const requestBody = {
+                    bookId: this.activeId,
+                    oldRuName: updateRuNameOldRuName,
+                    newRuName: updateRuNameNewRuName,
+                    returnIds: false
+                };
+                if (updateRuNameNameFilter?.trim()) {
+                    requestBody.nameFilter = updateRuNameNameFilter.trim();
+                }
+
                 const response = await fetch(`/api/books/${this.activeId}/update-ru-name`, {
                     method: 'PUT',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        bookId: this.activeId,
-                        oldRuName: updateRuNameOldRuName,
-                        newRuName: updateRuNameNewRuName,
-                        returnIds: false
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (!response.ok) {
@@ -195,6 +259,8 @@ export function glossaryDetailsApp() {
                 }
 
                 this.showToast('Russian name updated successfully', false);
+                // Clear affected chapters after successful update
+                this.glossary.details.updateRuNameAffectedChapters = [];
                 return Promise.resolve();
             } catch (error) {
                 console.error('Error updating Russian name:', error);
@@ -242,35 +308,45 @@ export function glossaryDetailsApp() {
             await this.changeGlossaryTranslatedName(glossaryTo, glossaryFrom);
             await this.changeGlossaryText(glossaryTo, glossaryFrom);
             await this.changeGlossarySummary(glossaryTo, glossaryFrom);
-            this.glossaryConfigTabs.activeTab = 'current';
+            this.glossaryConfigTabs.activeTab = 'config';
         },
 
         glossaryCompareItems(item1, item2) {
             const summary = [];
 
-            if (item1.name === item2.name) {
-                summary.push(`Both items refer to the same character: ${item1.name}`);
+            if (item1?.name === item2?.name) {
+                summary.push(`Both items refer to the same character: ${item1?.name}`);
             } else {
-                summary.push(`Comparing different entities: ${item1.name} vs ${item2.name}`);
+                summary.push(`Comparing different entities: ${item1?.name} vs ${item2?.name}`);
             }
 
-            if (item1.category === item2.category) {
-                summary.push(`Same category: ${item1.category}`);
+            if (item1?.category === item2?.category) {
+                summary.push(`Same category: ${item1?.category}`);
             } else {
-                summary.push(`Different categories: ${item1.category} vs ${item2.category}`);
+                summary.push(`Different categories: ${item1?.category} vs ${item2?.category}`);
             }
 
-            const chapterDiff = Math.abs(item1.chapterNumber - item2.chapterNumber);
+            const chapterDiff = Math.abs(item1?.chapterNumber - item2?.chapterNumber);
             summary.push(`Chapter difference: ${chapterDiff} chapters apart`);
 
-            if (item1.description === item2.description) {
+            if (item1?.description === item2?.description) {
                 summary.push('Identical descriptions');
             } else {
                 summary.push('Different descriptions - possible character development or different aspects');
             }
 
             return { item1, item2, summary };
-        }
+        },
+
+        get glossaryFilteredRelatedItems() {
+            if(!this.glossary.details?.filterText || this.glossary.details?.filterText == '') {
+                return this.glossary.details.relatedItems;
+            }
+
+            return this.glossary.details.relatedItems?.filter(item =>item?.name?.toLowerCase().includes(this.glossary.details.filterText?.toLowerCase()) ||
+                item.ruName?.toLowerCase().includes(this.glossary.details.filterText.toLowerCase()) ||
+                item.description.toLowerCase().includes(this.glossary.details.filterText.toLowerCase()));
+        },
 
     };
 }

@@ -5,6 +5,7 @@
         const items = document.querySelectorAll("body > main > div.mx-auto.flex.h-full.min-h-screen.w-full.max-w-screen-4xl > section > div.relative.w-full > div > ul > li:nth-child(n)");
         let newItemsFound = false;
 
+
         for (const item of items) {
             const linkElement = item.querySelector("a");
             if (linkElement) {
@@ -21,7 +22,7 @@
         }
 
         if (!newItemsFound) {
-            console.log("No new items found. Exiting.");
+            console.log("No new items found. Exiting: ", processedLinks);
             break;
         }
 

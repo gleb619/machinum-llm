@@ -5,6 +5,7 @@ export function glossaryListApp() {
     return {
         glossaryList: [],
         glossaryListBackup: [],
+        favoriteGlossaryId: null,
         glossaryObject: {
             glossaryTranslationFilter: 'all',
             glossaryFilterTerm: '',
@@ -24,6 +25,7 @@ export function glossaryListApp() {
 
         initGlossaryList() {
             this.loadValue('glossaryObject', this.glossaryObject);
+            this.favoriteGlossaryId = this.readSetting('favorite-' + this.activeId) || null;
             this.fetchGlossary();
         },
 
@@ -302,6 +304,16 @@ export function glossaryListApp() {
         cancelEditName(glossary) {
             glossary.details.editingName = false;
             glossary.details.nameEdit = '';
+        },
+
+        setFavoriteGlossary(glossary) {
+            if (glossary.id === this.favoriteGlossaryId) {
+                this.favoriteGlossaryId = null;
+                this.writeSetting('favorite-' + this.activeId, '');
+            } else {
+                this.favoriteGlossaryId = glossary.id;
+                this.writeSetting('favorite-' + this.activeId, glossary.id);
+            }
         },
 
     };

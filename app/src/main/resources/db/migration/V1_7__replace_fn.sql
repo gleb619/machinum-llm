@@ -179,34 +179,37 @@ CREATE OR REPLACE FUNCTION mt_update_glossary_runame(
     b_id VARCHAR(36),
     old_ru_name TEXT,
     new_ru_name TEXT,
-    p_return_ids BOOLEAN DEFAULT FALSE
+    p_return_ids BOOLEAN DEFAULT FALSE,
+    name_filter TEXT DEFAULT NULL
 ) RETURNS TEXT AS $$
 DECLARE
     result_json TEXT;
 BEGIN
     IF p_return_ids THEN
-        SELECT jsonb_agg(DISTINCT ci.id)::TEXT INTO result_json
-        FROM chapter_info ci, jsonb_array_elements(ci.names) AS elem
-        WHERE ci.book_id = b_id AND elem->>'ruName' = old_ru_name;
+        SELECT json_agg(DISTINCT ci.id)::TEXT INTO result_json
+        FROM chapter_info ci, json_array_elements(ci.names) AS elem
+        WHERE ci.book_id = b_id AND elem->>'ruName' = old_ru_name
+        AND (name_filter IS NULL OR elem->>'name' = name_filter);
     ELSE
         WITH updated AS (
             UPDATE chapter_info
             SET names = (
-                SELECT jsonb_agg(
+                SELECT json_agg(
                     CASE WHEN elem->>'ruName' = old_ru_name
-                    THEN jsonb_set(elem, '{ruName}', to_jsonb(new_ru_name))
+                    THEN (jsonb_set(elem::jsonb, '{ruName}', to_jsonb(new_ru_name)))::json
                     ELSE elem END
                 )
-                FROM jsonb_array_elements(names) AS elem
+                FROM json_array_elements(names) AS elem
             )
             WHERE book_id = b_id
             AND EXISTS (
-                SELECT 1 FROM jsonb_array_elements(names) AS elem
+                SELECT 1 FROM json_array_elements(names) AS elem
                 WHERE elem->>'ruName' = old_ru_name
+                AND (name_filter IS NULL OR elem->>'name' = name_filter)
             )
             RETURNING id
         )
-        SELECT jsonb_agg(id)::TEXT INTO result_json FROM updated;
+        SELECT json_agg(id)::TEXT INTO result_json FROM updated;
     END IF;
 
     RETURN COALESCE(result_json, '[]');

@@ -337,12 +337,13 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterGlossary
                         @Param("search") String search,
                         @Param("replacement") String replacement);
 
-    @Query(value = "SELECT mt_update_glossary_runame(:bookId, :oldRuName, :newRuName, :returnIds)",
+    @Query(value = "SELECT mt_update_glossary_runame(:bookId, :oldRuName, :newRuName, :returnIds, :nameFilter)",
             nativeQuery = true)
-    List updateGlossaryRuName(@Param("bookId") String bookId,
+    String updateGlossaryRuName(@Param("bookId") String bookId,
                               @Param("oldRuName") String oldRuName,
                               @Param("newRuName") String newRuName,
-                              @Param("returnIds") Boolean returnIds);
+                                @Param("returnIds") Boolean returnIds,
+                                @Param("nameFilter") String nameFilter);
 
     interface GlossaryByQueryResult {
 
@@ -395,7 +396,7 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterGlossary
                               cg0.raw_json as rawJson
                           FROM search_glossary(:bookId, :searchText, :chapterStart, :chapterEnd, :topK, :minScore) sg1
                           LEFT JOIN chapter_glossary cg0 ON cg0.id = sg1.glossary_id
-                          ORDER BY sg1.score 
+                          ORDER BY sg1.score DESC
                         )
                         """;
 

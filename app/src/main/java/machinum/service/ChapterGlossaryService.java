@@ -230,13 +230,23 @@ public class ChapterGlossaryService {
     }
 
     @Transactional
-    public void updateGlossaryRuName(@NonNull String bookId, String oldRuName, String newRuName, Boolean returnIds) {
+    public List<String> updateGlossaryRuName(@NonNull String bookId, String oldRuName, String newRuName, Boolean returnIds, String nameFilter) {
         if (returnIds == null) {
             log.warn("returnIds is null for bookId: {}", bookId);
         }
         log.debug("Updating glossary ru name in bookId: {}", bookId);
-        chapterRepository.updateGlossaryRuName(bookId, oldRuName, newRuName, returnIds);
+        String result = chapterRepository.updateGlossaryRuName(bookId, oldRuName, newRuName, returnIds, nameFilter);
         log.debug("Glossary ru name update completed for bookId: {}", bookId);
+        if (returnIds != null && returnIds) {
+            try {
+                return objectMapperHolder.execute(mapper -> mapper.readValue(result, List.class));
+            } catch (Exception e) {
+                log.error("Failed to parse ids: {}", result, e);
+                return List.of();
+            }
+        } else {
+            return null;
+        }
     }
 
     /* ============= */

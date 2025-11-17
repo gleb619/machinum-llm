@@ -148,7 +148,6 @@ public class ChapterController implements ControllerTrait {
         return pageResponse(result);
     }
 
-
     @GetMapping("/api/books/{bookId}/glossary/search")
     public ResponseEntity<List<ChapterGlossary>> searchGlossary(
             @PathVariable("bookId") String bookId,
@@ -205,10 +204,19 @@ public class ChapterController implements ControllerTrait {
     }
 
     @PutMapping("/api/books/{bookId}/update-ru-name")
-    public void updateGlossaryRuName(@PathVariable("bookId") String bookId, @RequestBody UpdateGlossaryRuNameRequest request) {
-        log.info("Updating glossary ru name for bookId: {}, oldRuName: {}, newRuName: {}, returnIds: {}",
-                bookId, request.oldRuName(), request.newRuName(), request.returnIds());
-        chapterGlossaryService.updateGlossaryRuName(bookId, request.oldRuName(), request.newRuName(), request.returnIds());
+    public ResponseEntity<Void> updateGlossaryRuName(@PathVariable("bookId") String bookId, @RequestBody UpdateGlossaryRuNameRequest request) {
+        log.info("Updating glossary ru name for bookId: {}, oldRuName: {}, newRuName: {}, returnIds: {}, nameFilter: {}",
+                bookId, request.oldRuName(), request.newRuName(), request.returnIds(), request.nameFilter());
+        chapterGlossaryService.updateGlossaryRuName(bookId, request.oldRuName(), request.newRuName(), request.returnIds(), request.nameFilter());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/api/books/{bookId}/preview-update-ru-name")
+    public ResponseEntity<List<String>> previewUpdateGlossaryRuName(@PathVariable("bookId") String bookId, @RequestBody UpdateGlossaryRuNameRequest request) {
+        log.info("Previewing glossary ru name update for bookId: {}, oldRuName: {}, newRuName: {}, nameFilter: {}",
+                bookId, request.oldRuName(), request.newRuName(), request.nameFilter());
+        List<String> chapterIds = chapterGlossaryService.updateGlossaryRuName(bookId, request.oldRuName(), request.newRuName(), true, request.nameFilter());
+        return ResponseEntity.ok(chapterIds != null ? chapterIds : List.of());
     }
 
     @PostMapping("/api/tokens")
@@ -221,7 +229,7 @@ public class ChapterController implements ControllerTrait {
     private Page<Chapter> doSearch(ChapterSearchRequest request) {
         if (Objects.nonNull(request.getChapterId())) {
             return chapterService.findById(request.getChapterId())
-                    .map(chapter -> (Page) new PageImpl<>(List.of(chapter)))
+                    .map(chapter -> new PageImpl<>(List.of(chapter)))
                     .orElseGet(() -> Page.empty());
         }
 
@@ -236,7 +244,7 @@ public class ChapterController implements ControllerTrait {
             } else if (Objects.nonNull(request.getChapterNumber())) {
                 return chapterService.findByNumber(request.getBookId(), request.getChapterNumber())
                         .map(chapter -> List.of(chapter))
-                        .map(list -> (Page<Chapter>) new PageImpl(list))
+                        .map(list -> new PageImpl(list))
                         .orElse(Page.empty());
             } else if (request.isEnglishText() || request.isSuspiciousOriginalWords() || request.isSuspiciousTranslatedWords() || request.isWarnings()) {
                 return chapterFacade.getSuspiciousChapters(request.getBookId(), request.isEnglishText(),
@@ -306,7 +314,8 @@ public class ChapterController implements ControllerTrait {
     public record ReplaceSummaryRequest(String search, String replacement) {
     }
 
-    public record UpdateGlossaryRuNameRequest(String oldRuName, String newRuName, Boolean returnIds) {
+    public record UpdateGlossaryRuNameRequest(String oldRuName, String newRuName, Boolean returnIds,
+                                              String nameFilter) {
     }
 
 }
