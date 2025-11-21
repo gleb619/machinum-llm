@@ -2,11 +2,13 @@ package machinum.service.simplescaling;
 
 import machinum.TestApplication;
 import machinum.service.AbstractRewriterTest;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * Doesn't fit, 32GB model
  */
+@EnabledIfSystemProperty(named = "llmAllowed", matches = "true")
 @Deprecated
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,

@@ -2,8 +2,10 @@ package machinum.service.deepseek;
 
 import machinum.TestApplication;
 import machinum.extract.service.AbstractTranslationScoringTest;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.boot.test.context.SpringBootTest;
 
+@EnabledIfSystemProperty(named = "llmAllowed", matches = "true")
 @Deprecated
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,

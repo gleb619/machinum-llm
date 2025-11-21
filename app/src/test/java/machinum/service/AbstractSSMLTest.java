@@ -20,7 +20,7 @@ import static machinum.service.NormalTest.ReportInput.data;
 import static machinum.util.JavaUtil.calculatePart;
 import static machinum.util.TextProcessingTestUtil.assertCharacterCount;
 
-public class AbstractSSMLTest extends NormalTest {
+public abstract class AbstractSSMLTest extends NormalTest {
 
     @Autowired
     SSMLConverter converter;

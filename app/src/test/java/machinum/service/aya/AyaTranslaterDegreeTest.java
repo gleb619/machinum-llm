@@ -2,8 +2,10 @@ package machinum.service.aya;
 
 import machinum.TestApplication;
 import machinum.service.base.AbstractTranslaterTest;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.boot.test.context.SpringBootTest;
 
+@EnabledIfSystemProperty(named = "llmAllowed", matches = "true")
 @Deprecated
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,

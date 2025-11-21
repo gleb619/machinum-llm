@@ -6,9 +6,11 @@ import machinum.service.mistral.MistralNemoProofreaderTestEn;
 import machinum.service.openbuddy.OpenbuddyProofreaderTestEn;
 import machinum.service.qwen.QwenProofreaderTestEn;
 import machinum.service.tlite.TproProofreaderTestEn;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 
+@EnabledIfSystemProperty(named = "llmAllowed", matches = "true")
 @Suite
 @SelectClasses({
         GemmaProofreaderTestEn.class,

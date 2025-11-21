@@ -19,7 +19,7 @@ import static machinum.service.NormalTest.ReportInput.data;
 import static machinum.util.JavaUtil.calculatePart;
 import static machinum.util.TextProcessingTestUtil.assertCharacterCount;
 
-public class AbstractProofreaderTestEn extends NormalTest {
+public abstract class AbstractProofreaderTestEn extends NormalTest {
 
     @Autowired
     ProofreaderEnXml proofreaderEn;

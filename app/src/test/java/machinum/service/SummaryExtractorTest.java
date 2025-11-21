@@ -6,6 +6,7 @@ import machinum.flow.model.FlowContext;
 import machinum.flow.model.helper.FlowContextActions;
 import machinum.util.DurationMeasureUtil;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -17,6 +18,7 @@ import static machinum.service.NormalTest.ReportInput.data;
 import static machinum.util.JavaUtil.calculatePart;
 import static machinum.util.TextProcessingTestUtil.assertCharacterCount;
 
+@EnabledIfSystemProperty(named = "llmAllowed", matches = "true")
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
         classes = TestApplication.class,
