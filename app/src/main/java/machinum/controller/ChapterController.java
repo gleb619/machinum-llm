@@ -148,18 +148,12 @@ public class ChapterController implements ControllerTrait {
         return pageResponse(result);
     }
 
-    @GetMapping("/api/books/{bookId}/glossary/search")
-    public ResponseEntity<List<ChapterGlossary>> searchGlossary(
-            @PathVariable("bookId") String bookId,
-            @RequestParam("searchText") String searchText,
-            @RequestParam(name = "chapterStart", defaultValue = "1") Integer chapterStart,
-            @RequestParam(name = "chapterEnd", defaultValue = "999999") Integer chapterEnd,
-            @RequestParam(name = "topK", defaultValue = "20") Integer topK,
-            @RequestParam(name = "minScore", defaultValue = "0.1") Float minScore) {
+    @PostMapping("/api/books/{bookId}/glossary/search")
+    public ResponseEntity<List<ChapterGlossary>> searchGlossary(@PathVariable("bookId") String bookId,
+                                                                @RequestBody GlossarySearchRequest request) {
 
-        log.info("Searching glossary for bookId: {}, searchText: {}, chapterStart: {}, chapterEnd: {}, topK: {}, minScore: {}",
-                bookId, searchText, chapterStart, chapterEnd, topK, minScore);
-        var result = chapterGlossaryService.searchGlossary(bookId, searchText, chapterStart, chapterEnd, topK, minScore);
+        log.info("Searching glossary for bookId: {}, request: {}", bookId, request);
+        var result = chapterGlossaryService.searchGlossary(bookId, request);
 
         return ResponseEntity.ok(result);
     }
@@ -229,8 +223,8 @@ public class ChapterController implements ControllerTrait {
     private Page<Chapter> doSearch(ChapterSearchRequest request) {
         if (Objects.nonNull(request.getChapterId())) {
             return chapterService.findById(request.getChapterId())
-                    .map(chapter -> new PageImpl<>(List.of(chapter)))
-                    .orElseGet(() -> Page.empty());
+                    .map(chapter -> (Page<Chapter>) new PageImpl<>(List.of(chapter)))
+                    .orElseGet(Page::empty);
         }
 
         if (Objects.nonNull(request.getBookId())) {
@@ -244,7 +238,7 @@ public class ChapterController implements ControllerTrait {
             } else if (Objects.nonNull(request.getChapterNumber())) {
                 return chapterService.findByNumber(request.getBookId(), request.getChapterNumber())
                         .map(chapter -> List.of(chapter))
-                        .map(list -> new PageImpl(list))
+                        .map(list -> (Page<Chapter>) new PageImpl(list))
                         .orElse(Page.empty());
             } else if (request.isEnglishText() || request.isSuspiciousOriginalWords() || request.isSuspiciousTranslatedWords() || request.isWarnings()) {
                 return chapterFacade.getSuspiciousChapters(request.getBookId(), request.isEnglishText(),
@@ -312,6 +306,21 @@ public class ChapterController implements ControllerTrait {
     }
 
     public record ReplaceSummaryRequest(String search, String replacement) {
+    }
+
+    @Data
+    @AllArgsConstructor
+    @Builder(toBuilder = true)
+    @NoArgsConstructor(access = AccessLevel.PUBLIC)
+    public static class GlossarySearchRequest {
+
+        private String searchText;
+        private String fuzzyText;
+        private Integer chapterStart = 1;
+        private Integer chapterEnd = 999999;
+        private Integer topK = 20;
+        private Float minScore = 0.1f;
+
     }
 
     public record UpdateGlossaryRuNameRequest(String oldRuName, String newRuName, Boolean returnIds,

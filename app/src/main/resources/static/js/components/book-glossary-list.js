@@ -259,16 +259,23 @@ export function glossaryListApp() {
         },
 
         async handleTranslateGlossary(glossary) {
-            if (!glossary.glossary || glossary.glossary.trim() === '') {
+            if (!glossary.name || glossary.name.trim() === '') {
                 return;
             }
 
+            // Set loading state
+            glossary.details = glossary.details || {};
+            glossary.details.translating = true;
+
             try {
                 // Call your translation API
-                const data = await this.translateToRussian(glossary.glossary);
+                const data = await this.translateToRussian(glossary.name);
+
+                // Clean the response (remove markdown formatting if any)
+                const cleanData = data ? data.replace(/^```[\s\S]*?```\s*$/gm, '').trim() : '';
 
                 // Update the translated glossary
-                glossary.ruName = data;
+                glossary.ruName = cleanData;
 
                 // Save the changes
                 await this.saveGlossaryChanges(glossary);
@@ -276,7 +283,10 @@ export function glossaryListApp() {
                 this.showToast('Translation completed', false);
             } catch (error) {
                 console.error('Translation error:', error);
-                this.showToast(`Translation failed: ${error.message}`, true);
+                this.showToast(`Translation failed: ${error.message || error.detail || error}`, true);
+            } finally {
+                // Clear loading state
+                glossary.details.translating = false;
             }
         },
 

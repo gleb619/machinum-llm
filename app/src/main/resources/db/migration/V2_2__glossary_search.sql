@@ -1,3 +1,7 @@
+-- Create necessary extensions
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
+
 -- Create Jaro-Winkler function if not exists
 CREATE OR REPLACE FUNCTION jaro_winkler(text, text)
 RETURNS float AS $$
@@ -64,6 +68,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE;
 
+-- Create match result type
+DROP TYPE IF EXISTS match_result_type CASCADE;
+CREATE TYPE match_result_type AS (
+    search_type TEXT,
+    score REAL
+);
+
 DROP FUNCTION IF EXISTS search_glossary;
 
 CREATE OR REPLACE FUNCTION search_glossary(
@@ -86,169 +97,189 @@ RETURNS TABLE(
     score REAL,
     raw_json TEXT
 ) AS $$
+DECLARE
+    search_lower TEXT := lower(p_search_text);
+    search_len INT := length(p_search_text);
+    lev_threshold INT := GREATEST(3, (search_len * 0.3)::INT);
+    pg_fuzzy_threshold FLOAT := 0.3;
 BEGIN
     RETURN QUERY
     WITH base_data AS (
-        SELECT cg.id,
-               cg.chapter_id,
-               cg.name,
-               cg.translated_name,
-               cg.category,
-               cg.description,
-               cg.number,
-               cg.raw_json,
-               cg.search_string1,
-               cg.search_string2,
-               cg.search_string3,
-               dmetaphone(cg.name) as metaphone_code,
-               dmetaphone_alt(cg.name) as metaphone_alt,
-               soundex(cg.name) as soundex_code,
-               jaro_winkler(cg.name, p_search_text) as jw_score
+        SELECT
+            cg.id,
+            cg.chapter_id,
+            cg.name,
+            cg.translated_name,
+            cg.category,
+            cg.description,
+            cg.number,
+            cg.raw_json,
+            cg.search_string1,
+            cg.search_string2,
+            cg.search_string3,
+            lower(cg.name) as name_lower,
+            lower(cg.description) as desc_lower
         FROM chapter_glossary cg
         WHERE cg.book_id = p_book_id
-          AND cg.number between p_chapter_start and p_chapter_end
+          AND cg.number BETWEEN p_chapter_start AND p_chapter_end
           AND cg.name IS NOT NULL
     ),
-    exact_match AS (
-        SELECT bd.id, '1_exact' as search_type, 1.0::REAL as score
+    scored_results AS (
+        SELECT
+            bd.id,
+            bd.chapter_id,
+            bd.name,
+            bd.translated_name,
+            bd.category,
+            bd.description,
+            bd.number,
+            bd.raw_json,
+            CASE
+                WHEN bd.name_lower = search_lower THEN
+                    ROW('1_exact', 1.0::REAL)::match_result_type
+                WHEN bd.name_lower LIKE '%' || search_lower || '%' THEN
+                    ROW('2_contains', 0.9::REAL)::match_result_type
+                WHEN bd.desc_lower LIKE '%' || search_lower || '%' THEN
+                    ROW('2_contains', 0.7::REAL)::match_result_type
+                WHEN bd.search_string2 @@ websearch_to_tsquery('english', p_search_text) THEN
+                    ROW('3_fulltext', GREATEST(
+                        ts_rank(bd.search_string1, websearch_to_tsquery('english', p_search_text)),
+                        ts_rank(bd.search_string2, websearch_to_tsquery('english', p_search_text))
+                    )::REAL)::match_result_type
+                WHEN bd.name % p_search_text OR bd.search_string3 % p_search_text THEN
+                    ROW('4_trigram', GREATEST(
+                        similarity(bd.name, p_search_text),
+                        similarity(bd.search_string3, p_search_text)
+                    )::REAL)::match_result_type
+                WHEN levenshtein(bd.name_lower, search_lower) <= lev_threshold THEN
+                    ROW('5_levenshtein', (1.0 / (1.0 + levenshtein(bd.name_lower, search_lower)::FLOAT))::REAL)::match_result_type
+                WHEN dmetaphone(bd.name) = dmetaphone(p_search_text)
+                     OR dmetaphone_alt(bd.name) = dmetaphone(p_search_text)
+                     OR soundex(bd.name) = soundex(p_search_text) THEN
+                    ROW('6_phonetic', 0.6::REAL)::match_result_type
+                WHEN jaro_winkler(bd.name, p_search_text) >= 0.8 THEN
+                    ROW('7_jaro_winkler', jaro_winkler(bd.name, p_search_text)::REAL)::match_result_type
+                WHEN word_similarity(p_search_text, bd.name) >= pg_fuzzy_threshold
+                     OR word_similarity(p_search_text, bd.description) >= pg_fuzzy_threshold THEN
+                    ROW('8_pg_fuzzy', GREATEST(
+                        word_similarity(p_search_text, bd.name),
+                        word_similarity(p_search_text, COALESCE(bd.description, ''))
+                    )::REAL)::match_result_type
+            END as match_result
         FROM base_data bd
-        WHERE lower(bd.name) = lower(p_search_text)
-    ),
-    contains_match AS (
-        SELECT bd.id, '2_contains' as search_type,
-               CASE
-                   WHEN lower(bd.name) LIKE '%' || lower(p_search_text) || '%' THEN 0.9::REAL
-                   WHEN lower(bd.description) LIKE '%' || lower(p_search_text) || '%' THEN 0.7::REAL
-                   ELSE 0.5::REAL
-               END as score
-        FROM base_data bd
-        WHERE (lower(bd.name) LIKE '%' || lower(p_search_text) || '%'
-               OR lower(bd.description) LIKE '%' || lower(p_search_text) || '%')
-          AND bd.id NOT IN (SELECT id FROM exact_match)
-    ),
-    fulltext_search AS (
-        SELECT bd.id, '3_fulltext' as search_type,
-               GREATEST(
-                   ts_rank(bd.search_string1, websearch_to_tsquery('english', p_search_text)),
-                   ts_rank(bd.search_string2, websearch_to_tsquery('english', p_search_text))
-               ) as score
-        FROM base_data bd
-        WHERE bd.search_string2 @@ websearch_to_tsquery('english', p_search_text)
-          AND bd.id NOT IN (SELECT id FROM exact_match UNION SELECT id FROM contains_match)
-    ),
-    trigram_search AS (
-        SELECT bd.id, '4_trigram' as search_type,
-               GREATEST(
-                   similarity(bd.name, p_search_text),
-                   similarity(bd.search_string3, p_search_text)
-               ) as score
-        FROM base_data bd
-        WHERE (bd.name % p_search_text OR bd.search_string3 % p_search_text)
-          AND bd.id NOT IN (
-              SELECT id FROM exact_match
-              UNION SELECT id FROM contains_match
-              UNION SELECT id FROM fulltext_search
-          )
-    ),
-    levenshtein_search AS (
-        SELECT bd.id, '5_levenshtein' as search_type,
-               (1.0 / (1.0 + levenshtein(lower(bd.name), lower(p_search_text))::float))::REAL as score
-        FROM base_data bd
-        WHERE levenshtein(lower(bd.name), lower(p_search_text)) <= GREATEST(3, length(p_search_text) * 0.3)
-          AND bd.id NOT IN (
-              SELECT id FROM exact_match
-              UNION SELECT id FROM contains_match
-              UNION SELECT id FROM fulltext_search
-              UNION SELECT id FROM trigram_search
-          )
-    ),
-    double_metaphone AS (
-        SELECT bd.id, '6_double_metaphone' as search_type,
-               CASE
-                   WHEN bd.metaphone_code = dmetaphone(p_search_text) THEN 0.6::REAL
-                   WHEN bd.metaphone_alt = dmetaphone_alt(p_search_text) THEN 0.4::REAL
-                   ELSE 0.0::REAL
-               END as score
-        FROM base_data bd
-        WHERE bd.metaphone_code = dmetaphone(p_search_text) OR bd.metaphone_alt = dmetaphone_alt(p_search_text)
-          AND bd.id NOT IN (
-              SELECT id FROM exact_match
-              UNION SELECT id FROM contains_match
-              UNION SELECT id FROM fulltext_search
-              UNION SELECT id FROM trigram_search
-              UNION SELECT id FROM levenshtein_search
-          )
-    ),
-    jaro_winkler_search AS (
-        SELECT bd.id, '7_jaro_winkler' as search_type,
-               (0.55::REAL * bd.jw_score)::REAL as score
-        FROM base_data bd
-        WHERE bd.jw_score >= 0.7
-          AND bd.id NOT IN (
-              SELECT id FROM exact_match
-              UNION SELECT id FROM contains_match
-              UNION SELECT id FROM fulltext_search
-              UNION SELECT id FROM trigram_search
-              UNION SELECT id FROM levenshtein_search
-              UNION SELECT id FROM double_metaphone
-          )
-    ),
-    soundex_search AS (
-        SELECT bd.id, '8_soundex' as search_type,
-               CASE
-                   WHEN difference(bd.name, p_search_text) >= 3 THEN 0.35::REAL
-                   WHEN difference(bd.name, p_search_text) = 2 THEN 0.25::REAL
-                   WHEN difference(bd.name, p_search_text) = 1 THEN 0.15::REAL
-                   ELSE 0::REAL
-               END as score
-        FROM base_data bd
-        WHERE bd.soundex_code = soundex(p_search_text)
-          AND bd.id NOT IN (
-              SELECT id FROM exact_match
-              UNION SELECT id FROM contains_match
-              UNION SELECT id FROM fulltext_search
-              UNION SELECT id FROM trigram_search
-              UNION SELECT id FROM levenshtein_search
-              UNION SELECT id FROM double_metaphone
-              UNION SELECT id FROM jaro_winkler_search
-          )
-    ),
-    all_results AS (
-        SELECT * FROM exact_match
-        UNION ALL SELECT * FROM contains_match
-        UNION ALL SELECT * FROM fulltext_search
-        UNION ALL SELECT * FROM trigram_search
-        UNION ALL SELECT * FROM levenshtein_search
-        UNION ALL SELECT * FROM double_metaphone
-        UNION ALL SELECT * FROM jaro_winkler_search
-        UNION ALL SELECT * FROM soundex_search
-    ),
-    ranked_results AS (
-        SELECT ar.id, ar.search_type, ar.score,
-               ROW_NUMBER() OVER (PARTITION BY ar.id ORDER BY ar.score DESC) as rn
-        FROM all_results ar
-        WHERE ar.score >= p_min_score
-    ),
-    final_results AS (
-        SELECT rr.id, rr.search_type, rr.score,
-               ROW_NUMBER() OVER (ORDER BY rr.score DESC, bd.number DESC) as final_rank
-        FROM ranked_results rr
-        JOIN base_data bd ON bd.id = rr.id
-        WHERE rr.rn = 1
     )
-    SELECT fr.id,
-           bd.chapter_id,
-           bd.name,
-           bd.translated_name,
-           bd.category,
-           bd.description,
-           bd.number,
-           fr.search_type,
-           fr.score,
-           bd.raw_json
-    FROM final_results fr
-    JOIN base_data bd ON bd.id = fr.id
-    WHERE fr.final_rank <= p_top_k
-    ORDER BY fr.score DESC, bd.number DESC;
+    SELECT
+        sr.id,
+        sr.chapter_id,
+        sr.name,
+        sr.translated_name,
+        sr.category,
+        sr.description,
+        sr.number,
+        (sr.match_result).search_type,
+        (sr.match_result).score,
+        sr.raw_json
+    FROM scored_results sr
+    WHERE sr.match_result IS NOT NULL
+      AND (sr.match_result).score >= p_min_score
+    ORDER BY (sr.match_result).score DESC, sr.number DESC
+    LIMIT p_top_k;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP FUNCTION IF EXISTS fuzzy_search_glossary;
+
+CREATE OR REPLACE FUNCTION fuzzy_search_glossary(
+    p_book_id VARCHAR(36),
+    p_fuzzy_query TEXT,
+    p_chapter_start INTEGER DEFAULT 1,
+    p_chapter_end INTEGER DEFAULT 999999,
+    p_top_k INTEGER DEFAULT 20,
+    p_min_score FLOAT DEFAULT 0.1
+)
+RETURNS TABLE(
+    glossary_id TEXT,
+    chapter_id VARCHAR(36),
+    name TEXT,
+    translated_name TEXT,
+    category TEXT,
+    description TEXT,
+    chapter_number INTEGER,
+    search_type TEXT,
+    score REAL,
+    raw_json TEXT
+) AS $$
+DECLARE
+    search_data JSONB;
+    search_term TEXT;
+    min_len INT;
+    max_len INT;
+    ngram_list TEXT[];
+BEGIN
+    -- Parse the JSON fuzzy query
+    search_data := p_fuzzy_query::JSONB;
+    search_term := search_data->>'query';
+    min_len := (search_data->'lengthRange'->>'min')::INT;
+    max_len := (search_data->'lengthRange'->>'max')::INT;
+    ngram_list := ARRAY(SELECT jsonb_array_elements_text(search_data->'nGrams'));
+
+    RETURN QUERY
+    WITH base_data AS (
+        SELECT
+            cg.id,
+            cg.chapter_id,
+            cg.name,
+            cg.translated_name,
+            cg.category,
+            cg.description,
+            cg.number,
+            cg.raw_json,
+            lower(cg.name) as name_lower
+        FROM chapter_glossary cg
+        WHERE cg.book_id = p_book_id
+          AND cg.number BETWEEN p_chapter_start AND p_chapter_end
+          AND cg.name IS NOT NULL
+          AND length(cg.name) BETWEEN min_len AND max_len
+    ),
+    scored_results AS (
+        SELECT
+            bd.id,
+            bd.chapter_id,
+            bd.name,
+            bd.translated_name,
+            bd.category,
+            bd.description,
+            bd.number,
+            bd.raw_json,
+            CASE
+                WHEN bd.name_lower = search_term THEN
+                    ROW('1_exact', 1.0::REAL)::match_result_type
+                WHEN bd.name_lower LIKE '%' || search_term || '%' THEN
+                    ROW('2_contains', 0.9::REAL)::match_result_type
+                ELSE
+                    ROW('3_fuzzy_ngram', (
+                        SELECT COUNT(*)
+                        FROM unnest(ngram_list) AS ng
+                        WHERE bd.name_lower LIKE '%' || ng || '%'
+                    )::REAL / GREATEST(1, array_length(ngram_list, 1))::REAL)::match_result_type
+            END as match_result
+        FROM base_data bd
+    )
+    SELECT
+        sr.id,
+        sr.chapter_id,
+        sr.name,
+        sr.translated_name,
+        sr.category,
+        sr.description,
+        sr.number,
+        (sr.match_result).search_type,
+        (sr.match_result).score,
+        sr.raw_json
+    FROM scored_results sr
+    WHERE sr.match_result IS NOT NULL
+      AND (sr.match_result).score >= p_min_score
+    ORDER BY (sr.match_result).score DESC, sr.number DESC
+    LIMIT p_top_k;
 END;
 $$ LANGUAGE plpgsql;

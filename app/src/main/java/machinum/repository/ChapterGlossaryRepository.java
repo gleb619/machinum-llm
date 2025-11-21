@@ -13,8 +13,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static machinum.repository.ChapterGlossaryRepository.Queries.BOOK_GLOSSARY;
-import static machinum.repository.ChapterGlossaryRepository.Queries.GLOSSARY_SEARCH;
+import static machinum.repository.ChapterGlossaryRepository.Queries.*;
 
 @Repository
 public interface ChapterGlossaryRepository extends JpaRepository<ChapterGlossaryView, String> {
@@ -293,19 +292,38 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterGlossary
                                                            PageRequest pageRequest);
 
     @Query(value = Queries.GLOSSARY_SEARCH + """
-            SELECT 
+            SELECT
                 cg1.id,
                 cg1.chapterId,
                 cg1.chapterNumber,
-                cg1.rawJson 
+                cg1.rawJson
             FROM data cg1
             """, countQuery = GLOSSARY_SEARCH + """
-            SELECT count(cg1.id) 
-            FROM data cg1 
+            SELECT count(cg1.id)
+            FROM data cg1
             """, nativeQuery = true)
     List<ChapterGlossaryProjection> searchGlossary(
             @Param("bookId") String bookId,
             @Param("searchText") String searchText,
+            @Param("chapterStart") Integer chapterStart,
+            @Param("chapterEnd") Integer chapterEnd,
+            @Param("topK") Integer topK,
+            @Param("minScore") Float minScore);
+
+    @Query(value = GLOSSARY_FUZZY_SEARCH + """
+            SELECT
+                cg1.id,
+                cg1.chapterId,
+                cg1.chapterNumber,
+                cg1.rawJson
+            FROM data cg1
+            """, countQuery = GLOSSARY_FUZZY_SEARCH + """
+            SELECT count(cg1.id)
+            FROM data cg1
+            """, nativeQuery = true)
+    List<ChapterGlossaryProjection> searchGlossaryFuzzy(
+            @Param("bookId") String bookId,
+            @Param("fuzzyText") String fuzzyText,
             @Param("chapterStart") Integer chapterStart,
             @Param("chapterEnd") Integer chapterEnd,
             @Param("topK") Integer topK,
@@ -385,7 +403,7 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterGlossary
         public static final String GLOSSARY_SEARCH = //language=sql
                 """
                         WITH data AS (
-                          SELECT 
+                          SELECT
                               cg0.id,
                               cg0.chapter_id as chapterId,
                               cg0."number" as chapterNumber,
@@ -395,6 +413,24 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterGlossary
                               cg0.translated,
                               cg0.raw_json as rawJson
                           FROM search_glossary(:bookId, :searchText, :chapterStart, :chapterEnd, :topK, :minScore) sg1
+                          LEFT JOIN chapter_glossary cg0 ON cg0.id = sg1.glossary_id
+                          ORDER BY sg1.score DESC
+                        )
+                        """;
+
+        public static final String GLOSSARY_FUZZY_SEARCH = //language=sql
+                """
+                        WITH data AS (
+                          SELECT
+                              cg0.id,
+                              cg0.chapter_id as chapterId,
+                              cg0."number" as chapterNumber,
+                              cg0."name",
+                              cg0.category,
+                              cg0.description,
+                              cg0.translated,
+                              cg0.raw_json as rawJson
+                          FROM fuzzy_search_glossary(:bookId, :fuzzyText, :chapterStart, :chapterEnd, :topK, :minScore) sg1
                           LEFT JOIN chapter_glossary cg0 ON cg0.id = sg1.glossary_id
                           ORDER BY sg1.score DESC
                         )

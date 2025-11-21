@@ -69,3 +69,17 @@ dependencies {
     testImplementation 'org.testcontainers:minio'
     testImplementation 'net.javacrumbs.json-unit:json-unit-assertj:3.5.0'
 }
+
+tasks.named('test') {
+    useJUnitPlatform()
+    systemProperties['llmAllowed'] = 'false'
+}
+
+/**
+ * CI test - run tests without stubs/mock of llm
+ */
+task llmtest(type: Test, group: 'verification') {
+    useJUnitPlatform()
+    description = 'Run tests with LLM mode enabled, including tests that require real LLM call'
+    systemProperties['llmAllowed'] = 'true'
+}

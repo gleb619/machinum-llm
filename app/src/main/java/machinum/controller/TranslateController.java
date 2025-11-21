@@ -1,11 +1,11 @@
 package machinum.controller;
 
-import machinum.util.CodeBlockExtractor;
 import lombok.*;
+import machinum.util.CodeBlockExtractor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.web.bind.annotation.*;
@@ -76,7 +76,9 @@ public class TranslateController {
         var content = response.content();
         var result = CodeBlockExtractor.extractCode(content);
 
-        return Objects.requireNonNull(result, "Result can't be null").trim();
+        return Objects.requireNonNull(result, "Result can't be null")
+                .replaceAll("(?ms)^```[\\s\\S]*?```\\s*$", "")
+                .trim();
     }
 
     /**

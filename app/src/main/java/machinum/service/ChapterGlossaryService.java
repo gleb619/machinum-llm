@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
+import machinum.controller.ChapterController.GlossarySearchRequest;
 import machinum.converter.ChapterGlossaryMapper;
 import machinum.converter.ChapterMapper;
 import machinum.exception.AppIllegalStateException;
@@ -12,6 +13,7 @@ import machinum.model.Chapter;
 import machinum.model.ChapterGlossary;
 import machinum.model.ObjectName;
 import machinum.repository.ChapterByGlossaryRepository;
+import machinum.repository.ChapterGlossaryDao;
 import machinum.repository.ChapterGlossaryRepository;
 import machinum.repository.ChapterGlossaryRepository.CountResult;
 import machinum.repository.ChapterGlossaryRepository.GlossaryByQueryResult;
@@ -21,9 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static machinum.util.JavaUtil.uniqueBy;
@@ -39,6 +39,7 @@ public class ChapterGlossaryService {
     private final Holder<ObjectMapper> objectMapperHolder;
     private final ChapterGlossaryMapper chapterGlossaryMapper;
     private final ChapterMapper chapterMapper;
+    private final ChapterGlossaryDao chapterGlossaryDao;
 
     @Transactional(readOnly = true)
     public ChapterGlossary getById(@NonNull String bookId) {
@@ -182,15 +183,16 @@ public class ChapterGlossaryService {
 
     @Transactional(readOnly = true)
     public List<ChapterGlossary> searchGlossary(@NonNull String bookId,
-                                                String searchText,
-                                                Integer chapterStart,
-                                                Integer chapterEnd,
-                                                Integer topK,
-                                                Float minScore) {
-        log.debug("Prepare to search glossary for: bookId={}, searchText={}, chapterStart={}, chapterEnd={}, topK={}, minScore={}",
-                bookId, searchText, chapterStart, chapterEnd, topK, minScore);
+                                                GlossarySearchRequest request) {
+        log.debug("Prepare to search glossary for: bookId={}, request={}", bookId, request);
 
-        return chapterRepository.searchGlossary(bookId, searchText, chapterStart, chapterEnd, topK, minScore).stream()
+        // Use fuzzy search if fuzzyText is provided
+        if (request.getFuzzyText() != null && !request.getFuzzyText().isEmpty()) {
+            return searchGlossaryFuzzy(bookId, request);
+        }
+
+        var result = chapterRepository.searchGlossary(bookId, request.getSearchText(), request.getChapterStart(),
+                        request.getChapterEnd(), request.getTopK(), request.getMinScore()).stream()
                 .map(projection -> {
                     var dto = chapterGlossaryMapper.toDto(projection);
                     var objectName = objectMapperHolder.execute(mapper -> mapper.readValue(projection.getRawJson(), ObjectName.class));
@@ -199,6 +201,43 @@ public class ChapterGlossaryService {
                     return dto;
                 })
                 .collect(Collectors.toList());
+
+        if (result.isEmpty()) {
+            // Fallback to new repository implementation
+            return chapterGlossaryDao.searchGlossary(bookId, request).stream()
+                    .map(searchResult -> {
+                        var dto = new ChapterGlossary();
+                        dto.setId(searchResult.getGlossaryId());
+                        dto.setChapterId(searchResult.getChapterId());
+                        dto.setChapterNumber(searchResult.getChapterNumber());
+                        dto.setObjectName(searchResult.getObjectName());
+
+                        return dto;
+                    })
+                    .collect(Collectors.toList());
+        } else {
+            return uniqueBy(result, ChapterGlossary::getId);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChapterGlossary> searchGlossaryFuzzy(@NonNull String bookId,
+                                                     GlossarySearchRequest request) {
+        log.debug("Prepare to search glossary fuzzy for: bookId={}, fuzzyRequest={}", bookId,
+                objectMapperHolder.execute(mapper -> mapper.readValue(request.getFuzzyText(), Map.class)));
+
+        var result = chapterRepository.searchGlossaryFuzzy(bookId, request.getFuzzyText(), request.getChapterStart(),
+                        request.getChapterEnd(), request.getTopK(), request.getMinScore()).stream()
+                .map(projection -> {
+                    var dto = chapterGlossaryMapper.toDto(projection);
+                    var objectName = objectMapperHolder.execute(mapper -> mapper.readValue(projection.getRawJson(), ObjectName.class));
+                    dto.setObjectName(objectName);
+
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        return uniqueBy(result, ChapterGlossary::getId);
     }
 
     @Transactional
@@ -260,10 +299,14 @@ public class ChapterGlossaryService {
     }
 
     private Page<ChapterGlossary> processUniqueState(@NonNull String bookId, Page<ChapterGlossary> result) {
-        var lastGlossary = result.getContent().getLast();
+        var list = result.getContent();
+        var lastGlossary = Optional.ofNullable(list.isEmpty() ? ChapterGlossary.builder().build() : list.getLast());
         var names = result.map(chapterGlossary -> chapterGlossary.getObjectName().getName()).getContent();
 
-        var countResults = chapterRepository.countGlossaryInPreviousChapters(names, lastGlossary.getChapterNumber(), bookId).stream()
+        var chapterNumber = lastGlossary.filter(v -> Objects.nonNull(v.getChapterNumber()))
+                .map(ChapterGlossary::getChapterNumber)
+                .orElse(1);
+        var countResults = chapterRepository.countGlossaryInPreviousChapters(names, chapterNumber, bookId).stream()
                 .collect(Collectors.toMap(CountResult::getName, CountResult::getCount));
 
         return result.map(chapterGlossary -> {

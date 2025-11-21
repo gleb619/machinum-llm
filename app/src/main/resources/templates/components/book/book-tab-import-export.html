@@ -456,7 +456,7 @@
                                             </div>
                                             <a :href="`/api/books/${currentBook.id}/download?from=${fromPage}&to=${toPage}`"
                                                class="mt-3 inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition-colors"
-                                               target="_blank" x-text="`Export ${fromPage - toPage} chapters`">
+                                               target="_blank" x-text="`Export ${(toPage - fromPage) + 1} chapters`">
                                                 Export Book
                                             </a>
                                         </div>

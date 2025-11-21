@@ -1,126 +1,304 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
+
 <body>
 <!-- Layout -->
 <div th:fragment="div" th:remove="tag">
-    <div>
-        <template x-if="glossary.details.searching">
-            <div class="flex justify-center items-center h-32 py-4">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            </div>
-        </template>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <!-- Config Inputs Collapsible -->
+        <div class="lg:col-span-3">
+            <button @click="glossaryConfigTabs.showConfigInputs = !glossaryConfigTabs.showConfigInputs"
+                    class="flex items-center justify-between w-full px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+                <h4 class="font-medium text-gray-900 text-sm">Search Settings</h4>
+                <svg :class="glossaryConfigTabs.showConfigInputs ? 'transform rotate-180' : ''"
+                     class="w-5 h-5 text-gray-500 transition-transform duration-200" fill="none"
+                     stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                </svg>
+            </button>
+            <div class="mt-4" x-show="glossaryConfigTabs.showConfigInputs">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <label class="block font-medium text-gray-700">Chapter Start</label>
+                            <input @change="changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                                   @input.debounce.300ms="fetchRelatedGlossaryItems(glossary)"
+                                   class="mt-1 block w-full border border-gray-300 rounded shadow-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                   type="number" x-model="glossaryConfigTabs.chapterStart">
+                            <div class="flex gap-1 mt-1">
+                                <button
+                                        @click="glossaryConfigTabs.chapterStart = 1; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded text-blue-400">
+                                    1
+                                </button>
+                                <button
+                                        @click="glossaryConfigTabs.chapterStart = parseInt(glossaryConfigTabs.chapterStart) - 1; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded">-
+                                </button>
+                                <button :disabled="glossaryConfigTabs.chapterStart <= 1"
+                                        @click="glossaryConfigTabs.chapterStart = Math.round(parseInt(glossaryConfigTabs.chapterStart) / 2); fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded">√2
+                                </button>
+                                <button
+                                        @click="glossaryConfigTabs.chapterStart = parseInt(glossaryConfigTabs.chapterStart) + 1; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded">+
+                                </button>
+                                <button
+                                        @click="glossaryConfigTabs.chapterStart = parseInt(glossaryConfigTabs.chapterEnd) - 1; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+                                        x-text="glossaryConfigTabs.chapterEnd - 1">100
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-700">Chapter End</label>
+                            <input @change="changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                                   @input.debounce.300ms="fetchRelatedGlossaryItems(glossary)"
+                                   class="mt-1 block w-full border border-gray-300 rounded shadow-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                   type="number" x-model="glossaryConfigTabs.chapterEnd">
+                            <div class="flex gap-1 mt-1">
+                                <button
+                                        @click="glossaryConfigTabs.chapterEnd = glossary.chapterNumber; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded text-blue-400"
+                                        x-text="glossary.chapterNumber">1
+                                </button>
+                                <button
+                                        @click="glossaryConfigTabs.chapterEnd = parseInt(glossaryConfigTabs.chapterEnd) - 1; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded">-
+                                </button>
+                                <button :disabled="glossaryConfigTabs.chapterEnd <= 1"
+                                        @click="glossaryConfigTabs.chapterEnd = Math.round(parseInt(glossaryConfigTabs.chapterEnd) * 2); fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded">^2
+                                </button>
+                                <button
+                                        @click="glossaryConfigTabs.chapterEnd = parseInt(glossaryConfigTabs.chapterEnd) + 1; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded">+
+                                </button>
+                                <button
+                                        @click="glossaryConfigTabs.chapterEnd += Math.round(parseInt(glossaryConfigTabs.chapterEnd) * 0.1); fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded"
+                                        x-text="parseInt(glossaryConfigTabs.chapterEnd) + Math.round(glossaryConfigTabs.chapterEnd * 0.1)">
+                                    100
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-700">Top K</label>
+                            <input @change="changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                                   @input.debounce.300ms="fetchRelatedGlossaryItems(glossary)"
+                                   class="mt-1 block w-full border border-gray-300 rounded shadow-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                   type="number" x-model="glossaryConfigTabs.topK">
+                            <div class="flex gap-1 mt-1">
+                                <button @click="glossaryConfigTabs.topK = 5; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded text-blue-400">
+                                    5
+                                </button>
+                                <button @click="glossaryConfigTabs.topK = 10; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded">10
+                                </button>
+                                <button @click="glossaryConfigTabs.topK = 20; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded">20
+                                </button>
+                                <button @click="glossaryConfigTabs.topK = 50; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded">50
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-gray-700">Min Score</label>
+                            <input @change="changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                                   @input.debounce.300ms="fetchRelatedGlossaryItems(glossary)"
+                                   class="mt-1 block w-full border border-gray-300 rounded shadow-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                   step="0.01" type="number" x-model="glossaryConfigTabs.minScore">
+                            <div class="flex gap-1 mt-1">
+                                <button
+                                        @click="glossaryConfigTabs.minScore = 0.1; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded text-blue-400">
+                                    0.1
+                                </button>
+                                <button
+                                        @click="glossaryConfigTabs.minScore = 0.3; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded">0.3
+                                </button>
+                                <button
+                                        @click="glossaryConfigTabs.minScore = 0.5; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded">0.5
+                                </button>
+                                <button
+                                        @click="glossaryConfigTabs.minScore = 0.7; fetchRelatedGlossaryItems(glossary)"
+                                        class="px-1.5 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 rounded">0.7
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-span-2 pt-4 border-t border-gray-200">
+                            <button @click="resetGlossaryConfig()"
+                                    class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Reset Configuration
+                            </button>
+                        </div>
 
-        <div class="overflow-x-auto"
-             x-show="!glossary.details.searching && glossary.details.relatedItems && glossary.details.relatedItems.length > 0">
-            <table class="min-w-full divide-y divide-gray-200 text-xs">
-                <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider"
-                        scope="col">
-                        Name
-                    </th>
-                    <th class="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider"
-                        scope="col">
-                        Translated
-                    </th>
-                    <th class="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider"
-                        scope="col">
-                        Ch.
-                    </th>
-                    <th class="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider"
-                        scope="col">
-                        Description
-                    </th>
-                    <th class="px-3 py-2 text-right font-medium text-gray-500 uppercase tracking-wider"
-                        scope="col">
-                        Actions
-                    </th>
-                </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                <template :key="item.id" x-for="item in glossary.details.relatedItems">
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-3 py-2 whitespace-nowrap">
-                            <div class="font-medium text-gray-900">
-                                <span class="block" x-text="item.name"></span>
-                                <span class="text-gray-500" x-text="item.category"></span>
-                            </div>
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap">
-                            <div :class="!item.ruName ? 'italic text-red-500' : 'text-gray-900'"
-                                 class="max-w-xs truncate"
-                                 x-text="item.ruName || 'No translation text'"></div>
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap">
-                            <a class="text-gray-300 hover:text-blue-600"
-                               x-bind:href="`/chapters?chapterId=${item.chapterId}`"
-                               x-text="`${item.chapterNumber}`">
-                            </a>
-                        </td>
-                        <td class="px-3 py-2">
-                            <div class="text-gray-900 max-w-xs">
-                                                <span :title="item.description" class="block truncate"
-                                                      x-text="item.description"></span>
-                                <span class="text-gray-300 hover:text-gray-600"
-                                      title="References"
-                                      x-show="item.references && item.references.length > 0"
-                                      x-text="`[${item.references.join(', ')}]`"></span>
-                            </div>
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-right">
-                            <div class="flex gap-1 justify-end">
-                                <button @click="changeGlossaryName(glossary, item)"
-                                        class="text-indigo-600 hover:text-indigo-900 p-1"
-                                        title="Replace Name">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
-                                    </svg>
-                                </button>
-                                <button @click="changeGlossaryTranslatedName(glossary, item)"
-                                        class="text-blue-600 hover:text-blue-900 p-1"
-                                        title="Replace Translated Name">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
-                                    </svg>
-                                </button>
-                                <button @click="changeGlossaryText(glossary, item)"
-                                        class="text-green-600 hover:text-green-900 p-1"
-                                        title="Replace Text">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M12 3V21M9 21H15M19 6V3H5V6" stroke="currentColor"
-                                              stroke-linecap="round" stroke-linejoin="round"
-                                              stroke-width="2"/>
-                                    </svg>
-                                </button>
-                                <button @click="changeGlossarySummary(glossary, item)"
-                                        class="text-yellow-600 hover:text-yellow-900 p-1"
-                                        title="Replace Summary">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M12 3V21M9 21H15M19 6V3H5V6" stroke="currentColor"
-                                              stroke-linecap="round" stroke-linejoin="round"
-                                              stroke-width="2"/>
-                                    </svg>
-                                </button>
-                                <button @click="applyAllGlossaryChanges(glossary, item)"
-                                        class="text-purple-600 hover:text-purple-900 p-1"
-                                        title="Apply All">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                              fill-rule="evenodd"/>
-                                    </svg>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                </template>
-                </tbody>
-            </table>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-900 text-sm">Configuration</h4>
+                        <p class="mt-1 text-xs text-gray-600">Configure search parameters for related items. Adjust
+                            chapter range, number of results (Top K), and minimum similarity score to refine search
+                            accuracy.</p>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="min-w-full text-center"
-             x-show="!glossary.details.searching && (!glossary.details.relatedItems || glossary.details.relatedItems.length === 0)">
-            <p class="text-xs text-gray-500">No related items found.</p>
+
+        <!-- Related Items -->
+        <div class="mt-4 lg:col-span-3 space-y-4">
+            <div th:remove="tag" th:replace="~{components/glossary/fuzzy-panel::div}">
+                <p>
+                    Here placed content of templates/components/glossary/fuzzy-panel.html page, tag
+                    `th:fragment="div"`
+                </p>
+            </div>
+
+            <template x-if="glossary.details.searching">
+                <div class="flex justify-center items-center h-32 py-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
+            </template>
+
+            <div class="overflow-x-auto"
+                 x-show="!glossary.details.searching && glossary.details?.relatedItems && glossary.details?.relatedItems?.length > 0">
+                <table class="min-w-full divide-y divide-gray-200 text-xs">
+                    <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider"
+                            scope="col">
+                            Name
+                        </th>
+                        <th class="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider"
+                            scope="col">
+                            Translated
+                        </th>
+                        <th class="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider"
+                            scope="col">
+                            Ch.
+                        </th>
+                        <th class="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider"
+                            scope="col">
+                            Description
+                        </th>
+                        <th class="px-3 py-2 text-right font-medium text-gray-500 uppercase tracking-wider"
+                            scope="col">
+                            Actions
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                    <template :key="`${relatedItem.id}-${relatedItemIndex}`"
+                              x-for="(relatedItem, relatedItemIndex) in glossaryFilteredRelatedItems">
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                <div class="font-medium text-gray-900">
+                                    <span class="block" x-text="relatedItem.name"></span>
+                                    <span class="text-gray-500" x-text="relatedItem.category"></span>
+                                </div>
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                <div :class="!relatedItem.ruName ? 'italic text-red-500' : 'text-gray-900'"
+                                     class="max-w-xs truncate"
+                                     x-text="relatedItem.ruName || 'No translation text'"></div>
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                <a class="text-gray-300 hover:text-blue-600"
+                                   x-bind:href="`/chapters?chapterId=${relatedItem.chapterId}`"
+                                   x-text="`${relatedItem.chapterNumber}`"></a>
+                            </td>
+                            <td class="px-3 py-2">
+                                <div class="text-gray-900 max-w-xs">
+                                            <span :title="relatedItem.description" class="block truncate"
+                                                  x-text="relatedItem.description"></span>
+                                    <span class="text-gray-300 hover:text-gray-600" title="References"
+                                          x-show="relatedItem.references && relatedItem.references.length > 0"
+                                          x-text="`[${relatedItem.references.join(', ')}]`"></span>
+                                </div>
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap text-right">
+                                <div class="flex gap-1 justify-end">
+                                    <button @click="changeGlossaryName(glossary, relatedItem)"
+                                            class="text-indigo-600 hover:text-indigo-900 p-1" title="Replace Name">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path
+                                                    d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                    <button @click="changeGlossaryTranslatedName(glossary, relatedItem)"
+                                            class="text-blue-600 hover:text-blue-900 p-1"
+                                            title="Replace Translated Name">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path
+                                                    d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                    <button @click="changeGlossaryText(glossary, relatedItem)"
+                                            class="text-green-600 hover:text-green-900 p-1" title="Replace Text">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M12 3V21M9 21H15M19 6V3H5V6" stroke="currentColor"
+                                                  stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                    <button @click="changeGlossarySummary(glossary, relatedItem)"
+                                            class="text-yellow-600 hover:text-yellow-900 p-1"
+                                            title="Replace Summary">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M12 3V21M9 21H15M19 6V3H5V6" stroke="currentColor"
+                                                  stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                    <button @click="applyAllGlossaryChanges(glossary, relatedItem)"
+                                            class="text-purple-600 hover:text-purple-900 p-1" title="Apply All">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path
+                                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                    fill-rule="evenodd"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                    </tbody>
+                </table>
+            </div>
+            <div class="min-w-full text-center p-8 bg-gray-50 rounded-lg"
+                 x-show="!glossary.details.searching && (!glossary.details.relatedItems || glossary.details.relatedItems.length === 0)">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round"
+                          stroke-linejoin="round" stroke-width="2"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No related items found</h3>
+                <p class="mt-1 text-sm text-gray-500">Try adjusting search settings for broader results or fewer
+                    filters.</p>
+                <div class="mt-4 flex flex-wrap gap-2 justify-center">
+                    <button
+                            @click="glossaryConfigTabs.topK = 50; glossaryConfigTabs.minScore = 0.1; fetchRelatedGlossaryItems(glossary);"
+                            class="px-3 py-2 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition">
+                        More Results (50 items, 0.1 score)
+                    </button>
+                    <button
+                            @click="glossaryConfigTabs.chapterStart = 1; glossaryConfigTabs.chapterEnd = 999999; glossaryConfigTabs.topK = 20; fetchRelatedGlossaryItems(glossary);"
+                            class="px-3 py-2 text-xs bg-green-100 hover:bg-green-200 text-green-700 rounded-md transition">
+                        All Chapters (20 items)
+                    </button>
+                    <button @click="glossary.details.filterText = ''; fetchRelatedGlossaryItems(glossary)"
+                            class="px-3 py-2 text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-md transition">
+                        Clear Filters
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 </body>
+
 </html>

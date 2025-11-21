@@ -1,8 +1,11 @@
+import { fuzzyAddon } from './fuzzy-panel.js';
+
 /**
  * Creates an Alpine.js data object with glossary details functionality
  */
 export function glossaryDetailsApp() {
     return {
+        ...fuzzyAddon(),
         glossaryConfigTabs: {
             activeTab: 'config',
             chapterStart: 1,
@@ -10,12 +13,11 @@ export function glossaryDetailsApp() {
             topK: 20,
             minScore: 0.1,
             showConfigInputs: true,
-            glossaryMatchCase: false,
-            glossaryWholeWord: false,
-            glossaryUseRegex: false,
+            showSearchInputs: true,
             lineMatchCase: false,
             lineMatchWholeWord: false,
-            lineUseRegex: false
+            lineUseRegex: false,
+            isFuzzyMode: false
         },
 
         initGlossaryDetails() {
@@ -24,9 +26,9 @@ export function glossaryDetailsApp() {
 
         async toggleGlossaryDetails(glossary) {
             glossary.details.expanded = !glossary.details.expanded;
-            glossary.details.searchText = glossary.name;
+            glossary.details.searchText = glossary.details.searchText || glossary.name;
             glossary.details.filterText = '';
-            glossary.details.lineSearchTerm = glossary.name;
+            glossary.details.lineSearchTerm = glossary.details.lineSearchTerm || glossary.name;
             this.glossary.details.replaceTextSearch = glossary.name;
             this.glossary.details.replaceSummarySearch = glossary.name;
             glossary.details.updateRuNameOldRuName = glossary.ruName || '';
@@ -34,9 +36,40 @@ export function glossaryDetailsApp() {
             glossary.details.updateRuNameNameFilter = '';
             glossary.details.updateRuNameAffectedChapters = [];
 
+            // Initialize fuzzy mode state
+            glossary.details.fuzzyTextInput = glossary.details.fuzzyTextInput || '';
+            glossary.details.fuzzyPreview = glossary.details.fuzzyPreview || '';
+            glossary.details.fuzzyText = glossary.details.fuzzyText || null;
+            glossary.details.activeNGrams = glossary.details.activeNGrams || [];
+            glossary.details.customNGramInput = glossary.details.customNGramInput || '';
+            glossary.details.previewStats = glossary.details.previewStats || {
+                text: '',
+                length: 0,
+                minLen: 0,
+                maxLen: 0,
+                totalNGrams: 0,
+                filteredNGrams: 0,
+                quality: { level: 'None' },
+                prediction: 0,
+                removedCount: 0,
+                removalReasons: []
+            };
+
             if (glossary.details.expanded && !glossary.details.relatedItems) {
                 this.fetchRelatedLines(glossary);
-                const relatedItems = await this.fetchRelatedGlossaryItems(glossary);
+                let relatedItems;
+
+                if(this.glossaryConfigTabs.isFuzzyMode) {
+                    // Ensure fuzzy mode is properly initialized
+                    if (!glossary.details.fuzzyTextInput && (glossary.details.searchText || glossary.name)) {
+                        glossary.details.fuzzyTextInput = glossary.details.searchText || glossary.name;
+                        this.updateFuzzyPreview(glossary);
+                    }
+                    relatedItems = await this.applyFuzzyFormat(glossary);
+                } else {
+                    relatedItems = await this.fetchRelatedGlossaryItems(glossary);
+                }
+
                 if(relatedItems) {
                     glossary.details.compareData = this.glossaryCompareItems(glossary, relatedItems[0]);
                 }
@@ -49,9 +82,6 @@ export function glossaryDetailsApp() {
                 chapterEnd: 999999,
                 topK: 20,
                 minScore: 0.1,
-                glossaryMatchCase: false,
-                glossaryWholeWord: false,
-                glossaryUseRegex: false
             });
             this.changeValue('glossaryConfigTabs', this.glossaryConfigTabs);
         },
@@ -60,22 +90,21 @@ export function glossaryDetailsApp() {
             glossary.details.searching = true;
             if (!this.activeId) return;
 
-            const chapterStart = parseInt(this.glossaryConfigTabs.chapterStart) || 1;
-            const chapterEnd = parseInt(this.glossaryConfigTabs.chapterEnd) || 999999;
-            const topK = parseInt(this.glossaryConfigTabs.topK) || 20;
-            const minScore = parseFloat(this.glossaryConfigTabs.minScore) || 0.1;
-
-            const params = new URLSearchParams({
-                bookId: this.activeId,
+            const requestBody = {
                 searchText: glossary.details.searchText || glossary.name,
-                chapterStart,
-                chapterEnd,
-                topK,
-                minScore
-            });
+                fuzzyText: glossary.details.fuzzyText || null,
+                chapterStart: parseInt(this.glossaryConfigTabs.chapterStart) || 1,
+                chapterEnd: parseInt(this.glossaryConfigTabs.chapterEnd) || 999999,
+                topK: parseInt(this.glossaryConfigTabs.topK) || 20,
+                minScore: parseFloat(this.glossaryConfigTabs.minScore) || 0.1,
+            };
 
             try {
-                const response = await fetch(`/api/books/${this.activeId}/glossary/search?${params.toString()}`);
+                const response = await fetch(`/api/books/${this.activeId}/glossary/search`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(requestBody)
+                });
                 if (!response.ok) {
                     const rsp = await response.json();
                     console.error('Error fetching related glossary items:', rsp);
