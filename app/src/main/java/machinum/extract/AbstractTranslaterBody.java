@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.retry.RetryHelper;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -75,9 +74,9 @@ public abstract class AbstractTranslaterBody implements FlowSupport, Preconditio
     @Autowired
     protected Assistant assistant;
     @Autowired
-    protected RawInfoTool rawInfoTool;
+    protected Worker worker;
     @Autowired
-    protected RetryHelper retryHelper;
+    protected RawInfoTool rawInfoTool;
 
 
     public FlowContext<Chapter> translate(FlowContext<Chapter> flowContext) {
@@ -90,7 +89,8 @@ public abstract class AbstractTranslaterBody implements FlowSupport, Preconditio
 
         var subIteration = flowContext.optionalValue(FlowContext::subIterationArg).orElse(0);
         var resource = parseResource(hasScoring);
-        var context = doAction(text, resource, history, flowContext.iteration(), subIteration, hasScoring.get(), textTokens);
+        var context = doAction(flowContext, text, resource, history, flowContext.iteration(),
+                subIteration, hasScoring.get(), textTokens);
 
         var translatedText = parseTranslatedText(context);
         log.debug("Prepared translated version: text={}...", toShortDescription(translatedText));
@@ -160,38 +160,32 @@ public abstract class AbstractTranslaterBody implements FlowSupport, Preconditio
         return history;
     }
 
-    private AssistantContext.Result doAction(String text, Resource resource, List<Message> history, Integer iteration,
+    private AssistantContext.Result doAction(FlowContext<?> flowContext, String text, Resource resource, List<Message> history, Integer iteration,
                                              Integer subIteration, boolean hasScoring, Integer textTokens) {
+        var numCtx = FlowSupport.slidingContextWindow(hasScoring ? (int) (textTokens * 1.2) : textTokens, history, contextLength);
         var context = AssistantContext.builder()
-                .operation("translateText-%s-%s-".formatted(iteration, subIteration))
-                .text(text)
+                .flowContext(flowContext)
                 .actionResource(resource)
                 .history(history)
-                .inputs(Map.of(
-                        "retryFixString", ""
-                ))
+                .inputs(Map.of("retryFixString", ""))
                 .tools(List.of(rawInfoTool))
                 .customizeChatOptions(options -> {
                     options.setModel(getChatModel());
                     options.setTemperature(temperature);
-                    options.setNumCtx(FlowSupport.slidingContextWindow(hasScoring ? (int) (textTokens * 1.2) : textTokens, history, contextLength));
+                    options.setNumCtx(numCtx);
                     return options;
                 })
                 .provider(parse(provider))
+                .text(text)
                 .build();
 
-        try {
-            return retryHelper.withSmallRetry(text, retryChunk -> {
-                var result = requiredAtLeast70Percent(context.copy(b -> b.text(retryChunk)
-                        .input("retryFixString", context.input("retryFixString") + "\n")
-                ), assistant::process);
-
-                return processAssistantResult(result);
-            });
-        } catch (LengthValidationException e) {
-            var result = context.getMostResultFromHistory();
-            return AssistantContext.Result.of(result);
-        }
+        return worker.work(context, "translateText-%s-%s-".formatted(iteration, subIteration), Worker.RetryType.SMALL_WITH_FALLBACK, b ->
+                retryChunk -> {
+                    var chunkContext = b.copy(builder -> builder.text(retryChunk)
+                            .input("retryFixString", b.input("retryFixString") + "\n"));
+                    var result = requiredAtLeast70Percent(chunkContext, assistant::process);
+                    return processAssistantResult(result);
+                });
     }
 
     private Resource parseResource(AtomicBoolean hasScoring) {

@@ -2,11 +2,9 @@ package machinum.service;
 
 import machinum.service.ru_qwen.RuQwenTranslaterDegreeTest;
 import machinum.service.ru_qwen.RuQwenTranslaterTest;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 
-@EnabledIfSystemProperty(named = "llmAllowed", matches = "true")
 @Suite
 @SelectClasses({
 //        GemmaTranslaterTest.class,

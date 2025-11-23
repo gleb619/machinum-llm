@@ -109,13 +109,19 @@ public class ObjectName implements StringSupport {
 
     @Override
     public String stringValue() {
-        String string = "`%s` - it's a %s; Example of usage: %s;".formatted(name, category, description);
+        StringBuilder sb = new StringBuilder();
+        sb.append(name).append(" - it's a ").append(category)
+                .append("; Example of usage: ").append(description);
 
+        if (references != null && !references.isEmpty()) {
+            sb.append("; References: ").append(references);
+        }
         if (metadata.containsKey(RU_NAME)) {
-            return "%s Russian translation is: `%s`;".formatted(string, ruName());
+            sb.append("; Russian translation is: `").append(ruName()).append("`;");
+            return sb.toString();
         }
 
-        return string;
+        return sb.toString();
     }
 
     public String invertedStringValue() {

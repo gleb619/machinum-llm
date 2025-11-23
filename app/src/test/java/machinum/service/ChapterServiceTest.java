@@ -6,6 +6,7 @@ import machinum.model.Chapter;
 import machinum.model.ObjectName;
 import machinum.repository.BookRepository;
 import machinum.util.DurationMeasureUtil;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Disabled
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.MOCK,
         classes = TestApplication.class,

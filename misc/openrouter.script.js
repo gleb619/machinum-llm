@@ -1,3 +1,5 @@
+// Open `https://openrouter.ai/models`
+
 (async function() {
     const processedLinks = new Set();
 

@@ -19,7 +19,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.retry.RetryHelper;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -29,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static machinum.config.Constants.FLOW_TYPE;
 import static machinum.config.Constants.SCORE;
+import static machinum.extract.Worker.RetryType.SMALL_WITH_FALLBACK;
 import static machinum.processor.client.AiClient.Provider.parse;
 import static machinum.processor.core.FlowSupport.HistoryItem.*;
 import static machinum.util.JavaUtil.calculatePercent;
@@ -75,7 +75,7 @@ public class GrammarEditor implements FlowSupport, PreconditionSupport {
     //TODO remove
     @Value("${app.translate.copy-editing.history.mode}")
     protected final String historyMode;
-    protected final RetryHelper retryHelper;
+    protected final Worker worker;
     @Value("classpath:prompts/custom/system/GrammarEditorSystem.ST")
     private final Resource systemTemplate;
     @Value("classpath:prompts/custom/GrammarEditor.ST")
@@ -208,14 +208,9 @@ public class GrammarEditor implements FlowSupport, PreconditionSupport {
                 .provider(parse(provider))
                 .build();
 
-        try {
-            return retryHelper.withSmallRetry(translatedText, retryChunk ->
-                    requiredAtLeast80Percent(
-                            context.copy(b -> b.text(retryChunk)), assistant::process));
-        } catch (LengthValidationException e) {
-            var result = context.getMostResultFromHistory();
-            return AssistantContext.Result.of(result);
-        }
+        return worker.work(context, "copyEdit-%s-".formatted(iteration), SMALL_WITH_FALLBACK, (baseContext) ->
+                (retryChunk) -> requiredAtLeast80Percent(
+                        baseContext.copy(b -> b.text(retryChunk)), assistant::process));
     }
 
 }

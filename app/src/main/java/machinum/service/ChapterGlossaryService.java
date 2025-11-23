@@ -17,6 +17,7 @@ import machinum.repository.ChapterGlossaryDao;
 import machinum.repository.ChapterGlossaryRepository;
 import machinum.repository.ChapterGlossaryRepository.CountResult;
 import machinum.repository.ChapterGlossaryRepository.GlossaryByQueryResult;
+import org.springframework.async.AsyncHelper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static machinum.util.JavaUtil.uniqueBy;
@@ -40,6 +42,7 @@ public class ChapterGlossaryService {
     private final ChapterGlossaryMapper chapterGlossaryMapper;
     private final ChapterMapper chapterMapper;
     private final ChapterGlossaryDao chapterGlossaryDao;
+    private final AsyncHelper asyncHelper;
 
     @Transactional(readOnly = true)
     public ChapterGlossary getById(@NonNull String bookId) {
@@ -77,12 +80,98 @@ public class ChapterGlossaryService {
                 .map(ObjectName::getName)
                 .collect(Collectors.toList());
 
-        var pairs = chapterRepository.findGlossaryByQuery(names, chapterNumber, bookId);
+        var pairs = chapterRepository.findGlossaryByQuery(names, chapterNumber, bookId, PageRequest.of(0, glossary.size() * 3));
 
         return pairs.stream()
                 .map(GlossaryByQueryResult::getRawJson)
                 .map(rawJson -> objectMapperHolder.execute(mapper -> mapper.readValue(rawJson, ObjectName.class)))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ObjectName> findGlossaryWithAlternatives(@NonNull Integer chapterNumber,
+                                                         @NonNull List<ObjectName> glossary, String bookId) {
+        if (glossary.isEmpty()) {
+            return glossary;
+        }
+
+        log.debug("Prepare to load references for glossary with alternatives: {}", glossary.size());
+        var uniqueGlossary = uniqueBy(glossary, ObjectName::getName);
+        var names = uniqueGlossary.stream()
+                .map(ObjectName::getName)
+                .collect(Collectors.toList());
+
+        // Find exact matches first
+        var exactMatches = chapterRepository.findGlossaryByQuery(names, chapterNumber, bookId, PageRequest.of(0, glossary.size() * 3))
+                .stream()
+                .map(GlossaryByQueryResult::getRawJson)
+                .map(rawJson -> objectMapperHolder.execute(mapper -> mapper.readValue(rawJson, ObjectName.class)))
+                .toList();
+
+        var exactNames = exactMatches.stream()
+                .map(ObjectName::getName)
+                .collect(Collectors.toSet());
+
+        // Get remaining names without exact matches
+        var remainingNames = names.stream()
+                .filter(name -> !exactNames.contains(name))
+                .toList();
+
+        // Create suppliers for parallel execution
+        var suppliers = remainingNames.stream()
+                .map(remainingName -> (Supplier<List<ObjectName>>) () -> {
+                    // Regular search request
+                    var request = new GlossarySearchRequest();
+                    request.setSearchText(remainingName);
+                    request.setChapterStart(1);
+                    request.setChapterEnd(chapterNumber);
+                    request.setTopK(3);
+                    request.setMinScore(0.1f);
+
+                    var regularResults = chapterGlossaryDao.searchGlossary(bookId, request);
+
+                    // Fuzzy search request
+                    var fuzzyText = objectMapperHolder.execute(mapper -> mapper.writeValueAsString(Map.of(
+                            "query", remainingName.toLowerCase(),
+                            "lengthRange", Map.of(
+                                    "min", Math.max(1, (int) Math.floor(remainingName.length() * 0.7)),
+                                    "max", (int) Math.ceil(remainingName.length() * 1.3)
+                            ),
+                            "nGrams", generateTrigrams(remainingName)
+                    )));
+                    var fuzzyRequest = new GlossarySearchRequest();
+                    fuzzyRequest.setFuzzyText(fuzzyText);
+                    fuzzyRequest.setChapterStart(1);
+                    fuzzyRequest.setChapterEnd(chapterNumber);
+                    fuzzyRequest.setTopK(3);
+                    fuzzyRequest.setMinScore(0.1f);
+
+                    var fuzzyResults = chapterGlossaryDao.searchGlossary(bookId, fuzzyRequest);
+
+                    // Combine results for this name
+                    List<ObjectName> results = new ArrayList<>();
+                    results.addAll(regularResults.stream()
+                            .map(ChapterGlossaryDao.GlossarySearchResult::getObjectName)
+                            .filter(objectName -> !exactNames.contains(objectName.getName()))
+                            .toList());
+                    results.addAll(fuzzyResults.stream()
+                            .map(ChapterGlossaryDao.GlossarySearchResult::getObjectName)
+                            .filter(objectName -> !exactNames.contains(objectName.getName()))
+                            .toList());
+                    return results;
+                })
+                .collect(Collectors.toList());
+
+        // Flatten the results
+        var alternatives = asyncHelper.executeAllInNewTransactions(suppliers, Runtime.getRuntime().availableProcessors() * 2).stream()
+                .flatMap(List::stream)
+                .toList();
+
+        // Combine exact matches and alternatives, deduplicate preferring exact matches (put them first)
+        var allResults = new ArrayList<>(exactMatches);
+        allResults.addAll(alternatives);
+
+        return uniqueBy(allResults, obj -> obj.getName() + "_" + obj.getCategory());
     }
 
     @Transactional(readOnly = true)
@@ -96,7 +185,7 @@ public class ChapterGlossaryService {
                 .map(ObjectName::getName)
                 .collect(Collectors.toList());
 
-        var pairs = chapterRepository.findGlossaryByQuery(names, chapterNumber, bookId);
+        var pairs = chapterRepository.findGlossaryByQuery(names, chapterNumber, bookId, PageRequest.of(0, glossary.size() * 3));
 
         if (pairs.size() == names.size()) {
             return pairs.stream()
@@ -314,6 +403,23 @@ public class ChapterGlossaryService {
             chapterGlossary.setUnique(countResults.getOrDefault(name, 0L) <= 1L);
             return chapterGlossary;
         });
+    }
+
+    private List<String> generateTrigrams(String text) {
+        // Clean the text: remove special characters, keep only letters, spaces, and numbers
+        String cleanedText = text.replaceAll("[^a-zA-Z0-9\\s]", "").toLowerCase();
+
+        Set<String> nGrams = new HashSet<>();
+        for (int i = 0; i <= cleanedText.length() - 3; i++) {
+            String trigram = cleanedText.substring(i, i + 3);
+
+            // Only add trigrams that consist only of letters or numbers (no spaces in middle)
+            if (trigram.matches("^[a-zA-Z0-9]+$")) {
+                nGrams.add(trigram);
+            }
+        }
+
+        return new ArrayList<>(nGrams);
     }
 
 }

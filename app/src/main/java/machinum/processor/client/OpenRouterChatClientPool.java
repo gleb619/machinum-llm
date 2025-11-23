@@ -196,7 +196,7 @@ public class OpenRouterChatClientPool {
                 return true;
             }
 
-            log.debug("Click is still blocked, time to wait: {}s", getSecondsUntilAvailable());
+            log.debug("Client is still blocked, time to wait: {}s", getSecondsUntilAvailable());
             return false;
         }
 

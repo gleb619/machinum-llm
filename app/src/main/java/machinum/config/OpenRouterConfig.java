@@ -49,7 +49,7 @@ public class OpenRouterConfig {
             OpenRouterAiChatProperties multiChatProperties,
             Holder<WiremockRequestInterceptor> requestInterceptorHolder
     ) {
-        var models = multiChatProperties.getOptions().getModels();
+        var models = multiChatProperties.getOptions().acquireModels();
 
         var observationRegistry = ObservationRegistry.NOOP;
 

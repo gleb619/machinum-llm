@@ -80,6 +80,61 @@ public interface ChapterReportRepository extends JpaRepository<ChapterEntity, St
             ORDER BY ci0.number""", nativeQuery = true)
     List<ChapterReadinessItemProjection> getChapterReadinessData(@Param("bookId") String bookId);
 
+    // Text fingerprint queries
+    @Query(value = """
+            SELECT
+                ci0.number,
+                CASE
+                    WHEN LENGTH(ci0.text) > 50000 THEN (
+                        -- Sample character count for large texts (first 10000 + middle 10000 + last 10000)
+                        LENGTH(SUBSTRING(ci0.text, 1, 10000)) +
+                        LENGTH(SUBSTRING(ci0.text, GREATEST(1, LENGTH(ci0.text)/2 - 5000), 10000)) +
+                        LENGTH(SUBSTRING(ci0.text, GREATEST(1, LENGTH(ci0.text) - 10000), 10000))
+                    ) / 3
+                    ELSE LENGTH(ci0.text)
+                END as sampled_chars
+            FROM chapter_info ci0
+            WHERE ci0.book_id = :bookId
+            ORDER BY ci0.number
+            """, nativeQuery = true)
+    List<CharacterCountProjection> getChapterCharacterCounts(@Param("bookId") String bookId);
+
+    @Query(value = """
+            WITH chapter_names AS (
+                SELECT
+                    cg.chapter_id,
+                    cg.number as chapter_number,
+                    cg.name,
+                    ROW_NUMBER() OVER (PARTITION BY cg.name ORDER BY cg.number) as name_occurrence
+                FROM chapter_glossary cg
+                WHERE cg.book_id = :bookId
+            ),
+            new_unique_names AS (
+                SELECT
+                    chapter_number,
+                    COUNT(*) as new_names
+                FROM chapter_names
+                WHERE name_occurrence = 1
+                GROUP BY chapter_number
+            ),
+            cumulative_unique AS (
+                SELECT
+                    chapter_number,
+                    SUM(new_names) OVER (ORDER BY chapter_number) as cumulative
+                FROM new_unique_names
+            )
+            SELECT
+                c.number as chapter_number,
+                COALESCE(n.new_names, 0) as new_unique_names,
+                COALESCE(cu.cumulative, 0) as cumulative_unique_names
+            FROM (SELECT DISTINCT number FROM chapter_info WHERE book_id = :bookId) c
+            LEFT JOIN new_unique_names n ON c.number = n.chapter_number
+            LEFT JOIN cumulative_unique cu ON c.number = cu.chapter_number
+            ORDER BY c.number
+            """, nativeQuery = true)
+    List<UniqueNamesProjection> getChapterUniqueNamesProgress(@Param("bookId") String bookId);
+
+
     /* ============= */
 
     interface ChapterReadinessItemProjection {
@@ -106,6 +161,22 @@ public interface ChapterReportRepository extends JpaRepository<ChapterEntity, St
 
         Long getTranslatedNameCount();
 
+    }
+
+    /* ============= */
+
+    interface CharacterCountProjection {
+        Integer getNumber();
+
+        Integer getSampledChars();
+    }
+
+    interface UniqueNamesProjection {
+        Integer getChapterNumber();
+
+        Integer getNewUniqueNames();
+
+        Integer getCumulativeUniqueNames();
     }
 
 }

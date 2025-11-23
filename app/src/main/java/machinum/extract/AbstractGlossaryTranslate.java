@@ -27,7 +27,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
-import org.springframework.retry.RetryHelper;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -57,7 +56,7 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
     @Value("${app.glossary.translate.numCtx}")
     protected Integer contextLength;
     @Autowired
-    protected RetryHelper retryHelper;
+    protected Worker worker;
     @Autowired
     @Qualifier("objectMapperHolder")
     private Holder<ObjectMapper> objectMapperHolder;
@@ -147,18 +146,13 @@ public abstract class AbstractGlossaryTranslate implements JsonSupport, RussianS
                 .mapper(this::map)
                 .build();
 
-        var localContext = retryHelper.withRetry(text, retryChunk -> {
-            var context = assistant.process(assistantContext.copy(b -> b.text(retryChunk)));
-
+        return worker.work(assistantContext, "glossaryTranslate-%s-".formatted(flowContext.iteration()), context -> {
             var result = context.result();
             if (!isRussian(result)) {
                 throw new IllegalArgumentException("Lang is not russian: " + result.trim());
             }
-
             return context;
-        });
-
-        return localContext;
+        }, Worker.RetryType.FULL);
     }
 
     private List<ObjectName> checkAndFixTranslations(FlowContext<Chapter> flowContext, AssistantContext.Result localContext,

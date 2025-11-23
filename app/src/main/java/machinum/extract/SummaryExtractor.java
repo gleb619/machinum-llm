@@ -32,6 +32,8 @@ public class SummaryExtractor implements ChunkSupport, FlowSupport, Precondition
     protected final Double temperature;
     @Value("${app.summary.numCtx}")
     protected final Integer contextLength;
+    @Value("${app.summary.ratio}")
+    protected final Double contextRatio;
     @Value("classpath:prompts/custom/system/SummarySystem.ST")
     private final Resource systemTemplate;
     @Value("classpath:prompts/custom/Summary.ST")
@@ -44,6 +46,7 @@ public class SummaryExtractor implements ChunkSupport, FlowSupport, Precondition
     private final RawInfoTool rawInfoTool;
 
     private final RetryHelper retryHelper;
+    private final Worker worker;
 
 
     public FlowContext<Chapter> simpleExtract(FlowContext<Chapter> flowContext) {
@@ -56,16 +59,16 @@ public class SummaryExtractor implements ChunkSupport, FlowSupport, Precondition
 
     private FlowContext<Chapter> doExtractSummary(FlowContext<Chapter> flowContext, boolean createHistory) {
         var text = flowContext.text();
-        int minValue = (int) Math.ceil(countLines(text) / 6.5);
+        int minValue = (int) Math.ceil(countLines(text) / contextRatio);
         var awaitedLines = String.valueOf(Math.min(Math.max(minValue, 10), 25));
         var textTokens = countTokens(text);
         log.debug("Prepare to summarize text to fit the content window: text={}..., awaitedLines={}", toShortDescription(text), awaitedLines);
 
         List<Message> history;
         if (createHistory) {
-            history = fulfillHistory(systemTemplate, flowContext);
+            history = worker.createSystemHistory(flowContext, systemTemplate);
         } else {
-            history = fulfillHistory(HistoryContext.builder()
+            history = worker.createAdvancedHistory(HistoryContext.builder()
                     .systemMessage(systemTemplate)
                     .flowContext(flowContext)
                     .allowedItems(List.of(HistoryItem.CONSOLIDATED_CONTEXT))
@@ -73,42 +76,34 @@ public class SummaryExtractor implements ChunkSupport, FlowSupport, Precondition
                     .build());
         }
 
-        var contextResult = doAction(flowContext, text, history, awaitedLines, textTokens);
+        var numCtx = worker.getSlidingWindow(textTokens, history, contextLength);
 
-        //TODO add check and retry for short list
-        String result = parseResult(contextResult);
+        var context = AssistantContext.builder()
+                .flowContext(flowContext)
+                .actionResource(summaryTemplate)
+                .history(history)
+                .inputs(Map.of("count", awaitedLines))
+                .tools(List.of(rawInfoTool))
+                .customizeChatOptions(options -> {
+                    options.setNumCtx(numCtx);
+                    options.setModel(getChatModel());
+                    options.setTemperature(temperature);
+                    return options;
+                })
+                .text(text)
+                .build();
+
+        var contextResult = worker.work(context, "extractSummary", result -> {
+            String parsed = requireNotEmpty(parseResult(result));
+            result.replaceResult(parsed);
+            return result;
+        }, Worker.RetryType.SMALL);
+
+        String result = contextResult.result();
 
         log.debug("Prepared summary chunks text to fit the content window: text={}...", toShortDescription(result));
 
         return flowContext.rearrange(FlowContext::contextArg, FlowContextActions.context(result));
-    }
-
-    private AssistantContext.Result doAction(FlowContext<Chapter> flowContext, String text, List<Message> history, String awaitedLines, Integer textTokens) {
-        var context = AssistantContext.builder()
-                .flowContext(flowContext)
-                .operation("extractSummary-%s-".formatted(flowContext.iteration()))
-                .text(text)
-                .actionResource(summaryTemplate)
-                .history(history)
-                .inputs(Map.of(
-                        "count", awaitedLines
-                ))
-                .tools(List.of(rawInfoTool))
-                .customizeChatOptions(options -> {
-                    options.setModel(getChatModel());
-                    options.setTemperature(temperature);
-                    options.setNumCtx(FlowSupport.slidingContextWindow(textTokens, history, contextLength));
-                    return options;
-                })
-                .build();
-
-        return retryHelper.withSmallRetry(text, retryChunk -> {
-            var contextResult = requiredNotEmpty(context.copy(b -> b.text(retryChunk)), assistant::process);
-            String result = requireNotEmpty(parseResult(contextResult));
-            contextResult.replaceResult(result);
-
-            return contextResult;
-        });
     }
 
     private String parseResult(AssistantContext.Result contextResult) {

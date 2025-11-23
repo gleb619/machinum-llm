@@ -63,7 +63,8 @@ public class Glossary {
         var glossaryFromLastChapter = flowContext.optionalValue(AppFlowActions::oldGlossaryArg)
                 .orElse(Collections.emptyList());
         var fullGlossary = enrichCurrentGlossaryFromDB(flowContext, glossaryFromLastChapter, namesExtractedByNLP);
-        var currentChapterGlossary = chapterGlossaryService.findGlossary(resolveChapterNumber(flowContext), namesExtractedByNLP, resolveBookId(flowContext));
+        var currentChapterGlossary = chapterGlossaryService.findGlossaryWithAlternatives(
+                resolveChapterNumber(flowContext), namesExtractedByNLP, resolveBookId(flowContext));
 
         //Run again
         return glossaryExtractor.secondExtract(flowContext.rearrange(AppFlowActions::glossaryArg, AppFlowActions.glossary(fullGlossary))

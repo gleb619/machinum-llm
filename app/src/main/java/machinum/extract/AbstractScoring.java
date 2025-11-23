@@ -28,7 +28,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
-import org.springframework.retry.RetryHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,8 +48,7 @@ public abstract class AbstractScoring implements FlowSupport, JsonSupport {
     private static final String USER_TEXT_TEMPLATE = """
             Provide the text of the chapter of the web novel we will be working with
             """;
-    @Autowired
-    protected RetryHelper retryHelper;
+
     @Value("classpath:prompts/custom/system/TranslationScoringSystem.ST")
     private Resource systemTemplate;
     @Value("classpath:prompts/custom/TranslationScoring.ST")
@@ -65,6 +63,8 @@ public abstract class AbstractScoring implements FlowSupport, JsonSupport {
 
     @Autowired
     private RawInfoTool rawInfoTool;
+    @Autowired
+    private Worker worker;
 
 
     public FlowContext<Chapter> scoreTranslate(FlowContext<Chapter> flowContext) {
@@ -127,15 +127,16 @@ public abstract class AbstractScoring implements FlowSupport, JsonSupport {
                 .build();
 
         try {
-            return retryHelper.withSmallRetry(translatedText, retryChunk -> {
-                var resultContext = assistant.process(context.copy(b -> b.text(retryChunk)));
+            return worker.work(context, "%s-%s-".formatted(getOperation(), iteration), Worker.RetryType.SMALL, baseContext ->
+                    retryChunk -> {
+                        var resultContext = assistant.process(baseContext.copy(b -> b.text(retryChunk)));
 
-                context.addResultHistory(resultContext.result());
-                var entity = parseEntity(resultContext);
-                resultContext.setEntity(entity);
+                        baseContext.addResultHistory(resultContext.result());
+                        var entity = parseEntity(resultContext);
+                        resultContext.setEntity(entity);
 
-                return resultContext;
-            });
+                        return resultContext;
+                    });
         } catch (IllegalArgumentException e) {
             var result = context.getMostResultFromHistory();
             return AssistantContext.Result.builder()

@@ -76,7 +76,7 @@ tasks.named('test') {
 }
 
 /**
- * CI test - run tests without stubs/mock of llm
+ * Local test - run tests without stubs/mock of llm
  */
 task llmtest(type: Test, group: 'verification') {
     useJUnitPlatform()

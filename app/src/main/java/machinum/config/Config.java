@@ -80,7 +80,7 @@ public class Config {
     public CacheManager cacheManager(Caffeine caffeine) {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCaffeine(caffeine);
-        caffeineCacheManager.setCacheNames(List.of(STORE, BOOKS_FOR_EXPORT, CHAPTER_DATA_SUMMARY, CHAPTER_HEATMAP_DATA));
+        caffeineCacheManager.setCacheNames(List.of(STORE, BOOKS_FOR_EXPORT, CHAPTER_DATA_SUMMARY, CHAPTER_HEATMAP_DATA, CHAPTER_FINGERPRINT_DATA));
         return caffeineCacheManager;
     }
 
@@ -177,6 +177,8 @@ public class Config {
 
         public static final String CHAPTER_HEATMAP_DATA = "chapterHeatmapData";
 
+        public static final String CHAPTER_FINGERPRINT_DATA = "chapterFingerprintData";
+
     }
 
     @Configuration
@@ -185,7 +187,8 @@ public class Config {
         @Scheduled(fixedRateString = "PT60S")
         @CacheEvict(value = {
                 CHAPTER_DATA_SUMMARY,
-                CHAPTER_HEATMAP_DATA
+                CHAPTER_HEATMAP_DATA,
+                CHAPTER_FINGERPRINT_DATA
         }, allEntries = true)
         public void emptyCaches() {
             log.trace("Emptying cache...");

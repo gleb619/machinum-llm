@@ -65,6 +65,7 @@ public class GlossaryExtractor implements JsonSupport, ObjectNameSupport, ChunkS
     @Qualifier("objectMapperHolder")
     private final Holder<ObjectMapper> objectMapperHolder;
     private final Assistant assistant;
+    private final Worker worker;
 
     public FlowContext<Chapter> firstExtract(FlowContext<Chapter> flowContext) {
         return doAction("glossaryExtract", flowContext, firstSystemTemplate, true);
@@ -81,9 +82,19 @@ public class GlossaryExtractor implements JsonSupport, ObjectNameSupport, ChunkS
         var textTokens = countTokens(text);
         List<Message> history;
         if (createHistory) {
-            history = prepareHistory(flowContext, sysTemplate, textTokens);
+            int targetLength = textTokens * 2;
+            var historySettings = new ArrayList<HistoryItem>();
+            if (calculatePercent(targetLength, contextLength) <= 70) {
+                historySettings.add(GLOSSARY);
+                historySettings.add(CONSOLIDATED_GLOSSARY);
+            }
+            if (calculatePercent(targetLength, contextLength) <= 60) {
+                historySettings.add(CONTEXT);
+                historySettings.add(CONSOLIDATED_CONTEXT);
+            }
+            history = worker.createCustomHistory(flowContext, sysTemplate, historySettings.toArray(new HistoryItem[0]));
         } else {
-            history = fulfillHistory(HistoryContext.builder()
+            history = worker.createAdvancedHistory(HistoryContext.builder()
                     .systemMessage(sysTemplate)
                     .flowContext(flowContext)
                     .budget(from(contextLength).allocate(POSSIBLE_RESPONSE_SIZE).allocate(textTokens))
@@ -93,8 +104,25 @@ public class GlossaryExtractor implements JsonSupport, ObjectNameSupport, ChunkS
 
         log.debug("Preparing a extract names for given: text={}...", toShortDescription(text));
 
-        var context = doWork(name, flowContext, text, history, textTokens);
-        List<ObjectName> output = context.entity();
+        var numCtx = worker.getSlidingWindow(textTokens, history, contextLength);
+        var context = AssistantContext.builder()
+                .flowContext(flowContext)
+                .actionResource(glossaryTemplate)
+                .history(history)
+                .tools(List.of(rawInfoTool))
+                .customizeChatOptions(options -> {
+                    options.setNumCtx(numCtx);
+                    return options;
+                })
+                .provider(AiClient.Provider.parse(provider))
+                .outputClass(outputClass())
+                .mapper(this::map)
+                .outputType(AssistantContext.OutputType.JSON)
+                .text(text)
+                .build();
+
+        var contextResult = worker.work(context, name, null, Worker.RetryType.FULL);
+        List<ObjectName> output = contextResult.entity();
 
         var names = output.stream()
                 .sorted(Comparator.comparing(ObjectName::getName))
@@ -106,49 +134,6 @@ public class GlossaryExtractor implements JsonSupport, ObjectNameSupport, ChunkS
                 .collect(Collectors.joining(";")));
 
         return flowContext.rearrange(AppFlowActions::glossaryArg, AppFlowActions.glossary(names));
-    }
-
-    private List<Message> prepareHistory(FlowContext<Chapter> flowContext, Resource sysTemplate, Integer textTokens) {
-        int targetLength = textTokens * 2;
-        var historySettings = new ArrayList<HistoryItem>();
-
-        //If we have space, then we try to add base context
-        if (calculatePercent(targetLength, contextLength) <= 70) {
-            historySettings.add(GLOSSARY);
-            historySettings.add(CONSOLIDATED_GLOSSARY);
-        }
-
-        //If we have space, then we try to add extended context
-        if (calculatePercent(targetLength, contextLength) <= 60) {
-            historySettings.add(CONTEXT);
-            historySettings.add(CONSOLIDATED_CONTEXT);
-        }
-
-        return fulfillHistory(sysTemplate, flowContext, historySettings);
-    }
-
-    private AssistantContext.Result doWork(String name, FlowContext<Chapter> flowContext, String text, List<Message> history, Integer textTokens) {
-        var assistantContext = AssistantContext.builder()
-                .flowContext(flowContext)
-                .operation("%s-%s-".formatted(name, flowContext.iteration()))
-                .text(text)
-                .actionResource(glossaryTemplate)
-                .history(history)
-                .outputClass(outputClass())
-                .mapper(this::map)
-                .tools(List.of(rawInfoTool))
-                .customizeChatOptions(options -> {
-                    options.setModel(getChatModel());
-                    options.setTemperature(temperature);
-                    options.setNumCtx(FlowSupport.slidingContextWindow(textTokens, history, contextLength));
-
-                    return options;
-                })
-                .provider(AiClient.Provider.parse(provider))
-                .build();
-
-        return retryHelper.withRetry(text, retryChunk ->
-                assistant.process(assistantContext.copy(b -> b.text(retryChunk))));
     }
 
     @SneakyThrows

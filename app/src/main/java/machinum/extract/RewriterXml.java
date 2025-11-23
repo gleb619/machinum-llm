@@ -11,7 +11,6 @@ import machinum.processor.core.*;
 import machinum.tool.RawInfoTool;
 import machinum.util.CodeBlockExtractor;
 import machinum.util.TextUtil;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.retry.RetryHelper;
@@ -48,6 +47,7 @@ public class RewriterXml implements ChunkSupport, FlowSupport, PreconditionSuppo
     private final String chatModel;
     private final Assistant assistant;
     private final RawInfoTool rawInfoTool;
+    private final Worker worker;
 
     public FlowContext<Chapter> rewrite(FlowContext<Chapter> flowContext) {
         var textArg = flowContext.textArg();
@@ -67,9 +67,32 @@ public class RewriterXml implements ChunkSupport, FlowSupport, PreconditionSuppo
 
         log.debug("Rewriting story for given: text={}", toShortDescription(text));
 
-        var history = fulfillHistory(systemTemplate, flowContext, HistoryItem.CONSOLIDATED_CONTEXT, HistoryItem.CONTEXT);
-        var context = doAction(flowContext, text, history, textTokens);
-        var result = parseTextFromEntity(context);
+        var history = worker.createCustomHistory(flowContext, systemTemplate, HistoryItem.CONSOLIDATED_CONTEXT, HistoryItem.CONTEXT);
+        var numCtx = FlowSupport.slidingContextWindow(textTokens, history, contextLength);
+        var context = AssistantContext.builder()
+                .flowContext(flowContext)
+                .actionResource(rewriteTemplate)
+                .history(history)
+                .inputs(Map.of("retryFixString", ""))
+                .tools(List.of(rawInfoTool))
+                .customizeChatOptions(options -> {
+                    options.setModel(getChatModel());
+                    options.setTemperature(temperature);
+                    options.setNumCtx(numCtx);
+                    return options;
+                })
+                .provider(parse(provider))
+                .text(text)
+                .build();
+
+        var contextResult = worker.work(context, "rewrite", Worker.RetryType.SMALL_WITH_FALLBACK, b ->
+                retryChunk -> {
+                    var chunkContext = b.copy(builder -> builder.text(retryChunk)
+                            .input("retryFixString", b.input("retryFixString") + "\n"));
+                    var result = requiredAtLeast70Percent(chunkContext, assistant::process);
+                    return processAssistantResult(result);
+                });
+        var result = parseTextFromEntity(contextResult);
 
         log.info("Rewritten text: text={}...", toShortDescription(result));
 
@@ -91,40 +114,7 @@ public class RewriterXml implements ChunkSupport, FlowSupport, PreconditionSuppo
         return result;
     }
 
-    private AssistantContext.Result doAction(FlowContext<Chapter> flowContext, String text, List<Message> history, Integer textTokens) {
-        var context = AssistantContext.builder()
-                .flowContext(flowContext)
-                .operation("rewrite-%s-".formatted(flowContext.iteration()))
-                .text(text)
-                .actionResource(rewriteTemplate)
-                .history(history)
-                .inputs(Map.of(
-                        "retryFixString", ""
-                ))
-                .tools(List.of(rawInfoTool))
-                .customizeChatOptions(options -> {
-                    options.setModel(getChatModel());
-                    options.setTemperature(temperature);
-                    options.setNumCtx(FlowSupport.slidingContextWindow(textTokens, history, contextLength));
 
-                    return options;
-                })
-                .provider(parse(provider))
-                .build();
-
-        try {
-            return retryHelper.withSmallRetry(text, retryChunk -> {
-                var result = requiredAtLeast70Percent(context.copy(b -> b.text(retryChunk)
-                        .input("retryFixString", context.input("retryFixString") + "\n")
-                ), assistant::process);
-
-                return processAssistantResult(result);
-            });
-        } catch (PreconditionSupport.LengthValidationException e) {
-            var result = context.getMostResultFromHistory();
-            return AssistantContext.Result.of(result);
-        }
-    }
 
     private String parseTextFromEntity(AssistantContext.Result context) {
         if (context.entity() instanceof List<?> l && l.getFirst() instanceof RawText) {

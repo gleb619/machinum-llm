@@ -15,7 +15,9 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StreamUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -310,6 +312,12 @@ public class HistoryService {
 
         public int remaining() {
             return remaining;
+        }
+
+        @SneakyThrows
+        public TokenBudget allocate(Resource systemTemplate) {
+            String content = StreamUtils.copyToString(systemTemplate.getInputStream(), StandardCharsets.UTF_8);
+            return allocate(countTokens(content));
         }
 
     }

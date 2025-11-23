@@ -304,7 +304,7 @@ public class JavaUtil {
         var resultMap = new HashMap<String, String>();
 
         for (var lostName : lostNames) {
-            var possibleObjects = TextSearchHelperUtil.search(unsuitableNames, lostName);
+            var possibleObjects = TextSimilarityUtil.search(unsuitableNames, lostName);
 
             if (!possibleObjects.isEmpty()) {
                 var bestMatch = possibleObjects.getFirst();

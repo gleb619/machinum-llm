@@ -76,7 +76,7 @@ public class AssistantContext implements Mergeable<AssistantContext> {
     private Map<String, String> metadata = new HashMap<>();
 
     @Builder.Default
-    private AiClient.Provider provider = AiClient.Provider.OLLAMA;
+    private AiClient.Provider provider = AiClient.Provider.NONE;
 
     @Builder.Default
     private FlowContext<?> flowContext = FlowContextActions.of();

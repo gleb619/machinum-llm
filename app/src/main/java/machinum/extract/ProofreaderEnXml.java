@@ -11,10 +11,8 @@ import machinum.processor.core.*;
 import machinum.tool.RawInfoTool;
 import machinum.util.CodeBlockExtractor;
 import machinum.util.TextUtil;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.retry.RetryHelper;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -46,9 +44,9 @@ public class ProofreaderEnXml implements ChunkSupport, FlowSupport, Precondition
     @Value("classpath:prompts/custom/ProofreadEn.xml.ST")
     private final Resource proofreadTemplate;
     private final RawInfoTool rawInfoTool;
-    private final RetryHelper retryHelper;
-
     private final Assistant assistant;
+
+    private final Worker worker;
 
 
     public FlowContext<Chapter> proofread(FlowContext<Chapter> flowContext) {
@@ -69,9 +67,32 @@ public class ProofreaderEnXml implements ChunkSupport, FlowSupport, Precondition
 
         log.debug("Proofreading story for given: text={}", toShortDescription(text));
 
-        var history = fulfillHistory(systemTemplate, flowContext, HistoryItem.CONSOLIDATED_CONTEXT, HistoryItem.GLOSSARY);
-        var context = doAction(flowContext, text, history, textTokens);
-        var result = parseTextFromEntity(context);
+        var history = worker.createCustomHistory(flowContext, systemTemplate, HistoryItem.CONSOLIDATED_CONTEXT, HistoryItem.GLOSSARY);
+        var numCtx = FlowSupport.slidingContextWindow(textTokens, history, contextLength);
+        var context = AssistantContext.builder()
+                .flowContext(flowContext)
+                .actionResource(proofreadTemplate)
+                .history(history)
+                .inputs(Map.of("retryFixString", ""))
+                .tools(List.of(rawInfoTool))
+                .customizeChatOptions(options -> {
+                    options.setModel(getChatModel());
+                    options.setTemperature(temperature);
+                    options.setNumCtx(numCtx);
+                    return options;
+                })
+                .provider(parse(provider))
+                .text(text)
+                .build();
+
+        var contextResult = worker.work(context, "proofreadEn-%s-".formatted(flowContext.iteration()), Worker.RetryType.SMALL_WITH_FALLBACK, b ->
+                retryChunk -> {
+                    var chunkContext = b.copy(builder -> builder.text(retryChunk)
+                            .input("retryFixString", b.input("retryFixString") + "\n"));
+                    var result = requiredAtLeast70Percent(chunkContext, assistant::process);
+                    return processAssistantResult(result);
+                });
+        var result = parseTextFromEntity(contextResult);
 
         log.info("Proofread text: text={}...", toShortDescription(result));
 
@@ -91,41 +112,6 @@ public class ProofreaderEnXml implements ChunkSupport, FlowSupport, Precondition
         result.setEntity(mapResult);
 
         return result;
-    }
-
-    private AssistantContext.Result doAction(FlowContext<Chapter> flowContext, String text, List<Message> history, Integer textTokens) {
-        var context = AssistantContext.builder()
-                .flowContext(flowContext)
-                .operation("proofreadEn-%s-".formatted(flowContext.iteration()))
-                .text(text)
-                .actionResource(proofreadTemplate)
-                .history(history)
-                .inputs(Map.of(
-                        "retryFixString", ""
-                ))
-                .tools(List.of(rawInfoTool))
-                .customizeChatOptions(options -> {
-                    options.setModel(getChatModel());
-                    options.setTemperature(temperature);
-                    options.setNumCtx(FlowSupport.slidingContextWindow(textTokens, history, contextLength));
-
-                    return options;
-                })
-                .provider(parse(provider))
-                .build();
-
-        try {
-            return retryHelper.withSmallRetry(text, retryChunk -> {
-                var result = requiredAtLeast70Percent(context.copy(b -> b.text(retryChunk)
-                        .input("retryFixString", context.input("retryFixString") + "\n")
-                ), assistant::process);
-
-                return processAssistantResult(result);
-            });
-        } catch (PreconditionSupport.LengthValidationException e) {
-            var result = context.getMostResultFromHistory();
-            return AssistantContext.Result.of(result);
-        }
     }
 
     private String parseTextFromEntity(AssistantContext.Result context) {

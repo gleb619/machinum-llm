@@ -86,7 +86,7 @@
                         </div>
 
                         <!-- Charts Section -->
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                             <!-- Completion Overview Chart -->
                             <div class="bg-white rounded-lg shadow-md p-6">
                                 <h3 class="text-xl font-semibold text-gray-800 mb-4">Completion Overview</h3>
@@ -100,7 +100,64 @@
                             </div>
                         </div>
 
-                        <!-- TODO: Place new chart here with symbols area and names count -->
+                        <!-- Text Fingerprint Chart -->
+                        <div class="grid grid-cols-1 lg:grid-cols-1 gap-8">
+                            <div class="bg-white rounded-lg shadow-md p-6">
+                                <h3 class="text-xl font-semibold text-gray-800 mb-4">Book Text Fingerprint</h3>
+                                <div class="relative">
+                                    <canvas class="w-full" height="400" id="fingerprintChart" width="800"></canvas>
+                                </div>
+                                <p class="text-sm text-gray-600 mt-2 italic">
+                                    Area chart shows sampled character counts per chapter.
+                                    Circles indicate new unique names introduced in each chapter.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Chart Fallback Templates (Hidden) -->
+                        <template id="completionChartNoData">
+                            <div class="flex items-center justify-center h-full text-gray-500">
+                                <div class="text-center">
+                                    <svg class="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor"
+                                         viewBox="0 0 24 24">
+                                        <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke-linecap="round" stroke-linejoin="round"
+                                              stroke-width="2"></path>
+                                    </svg>
+                                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Completion Data Available</h3>
+                                    <p class="text-sm text-gray-600">Chapter data is not yet available for analysis.</p>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template id="missingDataChartNoData">
+                            <div class="flex items-center justify-center h-full text-gray-500">
+                                <div class="text-center">
+                                    <svg class="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor"
+                                         viewBox="0 0 24 24">
+                                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"
+                                              stroke-width="2"></path>
+                                    </svg>
+                                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Missing Data Found</h3>
+                                    <p class="text-sm text-gray-600">All chapters appear to be complete.</p>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template id="fingerprintChartNoData">
+                            <div class="flex items-center justify-center h-full text-gray-500">
+                                <div class="text-center">
+                                    <svg class="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor"
+                                         viewBox="0 0 24 24">
+                                        <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round"
+                                              stroke-width="2"></path>
+                                    </svg>
+                                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Fingerprint Data
+                                        Available</h3>
+                                    <p class="text-sm text-gray-600">Text analysis data is not yet available for
+                                        fingerprint generation.</p>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                 </template>
 

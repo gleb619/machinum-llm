@@ -1,6 +1,7 @@
 const app = {
     completionChart: null,
     missingDataChart: null,
+    fingerprintChart: null,
 };
 
 /**
@@ -10,6 +11,7 @@ export function bookReportApp() {
     return {
         summary: null,
         heatmapData: null,
+        fingerprintData: null,
         selectedChapter: null,
         chaptersPerRow: 20,
         tooltipVisible: false,
@@ -20,6 +22,7 @@ export function bookReportApp() {
         initBookReport() {
             this.bookReportLoadData();
             this.bookReportLoadHeatmapData();
+            this.bookReportLoadFingerprintData();
         },
 
         async bookReportLoadData() {
@@ -78,14 +81,41 @@ export function bookReportApp() {
             this.$nextTick(() => {
                 this.createCompletionChart();
                 this.createMissingDataChart();
+                this.createFingerprintChart();
             });
         },
 
         createCompletionChart() {
             const ctx = document.getElementById('completionChart');
             if(!ctx) return;
+
             if (app.completionChart) {
                 app.completionChart.destroy();
+            }
+
+            // Check if we have meaningful data to display
+            const hasData = this.summary && (
+                this.getPercentage('title') > 0 ||
+                this.getPercentage('translatedTitle') > 0 ||
+                this.getPercentage('summary') > 0 ||
+                this.getPercentage('text') > 0 ||
+                this.getPercentage('translatedText') > 0 ||
+                this.getPercentage('translatedNames') > 0 ||
+                this.getPercentage('warnings', 'warningsPercentage') > 0
+            );
+
+            if (!hasData || !this.summary || this.summary.totalChapters === 0) {
+                // Show fallback template instead of empty chart
+                const parentElement = ctx.parentElement;
+                if (parentElement) {
+                    const template = document.getElementById('completionChartNoData');
+                    if (template) {
+                        const clone = template.content.cloneNode(true);
+                        parentElement.innerHTML = '';
+                        parentElement.appendChild(clone);
+                    }
+                }
+                return;
             }
 
             app.completionChart = new Chart(ctx, {
@@ -128,6 +158,31 @@ export function bookReportApp() {
                 app.missingDataChart.destroy();
             }
 
+            // Check if we have meaningful missing data to display
+            const hasMissingData = this.summary && (
+                (this.summary.emptyTitles || 0) > 0 ||
+                (this.summary.emptyTranslatedTitles || 0) > 0 ||
+                (this.summary.emptySummaries || 0) > 0 ||
+                (this.summary.emptyTexts || 0) > 0 ||
+                (this.summary.emptyTranslatedTexts || 0) > 0 ||
+                (this.summary.emptyTranslatedNames || 0) > 0 ||
+                (this.summary.totalChapters - (this.summary.emptyWarnings || 0)) > 0
+            );
+
+            if (!hasMissingData || !this.summary || this.summary.totalChapters === 0) {
+                // Show fallback template instead of empty chart
+                const parentElement = ctx.parentElement;
+                if (parentElement) {
+                    const template = document.getElementById('missingDataChartNoData');
+                    if (template) {
+                        const clone = template.content.cloneNode(true);
+                        parentElement.innerHTML = '';
+                        parentElement.appendChild(clone);
+                    }
+                }
+                return;
+            }
+
             app.missingDataChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -167,6 +222,121 @@ export function bookReportApp() {
                 console.error('Error loading heatmap data:', error);
                 this.showToast(`Error loading heatmap data: ${error.message || error.detail || error}`, true);
             }
+        },
+
+        async bookReportLoadFingerprintData(force = false) {
+            if(!this.activeId) return;
+
+            try {
+                const response = await fetch(`/api/books/${this.activeId}/chapters-fingerprint?forceUpdate=${force}`);
+                this.fingerprintData = await response.json();
+                this.createFingerprintChart();
+            } catch (error) {
+                console.error('Error loading fingerprint data:', error);
+                this.showToast(`Error loading fingerprint data: ${error.message || error.detail || error}`, true);
+            }
+        },
+
+        createFingerprintChart() {
+            const ctx = document.getElementById('fingerprintChart');
+            if(!ctx) return;
+
+            if (app.fingerprintChart) {
+                app.fingerprintChart.destroy();
+            }
+
+            // Check if we have fingerprint data to display
+            if (!this.fingerprintData || !this.fingerprintData.chapters || this.fingerprintData.chapters.length === 0) {
+                // Show fallback template instead of empty chart
+                const parentElement = ctx.parentElement;
+                if (parentElement) {
+                    const template = document.getElementById('fingerprintChartNoData');
+                    if (template) {
+                        const clone = template.content.cloneNode(true);
+                        parentElement.innerHTML = '';
+                        parentElement.appendChild(clone);
+                    }
+                }
+                return;
+            }
+
+            const data = this.fingerprintData.chapters;
+            const labels = data.map(ch => `Ch ${ch.chapterNumber}`);
+            const characterData = data.map(ch => ch.characterCount);
+            const newUniqueNamesData = data.map((ch, index) => ({
+                x: index,
+                y: ch.characterCount,
+                r: Math.max(2, Math.min(15, Math.sqrt(ch.newUniqueNames || 0) * 3))
+            }));
+
+            app.fingerprintChart = new Chart(ctx, {
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        type: 'line',
+                        label: 'Character Count (sampled)',
+                        data: characterData,
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        yAxisID: 'y'
+                    }, {
+                        type: 'bubble',
+                        label: 'New Unique Names',
+                        data: newUniqueNamesData,
+                        backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Chapter Number'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Character Count'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.dataset.type === 'line') {
+                                        return `Characters: ${context.parsed.y}`;
+                                    } else if (context.dataset.type === 'bubble') {
+                                        const chapterData = data[context.dataIndex];
+                                        return `New unique names: ${chapterData.newUniqueNames}`;
+                                    }
+                                    return '';
+                                }
+                            }
+                        },
+                        legend: {
+                            display: true
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        intersect: false
+                    }
+                }
+            });
         },
 
         getHeatmapCellClass(percentage) {

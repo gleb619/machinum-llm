@@ -8,7 +8,6 @@ import machinum.flow.model.FlowContext;
 import machinum.flow.model.helper.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.model.ObjectName;
-import machinum.processor.core.Assistant;
 import machinum.processor.core.AssistantContext;
 import machinum.processor.core.ChunkSupport;
 import machinum.processor.core.FlowSupport;
@@ -18,13 +17,13 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.retry.RetryHelper;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static machinum.extract.Worker.RetryType.FULL;
 import static machinum.processor.core.FlowSupport.HistoryItem.CONTEXT;
 import static machinum.processor.core.FlowSupport.HistoryItem.NONE;
 import static machinum.util.JavaUtil.calculatePercent;
@@ -36,6 +35,8 @@ import static machinum.util.TextUtil.toShortDescription;
 @RequiredArgsConstructor
 public class ProofreaderRu implements ChunkSupport, FlowSupport {
 
+    private static final String USER_GLOSSARY_TEMPLATE = "Use this glossary information:";
+
     @Getter
     @Value("${app.proofread.ru.model}")
     protected final String chatModel;
@@ -43,13 +44,12 @@ public class ProofreaderRu implements ChunkSupport, FlowSupport {
     protected final Double temperature;
     @Value("${app.proofread.ru.numCtx}")
     protected final Integer contextLength;
-    protected final RetryHelper retryHelper;
+    private final Worker worker;
     @Value("classpath:prompts/transform/system/ProofreadRuSystem.ST")
     private final Resource systemTemplate;
     @Value("classpath:prompts/transform/ProofreadRu.ST")
     private final Resource proofreadTemplate;
     private final RawInfoTool rawInfoTool;
-    private final Assistant assistant;
 
     public FlowContext<Chapter> proofread(FlowContext<Chapter> flowContext) {
         var text = flowContext.translatedText();
@@ -85,8 +85,7 @@ public class ProofreaderRu implements ChunkSupport, FlowSupport {
                 })
                 .build();
 
-        var context = retryHelper.withRetry(text, retryChunk ->
-                assistant.process(assistantContext.copy(b -> b.text(retryChunk))));
+        var context = worker.work(assistantContext, "proofread-%s-%s-".formatted(iteration, subIteration), null, FULL);
 
         return context.result();
     }

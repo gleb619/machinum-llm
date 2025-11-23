@@ -10,6 +10,7 @@ import machinum.processor.core.AssistantContext;
 import machinum.processor.core.ChunkSupport;
 import machinum.processor.core.FlowSupport;
 import machinum.tool.RawInfoTool;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
@@ -38,6 +39,8 @@ public class SummaryConsolidator implements ChunkSupport, FlowSupport {
     @Getter
     @Value("${app.summary.consolidate.model}")
     private final String chatModel;
+    private final Worker worker;
+    @Autowired
     private final Assistant assistant;
 
     private final RawInfoTool rawInfoTool;
@@ -79,7 +82,7 @@ public class SummaryConsolidator implements ChunkSupport, FlowSupport {
 
         var history = fulfillHistory(systemTemplate, flowContext);
 
-        var contextResult = assistant.process(AssistantContext.builder()
+        var context = AssistantContext.builder()
                 .flowContext(flowContext)
                 .operation("consolidateSummary-%s-".formatted(flowContext.iteration()))
                 .text(previous)
@@ -96,7 +99,9 @@ public class SummaryConsolidator implements ChunkSupport, FlowSupport {
                     options.setNumCtx(FlowSupport.slidingContextWindow(countTokens(previous + current), history, contextLength));
                     return options;
                 })
-                .build());
+                .build();
+
+        var contextResult = assistant.process(context);
 
         var result = parseResult(contextResult);
 

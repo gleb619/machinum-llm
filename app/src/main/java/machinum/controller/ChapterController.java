@@ -7,6 +7,7 @@ import machinum.converter.ChapterMapper;
 import machinum.model.Chapter;
 import machinum.model.ChapterDataSummary;
 import machinum.model.ChapterDataSummary.ChapterHeatmapData;
+import machinum.model.ChapterDataSummary.TextFingerprintData;
 import machinum.model.ChapterGlossary;
 import machinum.service.ChapterAnalysisService;
 import machinum.service.ChapterFacade;
@@ -96,6 +97,18 @@ public class ChapterController implements ControllerTrait {
         }
 
         return withCacheControl(chapterAnalysisService.getChapterHeatmapData(bookId));
+    }
+
+    @GetMapping("/api/books/{bookId}/chapters-fingerprint")
+    public ResponseEntity<TextFingerprintData> getChapterTextFingerprint(@PathVariable("bookId") String bookId, @RequestParam(value = "forceUpdate", defaultValue = "false") Boolean forceUpdate) {
+        log.info("Received request for chapter text fingerprint, bookId: {}", bookId);
+
+        if (forceUpdate) {
+            chapterAnalysisService.clearFingerprintCache(bookId);
+            chapterAnalysisService.getTextFingerprintData(bookId);
+        }
+
+        return withCacheControl(chapterAnalysisService.getTextFingerprintData(bookId));
     }
 
     @GetMapping("/api/books/{bookId}/chapters-titles")

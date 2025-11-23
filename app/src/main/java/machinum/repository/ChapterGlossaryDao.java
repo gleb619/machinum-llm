@@ -58,7 +58,7 @@ public class ChapterGlossaryDao {
      * @return list of search results as GlossarySearchResult objects
      */
     public List<GlossarySearchResult> searchGlossary(String bookId, GlossarySearchRequest request) {
-        log.debug("Searching glossary for bookId={}, searchText='{}', algorithms: exact, contains, fulltext, trigram, levenshtein, phonetic, jaro_winkler, fuzzy", bookId, request.getSearchText());
+        log.debug("Searching glossary for bookId={}, searchText='{}'", bookId, request.getSearchText());
 
         // Execute enabled algorithms and collect all results
         var allResults = algorithms.entrySet().stream()
@@ -66,7 +66,7 @@ public class ChapterGlossaryDao {
                     try {
                         var results = entry.getValue().apply(request, bookId);
                         if (!results.isEmpty()) {
-                            log.debug("Algorithm {} found {} results", entry.getKey(), results.size());
+                            log.trace("Algorithm {} found {} results", entry.getKey(), results.size());
                         }
                         return results.stream();
                     } catch (Exception e) {
@@ -97,7 +97,7 @@ public class ChapterGlossaryDao {
                 .limit(request.getTopK())
                 .collect(Collectors.toList());
 
-        log.debug("Combined search returned {} unique results after deduplication and filtering", sortedResults.size());
+        log.debug("Combined search returned {} unique results after deduplication and filtering for '{}'", sortedResults.size(), request.getSearchText());
         return sortedResults;
     }
 

@@ -6,16 +6,20 @@ import machinum.converter.ChapterAnalysisMapper;
 import machinum.model.ChapterDataSummary;
 import machinum.model.ChapterDataSummary.ChapterHeatmapData;
 import machinum.model.ChapterDataSummary.ChapterReadinessItem;
+import machinum.model.ChapterDataSummary.ChapterTextFingerprint;
+import machinum.model.ChapterDataSummary.TextFingerprintData;
 import machinum.repository.ChapterReportRepository;
+import machinum.repository.ChapterReportRepository.CharacterCountProjection;
+import machinum.repository.ChapterReportRepository.UniqueNamesProjection;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import static machinum.config.Config.CacheConstants.CHAPTER_DATA_SUMMARY;
-import static machinum.config.Config.CacheConstants.CHAPTER_HEATMAP_DATA;
+import static machinum.config.Config.CacheConstants.*;
 
 @Slf4j
 @Service
@@ -121,6 +125,63 @@ public class ChapterAnalysisService {
                         Collectors.collectingAndThen(Collectors.counting(), Math::toIntExact)));
 
         return new ChapterHeatmapData(bookId, chapters, averageReadiness, statusCounts, chapters.size());
+    }
+
+    @CacheEvict(CHAPTER_FINGERPRINT_DATA)
+    public void clearFingerprintCache(String bookId) {
+        log.debug("Will clean fingerprint cache for bookId: {}", bookId);
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(CHAPTER_FINGERPRINT_DATA)
+    public TextFingerprintData getTextFingerprintData(String bookId) {
+        log.info("Generating text fingerprint data for bookId: {}", bookId);
+
+        var characterCounts = chapterReportRepository.getChapterCharacterCounts(bookId).stream()
+                .collect(Collectors.toMap(
+                        CharacterCountProjection::getNumber,
+                        CharacterCountProjection::getSampledChars));
+
+        var uniqueNamesData = chapterReportRepository.getChapterUniqueNamesProgress(bookId).stream()
+                .collect(Collectors.toMap(
+                        UniqueNamesProjection::getChapterNumber,
+                        projection -> projection));
+
+        // Calculate average characters across all chapters
+        var averageCharacters = characterCounts.values().stream()
+                .mapToDouble(Integer::doubleValue)
+                .average()
+                .orElse(0.0);
+
+        // Calculate total unique names (final cumulative count)
+        var maxCumulative = uniqueNamesData.values().stream()
+                .mapToInt(UniqueNamesProjection::getCumulativeUniqueNames)
+                .max()
+                .orElse(0);
+
+        // Build chapter fingerprints in order
+        var chapterFingerprints = characterCounts.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> {
+                    var chapterNumber = entry.getKey();
+                    var characterCount = entry.getValue() != null ? entry.getValue() : 0;
+                    var namesData = uniqueNamesData.get(chapterNumber);
+
+                    return ChapterTextFingerprint.builder()
+                            .chapterNumber(chapterNumber)
+                            .characterCount(characterCount)
+                            .newUniqueNames(namesData != null ? namesData.getNewUniqueNames() : 0)
+                            .cumulativeUniqueNames(namesData != null ? namesData.getCumulativeUniqueNames() : 0)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return TextFingerprintData.builder()
+                .bookId(bookId)
+                .chapters(chapterFingerprints)
+                .averageCharacters(averageCharacters)
+                .totalUniqueNames((long) maxCumulative)
+                .build();
     }
 
 }

@@ -15,7 +15,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.retry.RetryHelper;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -52,7 +51,7 @@ public abstract class AbstractTranslaterHeader implements FlowSupport, Precondit
     private RawInfoTool rawInfoTool;
 
     @Autowired
-    private RetryHelper retryHelper;
+    private Worker worker;
 
 
     public abstract Resource getSystemTemplate();
@@ -135,16 +134,17 @@ public abstract class AbstractTranslaterHeader implements FlowSupport, Precondit
         if (simpleMode) {
             return assistant.process(context);
         } else {
-            return retryHelper.withSmallRetry(text, retryChunk -> {
-                var contextResult = requiredNotEmpty(context.copy(b -> b.text(retryChunk)), assistant::process);
-                var mapResult = parsePropertiesFromMarkdown(contextResult.result());
-                if (mapResult.isEmpty()) {
-                    throw new AppIllegalStateException("All titles are empty");
-                }
-                contextResult.setEntity(mapResult);
-
-                return contextResult;
-            });
+            return worker.work(context, "translateTitle-%s-".formatted(flowContext.iteration()), Worker.RetryType.SMALL, baseContext ->
+                    retryChunk -> {
+                        var chunkContext = baseContext.copy(b -> b.text(retryChunk));
+                        var result = requiredNotEmpty(chunkContext, assistant::process);
+                        var mapResult = parsePropertiesFromMarkdown(result.result());
+                        if (mapResult.isEmpty()) {
+                            throw new AppIllegalStateException("All titles are empty");
+                        }
+                        result.setEntity(mapResult);
+                        return result;
+                    });
         }
     }
 

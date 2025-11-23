@@ -9,7 +9,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class TextSearchHelperUtil {
+public class TextSimilarityUtil {
 
     public static List<String> search(List<String> texts, String searchTerm) {
         Map<String, String> textMap = texts.stream()

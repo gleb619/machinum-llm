@@ -72,5 +72,32 @@ public class ChapterDataSummary {
 
     }
 
+    @Data
+    @AllArgsConstructor
+    @Builder(toBuilder = true)
+    @NoArgsConstructor(access = AccessLevel.PUBLIC)
+    public static class TextFingerprintData {
+
+        private String bookId;
+        @Builder.Default
+        private List<ChapterTextFingerprint> chapters = new ArrayList<>();
+        private Double averageCharacters;
+        private Long totalUniqueNames;
+
+    }
+
+    @Data
+    @AllArgsConstructor
+    @Builder(toBuilder = true)
+    @NoArgsConstructor(access = AccessLevel.PUBLIC)
+    public static class ChapterTextFingerprint {
+
+        private Integer chapterNumber;
+        private Integer characterCount;
+        private Integer newUniqueNames;
+        private Integer cumulativeUniqueNames;
+
+    }
+
 
 }

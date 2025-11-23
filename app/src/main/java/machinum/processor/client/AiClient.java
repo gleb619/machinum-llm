@@ -20,6 +20,8 @@ public interface AiClient {
 
         OPENROUTER,
 
+        NONE,
+
         ;
 
         public static Provider parse(String name) {

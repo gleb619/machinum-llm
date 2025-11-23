@@ -1,7 +1,7 @@
 package machinum.processor.core;
 
 import machinum.model.ObjectName;
-import machinum.util.TextSearchHelperUtil;
+import machinum.util.TextSimilarityUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -21,7 +21,7 @@ public interface ObjectNameSupport {
                         %s
                         """.formatted(entry.getValue().getName(), entry.getValue().getDescription()), (f, s) -> f));
 
-        var searchResult = TextSearchHelperUtil.search(data, name);
+        var searchResult = TextSimilarityUtil.search(data, name);
 
         var objects = nameMap.entrySet()
                 .stream()

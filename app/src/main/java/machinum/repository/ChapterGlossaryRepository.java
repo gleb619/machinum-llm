@@ -31,7 +31,8 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterGlossary
             """, nativeQuery = true)
     List<GlossaryByQueryResult> findGlossaryByQuery(@Param("names") List<String> names,
                                                     @Param("chapterNumber") Integer chapterNumber,
-                                                    @Param("bookId") String bookId);
+                                                    @Param("bookId") String bookId,
+                                                    PageRequest pageRequest);
 
     @Query(value = """ 
                 select 
