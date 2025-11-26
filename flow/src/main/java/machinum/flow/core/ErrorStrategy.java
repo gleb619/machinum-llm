@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.flow.exception.FlowException;
 import machinum.flow.model.FlowContext;
 
+import java.time.Duration;
 import java.util.Objects;
 
 /**
@@ -63,6 +64,40 @@ public interface ErrorStrategy<T> {
         @Override
         public void handleError(FlowContext<T> context, Exception exception) {
             log.warn("Ignoring error: {}", exception.getMessage());
+        }
+    }
+
+    /**
+     * Error strategy that logs errors, schedules a retry after 1 minute in a background thread, and throws an exception to stop execution.
+     */
+    @Slf4j
+    class RetryAfterDelayErrorStrategy<T> implements ErrorStrategy<T> {
+
+        private final Runnable retryAction;
+
+        public RetryAfterDelayErrorStrategy(Runnable retryAction) {
+            this.retryAction = retryAction;
+        }
+
+        @Override
+        public void handleError(FlowContext<T> context, Exception exception) {
+            log.error("Error occurred during flow execution, scheduling retry after 1 minute in background", exception);
+
+            // Launch retry in background thread
+            Thread.ofVirtual().start(() -> {
+                try {
+                    Thread.sleep(Duration.ofMinutes(1));
+                    log.info("Retrying operation after delay");
+                    retryAction.run();
+                } catch (InterruptedException e) {
+                    log.warn("Retry scheduling was interrupted", e);
+                } catch (Exception e) {
+                    log.error("Error during retry execution", e);
+                }
+            });
+
+            // Still throw to stop current execution
+            throw new FlowException("Execution failed, background retry scheduled", exception);
         }
     }
 

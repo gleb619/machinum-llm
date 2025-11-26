@@ -20,6 +20,7 @@ import java.util.*;
 public class ObjectName implements StringSupport {
 
     public static final String RU_NAME = "ruName";
+    public static final String SIMILAR = "similar";
 
     @NotNull
     @NotEmpty
@@ -42,10 +43,13 @@ public class ObjectName implements StringSupport {
     @JsonDescription("A list of names of related terms (e.g., 'Kael’s Village' references 'Kael', etc).")
     private List<String> references = new ArrayList<>();
 
+    @JsonDescription("Russian translation of the term name.")
+    private String ruName;
+
     @SchemaIgnore
     @JsonIgnore
     @Singular("metadata")
-    private Map<String, String> metadata = new HashMap<>();
+    private Map<String, Object> metadata = new HashMap<>();
 
     public static ObjectName forName(String name) {
         return ObjectName.builder()
@@ -55,45 +59,67 @@ public class ObjectName implements StringSupport {
 
     @JsonAnySetter
     public void add(String key, String value) {
-        metadata.put(key, value);
+        if (RU_NAME.equals(key)) {
+            this.ruName = value;
+        } else {
+            metadata.put(key, value);
+        }
     }
 
     @JsonAnyGetter
-    public Map<String, String> getMap() {
+    public Map<String, Object> getMap() {
         return metadata;
     }
 
     public ObjectName withRuName(@NonNull String value) {
         var map = new HashMap<>(getMetadata());
-        if (map.containsKey(RU_NAME)) {
+        if (this.ruName != null) {
+            // Backup previous ruName to metadata for history
             int index = 1;
             while (map.containsKey(RU_NAME + index)) {
                 index++;
             }
-            map.put(RU_NAME + index, map.get(RU_NAME));
+            map.put(RU_NAME + index, this.ruName);
         }
-        map.put(RU_NAME, value);
 
         return toBuilder()
+                .ruName(value)
                 .clearMetadata()
                 .metadata(map)
                 .build();
     }
 
     public boolean hasRuName() {
-        return metadata.containsKey(RU_NAME);
+        return ruName != null;
     }
 
     public String ruName() {
-        return Objects.requireNonNull(metadata.get(RU_NAME), "Ru name can't be null or empty");
+        return Objects.requireNonNull(ruName, "Ru name can't be null or empty");
+    }
+
+    public boolean marked() {
+        return Boolean.TRUE.equals(metadata.get("marked"));
+    }
+
+    public void marked(boolean marked) {
+        metadata.put("marked", marked);
     }
 
     public Optional<String> optionalRuName() {
         return hasRuName() ? Optional.of(ruName()) : Optional.empty();
     }
 
+    @SuppressWarnings("unchecked")
+    public List<NameSimilarity> similarNames() {
+        return (List) metadata.getOrDefault(SIMILAR, new ArrayList<>());
+    }
+
+    public void similarNames(List<NameSimilarity> similarNames) {
+        metadata.put(SIMILAR, similarNames);
+    }
+
     public String getTranslationHistory(int version) {
-        return metadata.get(RU_NAME + version);
+        return Objects.toString(metadata.get(RU_NAME + version), null);
     }
 
     public List<String> getTranslationHistory() {
@@ -116,7 +142,7 @@ public class ObjectName implements StringSupport {
         if (references != null && !references.isEmpty()) {
             sb.append("; References: ").append(references);
         }
-        if (metadata.containsKey(RU_NAME)) {
+        if (hasRuName()) {
             sb.append("; Russian translation is: `").append(ruName()).append("`;");
             return sb.toString();
         }
@@ -133,7 +159,7 @@ public class ObjectName implements StringSupport {
     public String shortStringValue() {
         String string = "`%s` - it's a %s.".formatted(name, category);
 
-        if (metadata.containsKey(RU_NAME)) {
+        if (hasRuName()) {
             return "%s On Russian - `%s`;".formatted(string, ruName());
         }
 

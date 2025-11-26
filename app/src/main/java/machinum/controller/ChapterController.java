@@ -33,6 +33,7 @@ public class ChapterController implements ControllerTrait {
     private static final String MISSING_MODE = "missing";
     private static final String TRANSLATION_MODE = "translated";
     private static final String CHAPTERS_MODE = "chapters";
+    private static final String MARKED_MODE = "marked";
 
     private final ChapterService chapterService;
     private final ChapterAnalysisService chapterAnalysisService;
@@ -155,6 +156,7 @@ public class ChapterController implements ControllerTrait {
                     chapterGlossaryService.findBookTranslatedGlossary(bookId, true, PageRequest.of(page, size));
             case CHAPTERS_MODE ->
                     chapterGlossaryService.findBookTranslatedGlossary(bookId, fromChapterNumber, toChapterNumber, PageRequest.of(page, size));
+            case MARKED_MODE -> chapterGlossaryService.findMarkedGlossary(bookId, PageRequest.of(page, size));
             case null, default -> chapterGlossaryService.findBookGlossary(bookId, PageRequest.of(page, size));
         };
 
@@ -211,10 +213,26 @@ public class ChapterController implements ControllerTrait {
     }
 
     @PutMapping("/api/books/{bookId}/update-ru-name")
-    public ResponseEntity<Void> updateGlossaryRuName(@PathVariable("bookId") String bookId, @RequestBody UpdateGlossaryRuNameRequest request) {
+    public ResponseEntity<List<String>> updateGlossaryRuName(@PathVariable("bookId") String bookId, @RequestBody UpdateGlossaryRuNameRequest request) {
         log.info("Updating glossary ru name for bookId: {}, oldRuName: {}, newRuName: {}, returnIds: {}, nameFilter: {}",
                 bookId, request.oldRuName(), request.newRuName(), request.returnIds(), request.nameFilter());
-        chapterGlossaryService.updateGlossaryRuName(bookId, request.oldRuName(), request.newRuName(), request.returnIds(), request.nameFilter());
+        List<String> affectedChapterIds = chapterGlossaryService.updateGlossaryRuName(bookId, request.oldRuName(), request.newRuName(), request.returnIds(), request.nameFilter());
+        return ResponseEntity.ok(affectedChapterIds != null ? affectedChapterIds : List.of());
+    }
+
+    //TODO: redo, accept from frontend a glossaryId(e.g. a `ChapterGlossary#id`) and work on
+    //TODO: redo api to `/api/books/{bookId}/glossary/{chapterGlossaryId}/mark`, and redo js
+    @PutMapping("/api/books/{bookId}/chapters/{chapterId}/glossary/{glossaryIndex}/mark")
+    public ResponseEntity<Void> markGlossaryItem(@PathVariable("bookId") String bookId,
+                                                 @PathVariable("chapterId") String chapterId,
+                                                 @PathVariable("glossaryIndex") Integer glossaryIndex,
+                                                 @RequestParam("marked") boolean marked) {
+        log.info("Marking glossary item for bookId: {}, chapterId: {}, glossaryIndex: {}, marked: {}",
+                bookId, chapterId, glossaryIndex, marked);
+
+        //TODO: work with id and not with anme of glossary
+        chapterGlossaryService.toggleGlossaryMark(bookId, "glossaryName", marked, "glossaryName"); // Use name as filter
+
         return ResponseEntity.noContent().build();
     }
 

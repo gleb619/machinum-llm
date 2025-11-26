@@ -59,6 +59,24 @@ public class ExternalGlossaryTranslater extends MachinumAutomataTranslater {
      * in chunks to manage API call limitations and updates the flow context with
      * the complete translated glossary.
      *
+     * <h3>Example:</h3>
+     * <p>Suppose the flow context contains glossary terms such as:</p>
+     * <pre>{@code
+     * - Vayne (Character): "The privileged daughter of a wealthy merchant who commissions a dagger..."
+     * - Blacksmith (Profession): "A craftsperson who creates objects from metal..."
+     * }</pre>
+     * <p>Terms are formatted and grouped into chunks. A chunk might look like:</p>
+     * <pre>{@code
+     * Vayne - it's a Character; Example of usage: The privileged daughter of a wealthy merchant who commissions a dagger#>\n
+     * Blacksmith - it's a Profession; Example of usage: A craftsperson who creates objects from metal\n#123#
+     * }</pre>
+     * <p>After sending to the translation API, the response is parsed, expecting format like:</p>
+     * <pre>{@code
+     * Вэйн это\n
+     * Кузнец это
+     * }</pre>
+     * <p>The "Вэйн" and "Кузнец" are extracted as the Russian translations and added to the terms.</p>
+     *
      * @param flowContext the flow context containing the glossary terms to be translated
      * @return the updated flow context with all glossary terms translated into Russian
      * @throws TranslationException if any terms fail to translate properly

@@ -41,11 +41,11 @@ public interface FlowContextArgs {
         return arg(TRANSLATED_TEXT_PARAM);
     }
 
-    default FlowArgument<String> contextArg() {
+    default FlowArgument<String> chapContextArg() {
         return arg(CONTEXT_PARAM);
     }
 
-    default FlowArgument<String> consolidatedContextArg() {
+    default FlowArgument<String> consolidatedChapContextArg() {
         return arg(CONSOLIDATED_CONTEXT_PARAM);
     }
 
@@ -94,11 +94,11 @@ public interface FlowContextArgs {
         return oldArg(TRANSLATED_TEXT_PARAM);
     }
 
-    default FlowArgument<String> oldContextArg() {
+    default FlowArgument<String> oldChapContextArg() {
         return oldArg(CONTEXT_PARAM);
     }
 
-    default FlowArgument<String> oldConsolidatedContextArg() {
+    default FlowArgument<String> oldConsolidatedChapContextArg() {
         return oldArg(CONSOLIDATED_CONTEXT_PARAM);
     }
 
@@ -147,12 +147,12 @@ public interface FlowContextArgs {
         return translatedTextArg().getValue();
     }
 
-    default String context() {
-        return contextArg().getValue();
+    default String chapContext() {
+        return chapContextArg().getValue();
     }
 
-    default String consolidatedContext() {
-        return consolidatedContextArg().getValue();
+    default String consolidatedChapContext() {
+        return consolidatedChapContextArg().getValue();
     }
 
     default String proofread() {
@@ -200,12 +200,12 @@ public interface FlowContextArgs {
         return oldTranslatedTextArg().getValue();
     }
 
-    default String oldContext() {
-        return oldContextArg().getValue();
+    default String oldChapContext() {
+        return oldChapContextArg().getValue();
     }
 
-    default String oldConsolidatedContext() {
-        return oldConsolidatedContextArg().getValue();
+    default String oldConsolidatedChapContext() {
+        return oldConsolidatedChapContextArg().getValue();
     }
 
     default String oldProofread() {

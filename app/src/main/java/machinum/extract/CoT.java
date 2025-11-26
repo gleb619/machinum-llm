@@ -91,7 +91,7 @@ public class CoT implements JsonSupport {
 
     public FlowContext<Chapter> createCoT(FlowContext<Chapter> flowContext) {
         var text = flowContext.text();
-        var context = flowContext.context();
+        var context = flowContext.chapContext();
 
         var questions = firstStep(text, context, flowContext);
         var cot = secondStep(context, questions, flowContext);

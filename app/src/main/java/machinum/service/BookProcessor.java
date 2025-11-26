@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import machinum.controller.BookOperationController.BookOperationRequest;
 import machinum.converter.ChapterConverter;
 import machinum.exception.AppIllegalStateException;
+import machinum.flow.core.ErrorStrategy.RetryAfterDelayErrorStrategy;
 import machinum.flow.core.FlowRunner;
 import machinum.flow.model.Flow;
 import machinum.flow.runner.BatchFlowRunner;
@@ -73,7 +74,8 @@ public class BookProcessor {
         var bookId = book.getId();
         var bookState = book.getBookState().state();
 
-        var flow = enrichMetadata(flowFactory.createFlow(request.getOperationName(), bookId, chapters), request);
+        var flow = enrichMetadata(flowFactory.createFlow(request.getOperationName(), bookId, chapters), request)
+                .withErrorStrategy(new RetryAfterDelayErrorStrategy<>(() -> doStart(request)));
         flowFactory.createRunner(request, flow)
                 .run(bookState);
     }
@@ -91,7 +93,9 @@ public class BookProcessor {
 
         SUMMARY,
         CLEANING,
+        EMBEDDING,
         GLOSSARY,
+        GLOSSARY_CONSOLIDATION,
         PROOFREAD,
         TRANSLATE_GLOSSARY,
         TRANSLATE_TITLE,
@@ -264,10 +268,18 @@ public class BookProcessor {
                             .comment("On %s state we use gemma2"::formatted)
                             .pipeStateless(templateAiFacade::bootstrapWith)
                             .pipe(templateAiFacade::rewrite)
+                        .onState(ProcessorState.EMBEDDING)
+                            .comment("On %s state we generate embeddings"::formatted)
+                            .pipeStateless(templateAiFacade::bootstrapWith)
+                            .pipe(templateAiFacade::embedding)
                         .onState(ProcessorState.GLOSSARY)
                             .pipeStateless(templateAiFacade::bootstrapWith)
                             .pipe(templateAiFacade::glossary)
                             .pipe(templateAiFacade::logicSplit)
+                        .onState(ProcessorState.GLOSSARY_CONSOLIDATION)
+                            .comment("On %s state we consolidate similar glossary names"::formatted)
+                            .pipeStateless(templateAiFacade::bootstrapWith)
+                            .pipe(templateAiFacade::consolidateGlossary)
                         .onState(ProcessorState.PROOFREAD)
                             .comment("On %s state we use gemma2"::formatted)
                             .pipeStateless(templateAiFacade::bootstrapWith)

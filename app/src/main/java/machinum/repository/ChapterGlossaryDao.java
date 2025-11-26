@@ -1,10 +1,7 @@
 package machinum.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import machinum.config.Holder;
 import machinum.controller.ChapterController.GlossarySearchRequest;
@@ -57,8 +54,8 @@ public class ChapterGlossaryDao {
      * @param request the search request with algorithm enable flags
      * @return list of search results as GlossarySearchResult objects
      */
-    public List<GlossarySearchResult> searchGlossary(String bookId, GlossarySearchRequest request) {
-        log.debug("Searching glossary for bookId={}, searchText='{}'", bookId, request.getSearchText());
+    public List<GlossarySearchResult> searchGlossary(@NonNull String bookId, @NonNull GlossarySearchRequest request) {
+        log.debug("Searching glossary for bookId={}, searchText='{}'/'{}'", bookId, request.getSearchText(), request.getFuzzyText());
 
         // Execute enabled algorithms and collect all results
         var allResults = algorithms.entrySet().stream()
@@ -97,7 +94,9 @@ public class ChapterGlossaryDao {
                 .limit(request.getTopK())
                 .collect(Collectors.toList());
 
-        log.debug("Combined search returned {} unique results after deduplication and filtering for '{}'", sortedResults.size(), request.getSearchText());
+        log.debug("Combined search returned {} unique results after deduplication and filtering for '{}'/'{}'",
+                sortedResults.size(), request.getSearchText(), request.getFuzzyText());
+
         return sortedResults;
     }
 

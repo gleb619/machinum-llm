@@ -33,7 +33,7 @@ class CommonFlowContextTest {
     void testContext() {
         var result = flowContext
                 .addArgs(context("example2"))
-                .context();
+                .chapContext();
         Assertions.assertEquals("example2", result);
     }
 
@@ -41,7 +41,7 @@ class CommonFlowContextTest {
     void testConsolidatedContext() {
         var result = flowContext
                 .addArgs(consolidatedContext("example3"))
-                .consolidatedContext();
+                .consolidatedChapContext();
         Assertions.assertEquals("example3", result);
     }
 
@@ -65,7 +65,7 @@ class CommonFlowContextTest {
     void testOldContext() {
         var result = flowContext
                 .addArgs(context("example2-old").asObsolete())
-                .oldContext();
+                .oldChapContext();
         Assertions.assertEquals("example2-old", result);
     }
 
@@ -73,7 +73,7 @@ class CommonFlowContextTest {
     void testOldConsolidatedContext() {
         var result = flowContext
                 .addArgs(consolidatedContext("example3-old").asObsolete())
-                .oldConsolidatedContext();
+                .oldConsolidatedChapContext();
         Assertions.assertEquals("example3-old", result);
     }
 
@@ -135,7 +135,7 @@ class CommonFlowContextTest {
                 .addArgs(text("example1"))
                 .then(ctx -> ctx.copy(b -> b.argument(context("example2"))));
         var textResult = contextFlow.text();
-        var contextResult = contextFlow.context();
+        var contextResult = contextFlow.chapContext();
 
         Assertions.assertEquals("example1", textResult);
         Assertions.assertEquals("example2", contextResult);
@@ -145,11 +145,11 @@ class CommonFlowContextTest {
     void testHasArgument() {
         boolean hasArg = flowContext
                 .addArgs(consolidatedContext("example1"))
-                .hasArgument(FlowContext::consolidatedContextArg, arg -> {
+                .hasArgument(FlowContext::consolidatedChapContextArg, arg -> {
                 });
 
         boolean hasntArg = flowContext
-                .hasArgument(FlowContext::consolidatedContextArg, arg -> {
+                .hasArgument(FlowContext::consolidatedChapContextArg, arg -> {
                 });
 
         Assertions.assertTrue(hasArg);

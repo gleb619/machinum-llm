@@ -116,7 +116,7 @@ public interface FlowSupport {
         flowContext.hasAnyArgument(oldContext -> {
             history.add(new UserMessage(USER_PREVIOUS_CONTEXT_TEMPLATE));
             history.add(new AssistantMessage(oldContext.stringValue()));
-        }, FlowContext::consolidatedContextArg, FlowContext::contextArg);
+        }, FlowContext::consolidatedChapContextArg, FlowContext::chapContextArg);
 
         flowContext.hasArgument(AppFlowActions::glossaryArg, glossary -> {
             history.add(new UserMessage(USER_GLOSSARY_TEMPLATE));
@@ -165,11 +165,11 @@ public interface FlowSupport {
         if (items.contains(HistoryItem.CONSOLIDATED_CONTEXT)) {
             historyContext.getFlowContext().hasAnyArgument(oldContext -> {
                 processContext(historyContext, oldContext, previousContext, history, USER_PREVIOUS_CONTEXT_TEMPLATE);
-            }, FlowContext::consolidatedContextArg, FlowContext::oldContextArg);
+            }, FlowContext::consolidatedChapContextArg, FlowContext::oldChapContextArg);
         }
 
         if (items.contains(HistoryItem.CONTEXT)) {
-            historyContext.getFlowContext().hasArgument(FlowContext::contextArg, context -> {
+            historyContext.getFlowContext().hasArgument(FlowContext::chapContextArg, context -> {
                 var currentContext = context.stringValue();
                 if (!previousContext.toString().equals(currentContext)) {
                     processContext(historyContext, context, previousContext, history, USER_CONTEXT_TEMPLATE);

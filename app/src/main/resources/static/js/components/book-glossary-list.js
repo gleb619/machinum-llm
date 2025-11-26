@@ -6,25 +6,50 @@ export function glossaryListApp() {
         glossaryList: [],
         glossaryListBackup: [],
         favoriteGlossaryId: null,
-        glossaryObject: {
-            glossaryTranslationFilter: 'all',
-            glossaryFilterTerm: '',
-            glossaryCurrentPage: 0,
-            glossaryPageSize: 50,
-            glossaryTotalPages: 0,
-            glossaryTotalElements: 0,
-            glossarySortColumn: 'chapterNumber',
-            glossarySortDirection: 'asc',
-            glossaryActiveTab: 'search',
-            glossaryStartChapter: 1,
-            glossaryEndChapter: 10
-        },
+        glossaryObjects: {},
         glossaryDebounceTimers: {},
         glossarySaveStates: {},
         glossaryChangeLoader: {},
 
+        get glossaryObject() {
+            // Ensure we have a glossary object for the current activeId
+            if (!this.glossaryObjects[this.activeId]) {
+                this.glossaryObjects[this.activeId] = {
+                    glossaryTranslationFilter: 'all',
+                    glossaryFilterTerm: '',
+                    glossaryCurrentPage: 0,
+                    glossaryPageSize: 50,
+                    glossaryTotalPages: 0,
+                    glossaryTotalElements: 0,
+                    glossarySortColumn: 'chapterNumber',
+                    glossarySortDirection: 'asc',
+                    glossaryActiveTab: 'search',
+                    glossaryStartChapter: 1,
+                    glossaryEndChapter: 10
+                };
+            }
+
+            return this.glossaryObjects[this.activeId];
+        },
+
         initGlossaryList() {
-            this.loadValue('glossaryObject', this.glossaryObject);
+            // Only initialize if we have an activeId
+            if (!this.activeId) {
+                return;
+            }
+
+            // Migrate old data format to new book-specific format
+            const bookData = localStorage.getItem('glossary-' + this.activeId);
+            if (bookData) {
+                try {
+                    this.glossaryObjects[this.activeId] = JSON.parse(bookData);
+                } catch (e) {
+                    console.warn('Failed to load glossary data for book', this.activeId, e);
+                    // Initialize with defaults
+                    delete this.glossaryObjects[this.activeId];
+                }
+            }
+
             this.favoriteGlossaryId = this.readSetting('favorite-' + this.activeId) || null;
             this.fetchGlossary();
         },
@@ -79,7 +104,7 @@ export function glossaryListApp() {
                     return item;
                 });
                 this.glossaryListBackup = JSON.parse(JSON.stringify(rsp));
-                this.changeValue('glossaryObject', this.glossaryObject);
+                this.changeValue('glossary-' + this.activeId, this.glossaryObject);
 
             } catch (error) {
                 console.error('Error:', error);
@@ -323,6 +348,50 @@ export function glossaryListApp() {
             } else {
                 this.favoriteGlossaryId = glossary.id;
                 this.writeSetting('favorite-' + this.activeId, glossary.id);
+            }
+        },
+
+        async refreshGlossaryItemsFromChapters(affectedChapterIds) {
+            if (!affectedChapterIds || affectedChapterIds.length === 0) return;
+
+            try {
+                // Build query parameters for the chapterIds
+                const params = new URLSearchParams();
+                affectedChapterIds.forEach(chapterId => {
+                    params.append('chapterIds', chapterId);
+                });
+
+                const response = await fetch(`/api/books/${this.activeId}/chapters-glossary?${params.toString()}`);
+
+                if (!response.ok) {
+                    console.error('Error fetching updated glossary items:', response);
+                    return;
+                }
+
+                const updatedGlossaryItems = await response.json();
+
+                // Update glossary items in the list that match the updated items
+                // Match by name and category since glossary items are unique by name+category per chapter
+                updatedGlossaryItems.forEach(updatedItem => {
+                    const existingIndex = this.glossaryList.findIndex(item =>
+                        item.name === updatedItem.name &&
+                        item.category === updatedItem.category &&
+                        affectedChapterIds.includes(item.chapterId)
+                    );
+
+                    if (existingIndex >= 0) {
+                        // Preserve details and other UI state, only update the backend data
+                        const existingDetails = {...this.glossaryList[existingIndex].details};
+                        this.glossaryList[existingIndex] = updatedItem;
+                        this.glossaryList[existingIndex].details = existingDetails;
+                    }
+                });
+
+                this.showToast('Glossary list updated with new translations', false);
+
+            } catch (error) {
+                console.error('Error refreshing glossary items:', error);
+                this.showToast('Failed to refresh glossary items', true);
             }
         },
 

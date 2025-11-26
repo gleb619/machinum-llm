@@ -364,6 +364,75 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterGlossary
                                 @Param("returnIds") Boolean returnIds,
                                 @Param("nameFilter") String nameFilter);
 
+    @Query(value = "SELECT mt_toggle_glossary_mark(:bookId, :glossaryName, :marked, :nameFilter)",
+            nativeQuery = true)
+    String updateGlossaryMark(@Param("bookId") String bookId,
+                              @Param("glossaryName") String glossaryName,
+                              @Param("marked") Boolean marked,
+                              @Param("nameFilter") String nameFilter);
+
+    @Query(value =
+            """
+                    SELECT
+                        cg0.id,
+                        cg0.chapter_id as chapterId,
+                        cg0."number" as chapterNumber,
+                        cg0.raw_json as rawJson
+                    FROM chapter_glossary cg0
+                    WHERE cg0.book_id = :bookId
+                    AND cg0.chapter_id IN :chapterIds
+                    ORDER BY cg0.number, cg0.category, cg0.name
+                    """, nativeQuery = true)
+    List<ChapterGlossaryProjection> findGlossaryByChapterIds(@Param("bookId") String bookId,
+                                                             @Param("chapterIds") List<String> chapterIds);
+
+    @Query(value = """
+            SELECT
+                *,
+                raw_json as rawJson
+            FROM
+                chapter_context_glossary
+            WHERE
+                book_id = :bookId
+            """, nativeQuery = true)
+    List<ChapterContextGlossaryProjection> findContextGlossary(@Param("bookId") String bookId);
+
+    interface ChapterContextGlossaryProjection {
+        String getId();
+
+        String getChapter_id();
+
+        String getSource_key();
+
+        Integer getNumber();
+
+        String getTitle();
+
+        String getBook_id();
+
+        String getName();
+
+        String getCategory();
+
+        String getDescription();
+
+        Boolean getTranslated();
+
+        String getTranslated_name();
+
+        String getRawJson();
+
+        String getContext_description();
+
+        String getContext_translated_name();
+
+        float[] getEmbedding();
+
+        String getContext_created_at();
+
+        String getContext_updated_at();
+    }
+
     interface GlossaryByQueryResult {
 
         String getName();

@@ -100,7 +100,7 @@ public class HistoryService {
                                    ContextBundleBuilder builder,
                                    TokenBudget budget) {
 
-        flowContext.hasArgument(FlowContext::contextArg, context -> {
+        flowContext.hasArgument(FlowContext::chapContextArg, context -> {
             var contextText = context.stringValue();
             int tokens = countTokens(contextText);
 

@@ -269,7 +269,7 @@ export function glossaryDetailsApp() {
                     bookId: this.activeId,
                     oldRuName: updateRuNameOldRuName,
                     newRuName: updateRuNameNewRuName,
-                    returnIds: false
+                    returnIds: true
                 };
                 if (updateRuNameNameFilter?.trim()) {
                     requestBody.nameFilter = updateRuNameNameFilter.trim();
@@ -285,6 +285,13 @@ export function glossaryDetailsApp() {
                     const error = await response.json();
                     this.showToast(`Error: ${error.message || 'Failed to update Russian name'}`, true);
                     return Promise.resolve();
+                }
+
+                const affectedChapterIds = await response.json();
+
+                // Refresh glossary items from affected chapters
+                if (affectedChapterIds && affectedChapterIds.length > 0) {
+                    await this.refreshGlossaryItemsFromChapters(affectedChapterIds);
                 }
 
                 this.showToast('Russian name updated successfully', false);

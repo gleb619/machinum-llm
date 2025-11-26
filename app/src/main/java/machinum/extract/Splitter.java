@@ -8,7 +8,6 @@ import machinum.flow.model.FlowContext;
 import machinum.flow.model.helper.FlowContextActions;
 import machinum.model.Chapter;
 import machinum.processor.core.SplitStrategy;
-import machinum.processor.core.SplitStrategy.BalancedSentenceSplitter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -57,19 +56,14 @@ public class Splitter {
             return List.of(ChunkItem.of(text));
         }
 
-        if (splitStrategy instanceof BalancedSentenceSplitter strategy) {
-            var iterator = new AtomicInteger(1);
-            var parts = Math.max((int) Math.ceil((double) textTokens / chunkSize), 2);
-            var list = strategy.split(text, parts).stream()
-                    .filter(Predicate.not(String::isBlank))
-                    .map(ChunkItem::of)
-                    .peek(chunkItem -> chunkItem.setPart(iterator.getAndIncrement()))
-                    .toList();
+        var iterator = new AtomicInteger(1);
+        var chunks = splitStrategy.split(text).stream()
+                .filter(Predicate.not(String::isBlank))
+                .map(ChunkItem::of)
+                .peek(chunkItem -> chunkItem.setPart(iterator.getAndIncrement()))
+                .toList();
 
-            return list;
-        } else {
-            throw new IllegalArgumentException("Unknown split strategy: " + splitStrategy);
-        }
+        return chunks;
     }
 
 }

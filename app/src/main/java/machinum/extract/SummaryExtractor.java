@@ -103,7 +103,7 @@ public class SummaryExtractor implements ChunkSupport, FlowSupport, Precondition
 
         log.debug("Prepared summary chunks text to fit the content window: text={}...", toShortDescription(result));
 
-        return flowContext.rearrange(FlowContext::contextArg, FlowContextActions.context(result));
+        return flowContext.rearrange(FlowContext::chapContextArg, FlowContextActions.context(result));
     }
 
     private String parseResult(AssistantContext.Result contextResult) {

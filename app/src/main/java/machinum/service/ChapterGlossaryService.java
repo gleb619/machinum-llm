@@ -11,12 +11,14 @@ import machinum.converter.ChapterMapper;
 import machinum.exception.AppIllegalStateException;
 import machinum.model.Chapter;
 import machinum.model.ChapterGlossary;
+import machinum.model.NameSimilarityResult;
 import machinum.model.ObjectName;
 import machinum.repository.ChapterByGlossaryRepository;
 import machinum.repository.ChapterGlossaryDao;
 import machinum.repository.ChapterGlossaryRepository;
 import machinum.repository.ChapterGlossaryRepository.CountResult;
 import machinum.repository.ChapterGlossaryRepository.GlossaryByQueryResult;
+import machinum.util.EmbeddingUtils;
 import org.springframework.async.AsyncHelper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
@@ -377,6 +379,74 @@ public class ChapterGlossaryService {
         }
     }
 
+    public static List<String> generateTrigrams(String text) {
+        // Clean the text: remove special characters, keep only letters, spaces, and numbers
+        String cleanedText = text.replaceAll("[^a-zA-Z0-9\\s]", "").toLowerCase();
+
+        Set<String> nGrams = new HashSet<>();
+        for (int i = 0; i <= cleanedText.length() - 3; i++) {
+            String trigram = cleanedText.substring(i, i + 3);
+
+            // Only add trigrams that consist only of letters or numbers (no spaces in middle)
+            if (trigram.matches("^[a-zA-Z0-9]+$")) {
+                nGrams.add(trigram);
+            }
+        }
+
+        return new ArrayList<>(nGrams);
+    }
+
+    @Deprecated
+    @Transactional
+    //TODO: add chapterId, remove `boolean marked` due toggle means change state to oposite
+    public void toggleGlossaryMark(@NonNull String bookId, String glossaryName, boolean marked, String nameFilter) {
+        //TODO: Use `app/src/main/java/machinum/entity/ChapterGlossaryView.java`/`app/src/main/java/machinum/repository/ChapterGlossaryRepository.java`, to find correspondent chapter, then load chapter, update what needed(.e.g names), then update whole object
+        log.debug("Toggling glossary mark for bookId: {}, name: {}, marked: {}", bookId, glossaryName, marked);
+        chapterRepository.updateGlossaryMark(bookId, glossaryName, marked, nameFilter);
+        log.debug("Glossary mark toggle completed for bookId: {}", bookId);
+        //TODO: remove migration `app/src/main/resources/db/migration/V2_5__marked_glossary_fn.sql`, we need to set such flag manually
+    }
+
+    @Deprecated
+    @Transactional(readOnly = true)
+    public Page<ChapterGlossary> findMarkedGlossary(@NonNull String bookId, @NonNull PageRequest pageRequest) {
+        log.debug("Finding marked glossary for bookId: {}", bookId);
+
+        // Get all glossary entries to filter for marked ones
+        //TODO: do not load all, and process in memory, use correspondent query to db, in `ChapterGlossaryView` we have a `rawJson`, we can use json operators there
+
+        /*var allGlossaryPage = chapterRepository.findGlossary(bookId, PageRequest.of(0, Integer.MAX_VALUE));
+        var markedGlossaryProjections = allGlossaryPage.getContent().stream()
+                .filter(cg -> {
+                    try {
+                        var objectName = objectMapperHolder.execute(mapper -> mapper.readValue(cg.getRawJson(), ObjectName.class));
+                        return objectName.isMarked();
+                    } catch (Exception e) {
+                        log.warn("Failed to parse JSON for glossary item: {}", cg.getId());
+                        return false;
+                    }
+                })
+                .toList();
+
+        // Map projections to DTOs
+        var markedGlossary = markedGlossaryProjections.stream()
+                .map(projection -> {
+                    var dto = chapterGlossaryMapper.toDto(projection);
+                    var objectName = objectMapperHolder.execute(mapper -> mapper.readValue(projection.getRawJson(), ObjectName.class));
+                    dto.setObjectName(objectName);
+                    return dto;
+                })
+                .toList();
+
+        // Create a new page with only marked items
+        int start = (int) pageRequest.getOffset();
+        int end = Math.min(start + pageRequest.getPageSize(), markedGlossary.size());
+        var pageContent = markedGlossary.subList(start, end);
+        return new PageImpl<>(pageContent, pageRequest, markedGlossary.size());*/
+
+        return null;
+    }
+
     /* ============= */
 
     private List<String> findMissingNames(List<GlossaryByQueryResult> pairs, List<String> dtoNames) {
@@ -405,21 +475,30 @@ public class ChapterGlossaryService {
         });
     }
 
-    private List<String> generateTrigrams(String text) {
-        // Clean the text: remove special characters, keep only letters, spaces, and numbers
-        String cleanedText = text.replaceAll("[^a-zA-Z0-9\\s]", "").toLowerCase();
+    @Transactional(readOnly = true)
+    public List<NameSimilarityResult> findSimilarContextGlossaryNames(@NonNull String bookId, @NonNull float[] queryEmbedding, double threshold, int limit) {
+        log.debug("Finding similar context glossary names for bookId: {}, threshold: {}, limit: {}", bookId, threshold, limit);
 
-        Set<String> nGrams = new HashSet<>();
-        for (int i = 0; i <= cleanedText.length() - 3; i++) {
-            String trigram = cleanedText.substring(i, i + 3);
+        var projections = chapterRepository.findContextGlossary(bookId);
 
-            // Only add trigrams that consist only of letters or numbers (no spaces in middle)
-            if (trigram.matches("^[a-zA-Z0-9]+$")) {
-                nGrams.add(trigram);
-            }
-        }
+        return projections.stream()
+                .map(projection -> {
+                    var objectName = objectMapperHolder.execute(mapper -> mapper.readValue(projection.getRawJson(), ObjectName.class));
+                    double similarity = EmbeddingUtils.cosineSimilarity(queryEmbedding, projection.getEmbedding());
+                    double distance = EmbeddingUtils.cosineDistance(queryEmbedding, projection.getEmbedding());
 
-        return new ArrayList<>(nGrams);
+                    return NameSimilarityResult.builder()
+                            .distance(distance)
+                            .similarity(similarity)
+                            .objectName(objectName)
+                            .relatedNames(List.of())
+                            .isPotentialDuplicate(false)
+                            .build();
+                })
+                .filter(result -> result.getSimilarity() >= threshold)
+                .sorted(Comparator.comparing(NameSimilarityResult::getSimilarity).reversed())
+                .limit(limit)
+                .collect(Collectors.toList());
     }
 
 }

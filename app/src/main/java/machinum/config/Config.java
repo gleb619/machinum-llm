@@ -32,6 +32,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Profile;
 import org.springframework.db.DbHelper;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -55,6 +56,7 @@ import static machinum.config.Config.CacheConstants.*;
 public class Config {
 
     @Bean
+    @Profile("!test")
     VectorStore vectorStore(JdbcTemplate template, OllamaEmbeddingModel embeddingModel) {
         return PgVectorStore.builder(template, embeddingModel)
                 .build();

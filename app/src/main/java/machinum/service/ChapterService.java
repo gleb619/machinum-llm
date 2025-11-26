@@ -216,6 +216,7 @@ public class ChapterService {
 
     @Transactional
     public void saveWithContext(@NonNull FlowContext<Chapter> ctx) {
+        //TODO: add persist on GLOSSARY_CONSOLIDATION
         log.debug("Prepare to update chapter in db: {}", ctx);
         var state = (BookProcessor.ProcessorState) ctx.getState();
         var chapterInfo = ctx.getCurrentItem();
@@ -231,7 +232,7 @@ public class ChapterService {
             }
             case SUMMARY -> {
                 //TODO track changes for summary field
-                ctx.optionalValue(FlowContext::contextArg)
+                ctx.optionalValue(FlowContext::chapContextArg)
                         .ifPresent(context -> {
                             ctx.getCurrentItem().setSummary(context);
                             chapterRepository.updateSummary(chapterInfo.getId(), context);
@@ -505,7 +506,7 @@ public class ChapterService {
         boolean persist = false;
 
         for (var newObjectName : newNames) {
-            var newName = newObjectName.getMetadata().get(NEW_EN_NAME);
+            var newName = Objects.toString(newObjectName.getMetadata().get(NEW_EN_NAME), null);
             var objectInChapter = chapter.findObjectName(newObjectName.getName());
             if (Objects.nonNull(objectInChapter)) {
                 int targetIndex = chapter.getNames().indexOf(objectInChapter);

@@ -96,7 +96,7 @@ public abstract class AbstractScoring implements FlowSupport, JsonSupport {
                     history.add(new UserMessage(USER_PREVIOUS_CONTEXT_TEMPLATE));
                     history.add(new AssistantMessage(contextText));
                 }
-            }, FlowContext::consolidatedContextArg, FlowContext::contextArg, FlowContext::oldContextArg);
+            }, FlowContext::consolidatedChapContextArg, FlowContext::chapContextArg, FlowContext::oldChapContextArg);
         } else {
             history = fulfillHistory(systemTemplate, context);
             history.add(new UserMessage(USER_TEXT_TEMPLATE));

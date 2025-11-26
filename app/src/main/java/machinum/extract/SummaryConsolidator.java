@@ -64,15 +64,15 @@ public class SummaryConsolidator implements ChunkSupport, FlowSupport {
     public FlowContext<Chapter> consolidate(FlowContext<Chapter> flowContext) {
         String result;
 
-        if (flowContext.hasArgument(FlowContext::consolidatedContextArg)) {
-            result = doAction(flowContext, flowContext.consolidatedContext(), flowContext.context());
-        } else if (flowContext.hasArguments(FlowContext::oldContextArg, FlowContext::contextArg)) {
-            result = doAction(flowContext, flowContext.oldContext(), flowContext.context());
+        if (flowContext.hasArgument(FlowContext::consolidatedChapContextArg)) {
+            result = doAction(flowContext, flowContext.consolidatedChapContext(), flowContext.chapContext());
+        } else if (flowContext.hasArguments(FlowContext::oldChapContextArg, FlowContext::chapContextArg)) {
+            result = doAction(flowContext, flowContext.oldChapContext(), flowContext.chapContext());
         } else {
-            result = flowContext.context();
+            result = flowContext.chapContext();
         }
 
-        return flowContext.rearrange(FlowContext::consolidatedContextArg, consolidatedContext(result));
+        return flowContext.rearrange(FlowContext::consolidatedChapContextArg, consolidatedContext(result));
     }
 
     private String doAction(FlowContext<Chapter> flowContext, String previous, String current) {

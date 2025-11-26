@@ -147,6 +147,16 @@ public class Flow<T> {
     }
 
     /**
+     * Creates a new flow with the specified error strategy.
+     *
+     * @param errorStrategy The error strategy to handle exceptions during flow execution.
+     * @return The new flow.
+     */
+    public Flow<T> withErrorStrategy(ErrorStrategy<T> errorStrategy) {
+        return this.copy(b -> b.errorStrategy(errorStrategy));
+    }
+
+    /**
      * Maps the flow items using a simple mapper function.
      *
      * @param mapper The mapper function.

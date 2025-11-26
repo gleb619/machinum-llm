@@ -10,6 +10,7 @@ import machinum.flow.model.Chunks;
 import machinum.flow.model.FlowContext;
 import machinum.flow.model.helper.FlowContextActions;
 import machinum.model.Chapter;
+import machinum.model.EmbeddingExecutionType;
 import machinum.util.TextUtil;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +34,7 @@ public class TemplateAiFacade {
     private final SSMLConverter ssmlConverter;
     private final Synthesizer synthesizer;
     private final ExternalTitleTranslater externalTitleTranslater;
+    private final EmbeddingService embeddingService;
 
 
     public FlowContext<Chapter> rewrite(FlowContext<Chapter> context) {
@@ -132,6 +134,14 @@ public class TemplateAiFacade {
         return synthesizer.synthesize(context);
     }
 
+    public FlowContext<Chapter> embedding(FlowContext<Chapter> context) {
+        return embeddingService.processChapterEmbeddings(context, EmbeddingExecutionType.ONLY_NAMES);
+    }
+
+    public FlowContext<Chapter> consolidateGlossary(FlowContext<Chapter> flowContext) {
+        return embeddingService.consolidateGlossary(flowContext);
+    }
+
     public FlowContext<Chapter> bootstrapWith(FlowContext<Chapter> context) {
         var currentItem = context.getCurrentItem();
         log.debug("Bootstrap context from: {}", currentItem);
@@ -148,8 +158,8 @@ public class TemplateAiFacade {
 
         return context.push(FlowContext::chapterNumberArg, chapterNumber(currentItem.getNumber()))
                 .push(FlowContext::textArg, text(textValue))
-                .push(FlowContext::contextArg, context(contextValue))
-                .push(FlowContext::consolidatedContextArg, consolidatedContext(consolidatedContextValue))
+                .push(FlowContext::chapContextArg, context(contextValue))
+                .push(FlowContext::consolidatedChapContextArg, consolidatedContext(consolidatedContextValue))
                 .push(AppFlowActions::glossaryArg, AppFlowActions.glossary(glossaryValue))
                 .push(ctx -> ctx.arg(TITLE), FlowContextActions.createArg(TITLE, title))
                 .push(ctx -> ctx.arg(TRANSLATED_TITLE), FlowContextActions.createArg(TRANSLATED_TITLE, translatedTitle))
@@ -211,7 +221,7 @@ public class TemplateAiFacade {
         }
 
         try {
-            var oldContext = context.oldContext();
+            var oldContext = context.oldChapContext();
             if (TextUtil.isNotEmpty(oldContext)) {
                 return oldContext;
             }
