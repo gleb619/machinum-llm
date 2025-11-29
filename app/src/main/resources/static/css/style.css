@@ -202,3 +202,37 @@
 .volume-slider::-webkit-slider-thumb {
     background: #4f46e5;
 }
+
+.border-l-purple-500 {
+    border-left-color: rgb(168, 85, 247);
+}
+
+.monaco-suspicious-line {
+    background-color: yellow !important;
+}
+
+.monaco-active-line {
+    background-color: rgba(0, 120, 215, 0.1) !important;
+}
+
+.monaco-hidden-line {
+    opacity: 0.1 !important;
+    color: transparent !important;
+}
+
+.monaco-hidden-inline {
+    opacity: 0.1 !important;
+    color: transparent !important;
+}
+
+.sl-english {
+    background-color: lightcoral !important;
+}
+
+.sl-original {
+    background-color: lightgreen !important;
+}
+
+.sl-translated {
+    background-color: gold !important;
+}

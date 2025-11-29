@@ -4,7 +4,7 @@ import { utilsApp } from './utils.js';
 import { listApp } from './chapter-list.js';
 import { chapterDrawerApp } from './components/chapter-drawer.js';
 import { editApp } from './chapter-edit.js';
-import { initEditorDirective } from './directive/editor-directive.js';
+import { initEditorDirective, initMonacoEditorDirective } from './directive/editor-directive.js';
 import { lineListApp } from './components/line-list.js';
 import { textEditorApp } from './components/text-editor.js';
 import { audioApp } from './components/chapter-audio.js';
@@ -50,6 +50,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 document.addEventListener("DOMContentLoaded", function(event) {
     initEditorDirective();
+    initMonacoEditorDirective();
 
     Alpine.data('app', app);
     Alpine.start();

@@ -93,7 +93,7 @@
                             <input class="mt-1 block w-full border border-gray-300 rounded shadow-sm py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
                                    x-model="glossary.details.replaceTextReplacement">
                         </div>
-                        <button @click="replaceGlossaryText(); changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                        <button @click="replaceGlossaryText(glossary); changeValue('glossaryConfigTabs', glossaryConfigTabs)"
                                 class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500">
                             Replace
                         </button>
@@ -156,11 +156,11 @@
                                    x-model="glossary.details.updateRuNameNameFilter">
                         </div>
                         <div class="flex gap-2">
-                            <button @click="previewUpdateRuName()"
+                            <button @click="previewUpdateRuName(glossary)"
                                     class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500">
                                 Preview Affected Chapters
                             </button>
-                            <button @click="updateGlossaryRuName()"
+                            <button @click="updateGlossaryRuName(glossary)"
                                     class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500">
                                 Update
                             </button>

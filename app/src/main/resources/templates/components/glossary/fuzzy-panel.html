@@ -36,28 +36,71 @@
                                       class="pl-8 pr-24 py-2 w-full text-sm border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 focus:border-blue-400 h-10"
                                       placeholder="Search title..."
                                       type="text" x-model="glossary.details.searchText"
-                                      x-show="!glossaryConfigTabs.isFuzzyMode"></textarea>
+                                      x-show="glossaryConfigTabs.selectedAlgorithm !== 'fuzzy'"></textarea>
 
                             <textarea @input="updateFuzzyPreview(glossary);" @input.debounce.300ms="applyFuzzyFormat(glossary)"
                                       class="pl-8 pr-24 py-2 w-full text-sm border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 focus:border-blue-400 resize-none overflow-hidden h-10"
                                       placeholder="Enter text for fuzzy search..."
                                       rows="1" x-model="glossary.details.fuzzyTextInput"
-                                      x-show="glossaryConfigTabs.isFuzzyMode"></textarea>
+                                      x-show="glossaryConfigTabs.selectedAlgorithm === 'fuzzy'"></textarea>
 
-                            <!-- Right Addons (Mode Toggle + Search Button) -->
+                            <!-- Right Addons (Algorithm Tabs + Search Button) -->
                             <div class="absolute inset-y-0 right-0 flex items-center pr-1 gap-1">
-                                <!-- Mode Toggle Button -->
-                                <button :title="glossaryConfigTabs.isFuzzyMode ? 'Switch to regular search mode' : 'Switch to fuzzy search mode'"
-                                        @click="toggleFuzzyMode(glossary)"
-                                        class="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded text-gray-600">
-                                    <span x-text="glossaryConfigTabs.isFuzzyMode ? 'Regular' : 'Fuzzy'"></span>
-                                </button>
+                                <!-- Algorithm Tabs -->
+                                <div class="flex gap-0.5">
+                                    <button :class="glossaryConfigTabs.selectedAlgorithm === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'"
+                                            @click="glossaryConfigTabs.selectedAlgorithm = 'all'; fetchRelatedGlossaryItems(glossary); changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                                            class="px-1.5 py-0.5 text-xs rounded font-medium"
+                                            title="All Algorithms">All
+                                    </button>
+                                    <button :class="glossaryConfigTabs.selectedAlgorithm === 'exact' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'"
+                                            @click="glossaryConfigTabs.selectedAlgorithm = 'exact'; fetchRelatedGlossaryItems(glossary); changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                                            class="px-1.5 py-0.5 text-xs rounded font-medium hidden sm:inline-block"
+                                            title="Exact Match">Ex
+                                    </button>
+                                    <button :class="glossaryConfigTabs.selectedAlgorithm === 'contains' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'"
+                                            @click="glossaryConfigTabs.selectedAlgorithm = 'contains'; fetchRelatedGlossaryItems(glossary); changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                                            class="px-1.5 py-0.5 text-xs rounded font-medium hidden md:inline-block"
+                                            title="Contains">*
+                                    </button>
+                                    <button :class="glossaryConfigTabs.selectedAlgorithm === 'fulltext' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'"
+                                            @click="glossaryConfigTabs.selectedAlgorithm = 'fulltext'; fetchRelatedGlossaryItems(glossary); changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                                            class="px-1.5 py-0.5 text-xs rounded font-medium hidden lg:inline-block"
+                                            title="Fulltext">FT
+                                    </button>
+                                    <button :class="glossaryConfigTabs.selectedAlgorithm === 'trigram' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'"
+                                            @click="glossaryConfigTabs.selectedAlgorithm = 'trigram'; fetchRelatedGlossaryItems(glossary); changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                                            class="px-1.5 py-0.5 text-xs rounded font-medium hidden xl:inline-block"
+                                            title="Trigram">3g
+                                    </button>
+                                    <button :class="glossaryConfigTabs.selectedAlgorithm === 'levenshtein' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'"
+                                            @click="glossaryConfigTabs.selectedAlgorithm = 'levenshtein'; fetchRelatedGlossaryItems(glossary); changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                                            class="px-1.5 py-0.5 text-xs rounded font-medium hidden xl:inline-block"
+                                            title="Levenshtein">Lv
+                                    </button>
+                                    <button :class="glossaryConfigTabs.selectedAlgorithm === 'phonetic' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'"
+                                            @click="glossaryConfigTabs.selectedAlgorithm = 'phonetic'; fetchRelatedGlossaryItems(glossary); changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                                            class="px-1.5 py-0.5 text-xs rounded font-medium hidden 2xl:inline-block"
+                                            title="Phonetic">Ph
+                                    </button>
+                                    <button :class="glossaryConfigTabs.selectedAlgorithm === 'jaro_winkler' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'"
+                                            @click="glossaryConfigTabs.selectedAlgorithm = 'jaro_winkler'; fetchRelatedGlossaryItems(glossary); changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                                            class="px-1.5 py-0.5 text-xs rounded font-medium hidden 2xl:inline-block"
+                                            title="Jaro-Winkler">JW
+                                    </button>
+                                    <button :class="glossaryConfigTabs.selectedAlgorithm === 'fuzzy' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'"
+                                            @click="glossaryConfigTabs.selectedAlgorithm = 'fuzzy'; toggleFuzzyMode(glossary); changeValue('glossaryConfigTabs', glossaryConfigTabs)"
+                                            class="px-1.5 py-0.5 text-xs rounded font-medium"
+                                            title="Fuzzy">~
+                                    </button>
+                                </div>
                                 <!-- Search Button (always visible as addon) -->
                                 <button @click="fetchRelatedGlossaryItems(glossary)"
                                         class="px-2 py-2 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"
                                         title="Search">
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"
+                                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round"
+                                              stroke-linejoin="round"
                                               stroke-width="2"></path>
                                     </svg>
                                 </button>
@@ -67,7 +110,8 @@
                 </div>
 
                 <!-- Fuzzy Mode Configuration -->
-                <div @remove-ngram.window="removeNGram(glossary, $event.detail.ngram)" class="space-y-3" x-show="glossaryConfigTabs.isFuzzyMode"
+                <div @remove-ngram.window="removeNGram(glossary, $event.detail.ngram)" class="space-y-3"
+                     x-show="glossaryConfigTabs.selectedAlgorithm === 'fuzzy'"
                      x-transition>
                     <div class="text-xs font-medium text-gray-700">N-gram Search Configuration</div>
 
@@ -216,6 +260,7 @@
             </div>
         </div>
     </div>
+</div>
 </body>
 
 </html>

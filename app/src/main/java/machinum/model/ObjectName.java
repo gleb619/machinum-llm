@@ -12,6 +12,8 @@ import machinum.processor.core.JsonSupport.SchemaIgnore;
 
 import java.util.*;
 
+import static machinum.flow.model.HashSupport.hashStringWithCRC32;
+
 @Data
 @AllArgsConstructor
 @Builder(toBuilder = true)
@@ -105,6 +107,18 @@ public class ObjectName implements StringSupport {
         metadata.put("marked", marked);
     }
 
+    public String alternativeName() {
+        return Objects.toString(metadata.get("alternativeName"), null);
+    }
+
+    public void alternativeName(String alternativeName) {
+        metadata.put("alternativeName", alternativeName);
+    }
+
+    private boolean hasAlternativeName() {
+        return metadata.containsKey("alternativeName");
+    }
+
     public Optional<String> optionalRuName() {
         return hasRuName() ? Optional.of(ruName()) : Optional.empty();
     }
@@ -136,7 +150,13 @@ public class ObjectName implements StringSupport {
     @Override
     public String stringValue() {
         StringBuilder sb = new StringBuilder();
-        sb.append(name).append(" - it's a ").append(category)
+        sb.append(name);
+
+        if (hasAlternativeName()) {
+            sb.append(" (").append(alternativeName()).append(")");
+        }
+
+        sb.append(" - it's a ").append(category)
                 .append("; Example of usage: ").append(description);
 
         if (references != null && !references.isEmpty()) {
@@ -164,6 +184,16 @@ public class ObjectName implements StringSupport {
         }
 
         return string;
+    }
+
+    /**
+     * Returns a unique identifier for this ObjectName by concatenating name and category,
+     * then hashing the result using CRC32.
+     *
+     * @return a hexadecimal string representation of the CRC32 hash
+     */
+    public String uniqueId() {
+        return hashStringWithCRC32(name + "_" + category);
     }
 
 }

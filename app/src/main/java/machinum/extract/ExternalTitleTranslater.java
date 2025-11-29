@@ -157,7 +157,8 @@ public class ExternalTitleTranslater extends MachinumAutomataTranslater {
      */
     private void validateTranslationResults(List<String> original, List<String> translated) {
         if (translated.size() < original.size()) {
-            throw new AppIllegalStateException("Lost title due translation process");
+            log.error("Found error, can't detect translation for:\n\noriginal={},\ntranslated={}", original, translated);
+            throw new AppIllegalStateException("Lost title due translation process: %s <> %s", original.size(), translated.size());
         }
     }
 

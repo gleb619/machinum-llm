@@ -24,6 +24,7 @@ export function editApp() {
         startTime: null,   // Track the start time of the operation
         timePassed: '00:00:00',     // Track how much time has passed
         chapterFontSize: localStorage.getItem('chapterFontSize') || 16,
+        editorType: localStorage.getItem('editorType') || 'codemirror',
 
         initEdit() {
             this.updateContent();

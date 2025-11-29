@@ -45,6 +45,7 @@ public class OpenRouterAiClient implements AiClient {
 
         int clientsSize = clientPool.availableSize();
         for (int attempt = 0; attempt < clientsSize; attempt++) {
+            log.debug("Attempting to execute request with client, attempt: {}", attempt + 1);
             try {
                 currentClient = clientPool.getAvailableClient();
 
@@ -169,9 +170,9 @@ public class OpenRouterAiClient implements AiClient {
             // Don't block client for retryable errors like network issues
             log.warn("|X-- Retryable error: {}", errorMessage);
         } else {
-            // Non-rate-limit error, don't block client but still throw
-            log.error("|X-- Non-recoverable error: {}", errorMessage);
-            throw new AppIllegalStateException("OpenRouter API error: %s".formatted(errorMessage), e);
+            // Non-rate-limit error, disable client and try next if available
+            clientPool.disableClient(client);
+            log.error("|X-- Non-recoverable error, disabled client: {}", errorMessage);
         }
     }
 

@@ -10,7 +10,7 @@ import machinum.flow.model.Chunks;
 import machinum.flow.model.FlowContext;
 import machinum.flow.model.helper.FlowContextActions;
 import machinum.model.Chapter;
-import machinum.model.EmbeddingExecutionType;
+import machinum.service.EmbeddingService.EmbeddingExecutionType;
 import machinum.util.TextUtil;
 import org.springframework.stereotype.Service;
 
@@ -94,7 +94,11 @@ public class TemplateAiFacade {
     }
 
     public FlowContext<Chapter> batchTranslateTitleExternal(FlowContext<Chapter> context) {
-        return externalTitleTranslater.batchTranslate(context);
+        try {
+            return externalTitleTranslater.batchTranslate(context);
+        } catch (AppIllegalStateException e) {
+            return batchTranslateTitle(context);
+        }
     }
 
     public FlowContext<Chapter> translateTitle(FlowContext<Chapter> context) {

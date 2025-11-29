@@ -192,7 +192,7 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                     <template :key="`${relatedItem.id}-${relatedItemIndex}`"
-                              x-for="(relatedItem, relatedItemIndex) in glossaryFilteredRelatedItems">
+                              x-for="(relatedItem, relatedItemIndex) in glossaryFilteredRelatedItems(glossary)">
                         <tr class="hover:bg-gray-50">
                             <td class="px-3 py-2 whitespace-nowrap">
                                 <div class="font-medium text-gray-900">
@@ -220,49 +220,100 @@
                                 </div>
                             </td>
                             <td class="px-3 py-2 whitespace-nowrap text-right">
-                                <div class="flex gap-1 justify-end">
-                                    <button @click="changeGlossaryName(glossary, relatedItem)"
-                                            class="text-indigo-600 hover:text-indigo-900 p-1" title="Replace Name">
+                                <!--Menu section-->
+                                <div class="inline-block text-left"
+                                     x-data="{ menuOpen: false, menuLeft: 0, menuTop: 0, calculatePosition(el) { const rect = el.getBoundingClientRect(); const dropdownWidth = 192; this.menuLeft = Math.max(8, rect.right - dropdownWidth); this.menuTop = rect.bottom + 4; if (this.menuTop + 200 > window.innerHeight) this.menuTop = rect.top - 200 - 4; const maxLeft = Math.min(this.menuLeft, window.innerWidth - dropdownWidth - 8); this.menuLeft = Math.max(8, maxLeft); } }">
+                                    <button @click="if (menuOpen) { menuOpen = false; } else { menuOpen = true; calculatePosition($el); }"
+                                            class="text-gray-600 hover:text-gray-900 p-1 rounded-full hover:bg-gray-100">
                                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path
-                                                    d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z">
-                                            </path>
+                                            <g transform="translate(24) rotate(90)">
+                                                <rect fill="none" height="24" id="Rectangle" width="24"/>
+                                                <circle cx="1" cy="1" id="Oval" r="1" stroke="#000000"
+                                                        stroke-miterlimit="10" stroke-width="0.5" transform="translate(5 11)"/>
+                                                <circle cx="1" cy="1" data-name="Oval" id="Oval-2" r="1"
+                                                        stroke="#000000" stroke-miterlimit="10"
+                                                        stroke-width="0.5" transform="translate(11 11)"/>
+                                                <circle cx="1" cy="1" data-name="Oval" id="Oval-3" r="1"
+                                                        stroke="#000000" stroke-miterlimit="10"
+                                                        stroke-width="0.5" transform="translate(17 11)"/>
+                                            </g>
                                         </svg>
                                     </button>
-                                    <button @click="changeGlossaryTranslatedName(glossary, relatedItem)"
-                                            class="text-blue-600 hover:text-blue-900 p-1"
-                                            title="Replace Translated Name">
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path
-                                                    d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z">
-                                            </path>
-                                        </svg>
-                                    </button>
-                                    <button @click="changeGlossaryText(glossary, relatedItem)"
-                                            class="text-green-600 hover:text-green-900 p-1" title="Replace Text">
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M12 3V21M9 21H15M19 6V3H5V6" stroke="currentColor"
-                                                  stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                                            </path>
-                                        </svg>
-                                    </button>
-                                    <button @click="changeGlossarySummary(glossary, relatedItem)"
-                                            class="text-yellow-600 hover:text-yellow-900 p-1"
-                                            title="Replace Summary">
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M12 3V21M9 21H15M19 6V3H5V6" stroke="currentColor"
-                                                  stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                                            </path>
-                                        </svg>
-                                    </button>
-                                    <button @click="applyAllGlossaryChanges(glossary, relatedItem)"
-                                            class="text-purple-600 hover:text-purple-900 p-1" title="Apply All">
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path
-                                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                                    fill-rule="evenodd"></path>
-                                        </svg>
-                                    </button>
+                                    <div @click.away="menuOpen = false" class="w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+                                         x-bind:style="`position: fixed; left: ${menuLeft}px; top: ${menuTop}px; z-index: 9999;`"
+                                         x-show="menuOpen">
+                                        <div class="py-1">
+                                            <button @click="changeGlossaryName(glossary, relatedItem); menuOpen = false"
+                                                    class="group flex w-full items-center px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 hover:text-indigo-900">
+                                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path
+                                                            d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z">
+                                                    </path>
+                                                </svg>
+                                                Replace Name
+                                            </button>
+                                            <button @click="changeGlossaryTranslatedName(glossary, relatedItem); menuOpen = false"
+                                                    class="group flex w-full items-center px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-900">
+                                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path
+                                                            d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z">
+                                                    </path>
+                                                </svg>
+                                                <span class="truncate">Replace Translated Name</span>
+                                            </button>
+                                            <button @click="changeGlossaryAlternativeName(glossary, relatedItem); menuOpen = false"
+                                                    class="group flex w-full items-center px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 hover:text-orange-900">
+                                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M15.2685 11.3076C14.9169 11.0248 14.5923 10.7795 14.2848 10.5693C13.3451 9.92712 12.672 9.68977 12 9.68977C11.328 9.68977 10.6549 9.92712 9.71521 10.5693C8.75213 11.2275 7.62138 12.2301 6.02073 13.6529L3.66436 15.7474C3.25158 16.1143 2.61951 16.0771 2.25259 15.6644C1.88567 15.2516 1.92285 14.6195 2.33564 14.2526L4.74407 12.1118C6.28074 10.7458 7.50586 9.65678 8.58672 8.91809C9.70321 8.15504 10.771 7.68977 12 7.68977C13.229 7.68977 14.2968 8.15504 15.4133 8.91809C15.8434 9.21204 16.2963 9.56146 16.7827 9.96172L15.2685 11.3076Z"
+                                                          fill="#000000"/>
+                                                    <path d="M18.3151 13.9514L20.3356 15.7474C20.7484 16.1143 21.3805 16.0771 21.7474 15.6644C22.1143 15.2516 22.0771 14.6195 21.6644 14.2526L19.8203 12.6134L18.3151 13.9514Z"
+                                                          fill="#000000"/>
+                                                    <path d="M5.6224 9.99307L3.66436 8.25259C3.25158 7.88567 2.61951 7.92285 2.25259 8.33564C1.88567 8.74842 1.92285 9.38049 2.33564 9.74741L4.1172 11.331L5.6224 9.99307Z"
+                                                          fill="#000000"/>
+                                                    <path d="M7.15251 13.9848C7.6635 14.4075 8.13756 14.7749 8.58672 15.0819C9.70321 15.845 10.771 16.3102 12 16.3102C13.229 16.3102 14.2968 15.845 15.4133 15.0819C16.4941 14.3432 17.7193 13.2542 19.2559 11.8882L21.6644 9.74741C22.0771 9.38049 22.1143 8.74842 21.7474 8.33564C21.3805 7.92285 20.7484 7.88567 20.3356 8.25259L17.9793 10.3471C16.3786 11.7699 15.2479 12.7725 14.2848 13.4307C13.3451 14.0729 12.672 14.3102 12 14.3102C11.328 14.3102 10.6549 14.0729 9.71521 13.4307C9.38867 13.2075 9.04286 12.9448 8.66599 12.6395L7.15251 13.9848Z"
+                                                          fill="#000000"/>
+                                                    <path clip-rule="evenodd" d="M21.7474 8.33564C22.1143 8.74842 22.0771 9.38049 21.6644 9.74741L19.2559 11.8882C17.7193 13.2542 16.4941 14.3432 15.4133 15.0819C14.2968 15.845 13.229 16.3102 12 16.3102C10.9247 16.3102 9.97074 15.9539 8.99698 15.3497C8.52769 15.0585 8.38332 14.442 8.6745 13.9728C8.96569 13.5035 9.58218 13.3591 10.0515 13.6503C10.8187 14.1264 11.4086 14.3102 12 14.3102C12.672 14.3102 13.3451 14.0729 14.2848 13.4307C15.2479 12.7725 16.3786 11.7699 17.9793 10.3471L20.3356 8.25259C20.7484 7.88567 21.3805 7.92285 21.7474 8.33564Z"
+                                                          fill="#000000"
+                                                          fill-rule="evenodd"/>
+                                                </svg>
+                                                Set Alternative Name
+                                            </button>
+                                            <button @click="changeGlossaryText(glossary, relatedItem); menuOpen = false"
+                                                    class="group flex w-full items-center px-4 py-2 text-sm text-green-600 hover:bg-green-50 hover:text-green-900">
+                                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path
+                                                            d="M12 3V21M9 21H15M19 6V3H5V6"
+                                                            fill="none"
+                                                            stroke="currentColor" stroke-linecap="round"
+                                                            stroke-linejoin="round" stroke-width="2">
+                                                    </path>
+                                                </svg>
+                                                Replace Text
+                                            </button>
+                                            <button @click="changeGlossarySummary(glossary, relatedItem); menuOpen = false"
+                                                    class="group flex w-full items-center px-4 py-2 text-sm text-yellow-600 hover:bg-yellow-50 hover:text-yellow-900">
+                                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path
+                                                            d="M12 3V21M9 21H15M19 6V3H5V6"
+                                                            fill="none"
+                                                            stroke="currentColor" stroke-linecap="round"
+                                                            stroke-linejoin="round" stroke-width="2">
+                                                    </path>
+                                                </svg>
+                                                Replace Summary
+                                            </button>
+                                            <button @click="applyAllGlossaryChanges(glossary, relatedItem); menuOpen = false"
+                                                    class="group flex w-full items-center px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 hover:text-purple-900">
+                                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path
+                                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                            fill="currentColor" fill-rule="evenodd">
+                                                    </path>
+                                                </svg>
+                                                Apply All
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </td>
                         </tr>

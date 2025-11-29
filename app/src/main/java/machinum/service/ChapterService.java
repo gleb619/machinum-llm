@@ -72,7 +72,7 @@ public class ChapterService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<Chapter> getChapterById(String id) {
+    public Optional<Chapter> findChapterById(String id) {
         log.debug("Get chapter from db: {}", id);
         return chapterRepository.findById(id)
                 .map(chapterMapper::toDto);
@@ -135,6 +135,7 @@ public class ChapterService {
     }
 
     @Transactional
+    @Deprecated(forRemoval = true)
     public boolean updateNameInChapter(String chapterId, String oldName, ObjectName updatedName) {
         log.debug("Update chapter in db: {}", chapterId);
         return chapterRepository.findById(chapterId)
@@ -168,6 +169,7 @@ public class ChapterService {
     }
 
     @Transactional
+    @Deprecated(forRemoval = true)
     public boolean removeNameFromChapter(String chapterId, String nameToRemove) {
         log.debug("Remove name in chapter in db: {}", chapterId);
         return chapterRepository.findById(chapterId)

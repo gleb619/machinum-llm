@@ -205,6 +205,17 @@ public class Flow<T> {
     }
 
     /**
+     * Retrieves metadata value associated with the specified key.
+     *
+     * @param <U> the type of the metadata value to be returned
+     * @param key the key whose associated metadata value is to be returned
+     * @return the metadata value to which the specified key is mapped, or null if this map contains no mapping for the key
+     */
+    public <U> U metadata(String key) {
+        return (U) getMetadata().getOrDefault(key, null);
+    }
+
+    /**
      * Sets the before-all action.
      *
      * @param action The action to perform before all processing.

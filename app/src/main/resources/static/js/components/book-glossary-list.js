@@ -67,21 +67,28 @@ export function glossaryListApp() {
                     size: this.glossaryObject.glossaryPageSize,
                     fromChapter: this.glossaryObject.glossaryStartChapter,
                     toChapter: this.glossaryObject.glossaryEndChapter,
-                    translationMode: "chapters",
+                    fetchMode: "chapters",
+                });
+            } else if (this.glossaryObject.glossaryActiveTab === 'marked') {
+                // For marked tab, get only marked items
+                params = new URLSearchParams({
+                    page: this.glossaryObject.glossaryCurrentPage,
+                    size: this.glossaryObject.glossaryPageSize,
+                    fetchMode: "marked",
                 });
             } else {
-                // For search tab, use translationMode filtering
+                // For search tab, use fetchMode filtering
                 params = new URLSearchParams({
                     page: this.glossaryObject.glossaryCurrentPage,
                     size: this.glossaryObject.glossaryPageSize
                 });
 
                 if (this.glossaryObject.glossaryTranslationFilter == 'missing') {
-                    params.append('translationMode', 'missing');
+                    params.append('fetchMode', 'missing');
                 } else if (this.glossaryObject.glossaryTranslationFilter == 'translated') {
-                    params.append('translationMode', 'translated');
+                    params.append('fetchMode', 'translated');
                 } else {
-                    params.append('translationMode', 'all');
+                    params.append('fetchMode', 'all');
                 }
             }
 
@@ -394,6 +401,54 @@ export function glossaryListApp() {
                 this.showToast('Failed to refresh glossary items', true);
             }
         },
+
+        async refreshGlossaryItem(glossaryId) {
+            const response = await fetch(`/api/glossary/${glossaryId}`);
+            if (!response.ok) {
+                console.error('Error fetching updated glossary items:', response);
+                return;
+            }
+
+            const updatedGlossary = await response.json();
+            const existingIndex = this.glossaryList.findIndex(item => item.id === glossaryId);
+            if (existingIndex >= 0) {
+                // Preserve details and other UI state, only update the backend data
+                const existingDetails = {...this.glossaryList[existingIndex].details};
+                this.glossaryList[existingIndex] = updatedGlossary;
+                this.glossaryList[existingIndex].details = existingDetails;
+            }
+        },
+
+        async toggleGlossaryMark(glossary) {
+            if (!this.activeId) return;
+
+            try {
+                const newMarkedState = !glossary?.marked;
+
+                const response = await fetch(`/api/books/${this.activeId}/glossary/${glossary.id}/properties`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        field: 'mark',
+                        value: newMarkedState
+                    })
+                });
+
+                if (!response.ok) {
+                    const rsp = await response.json();
+                    console.error('Error toggling glossary mark:', rsp);
+                    this.showToast(`Error: ${rsp.message || rsp.detail}`, true);
+                    return;
+                }
+
+                glossary.marked = newMarkedState;
+            } catch (error) {
+                console.error('Error:', error);
+                this.showToast(`Failed to toggle mark: ${error.message || error.detail || error}`, true);
+            }
+        }
 
     };
 }

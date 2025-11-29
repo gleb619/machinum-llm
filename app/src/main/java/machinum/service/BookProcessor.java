@@ -75,7 +75,7 @@ public class BookProcessor {
         var bookState = book.getBookState().state();
 
         var flow = enrichMetadata(flowFactory.createFlow(request.getOperationName(), bookId, chapters), request)
-                .withErrorStrategy(new RetryAfterDelayErrorStrategy<>(() -> doStart(request)));
+                .withErrorStrategy(new RetryAfterDelayErrorStrategy<>(() -> start(request)));
         flowFactory.createRunner(request, flow)
                 .run(bookState);
     }
@@ -326,6 +326,10 @@ public class BookProcessor {
     @RequiredArgsConstructor
     public static class FlowFactory {
 
+        public static final String ONE_STEP_RUNNER = "OneStepRunner";
+        public static final String RECURSIVE_FLOW_RUNNER = "RecursiveFlowRunner";
+        public static final String BATCH_FLOW_RUNNER = "BatchFlowRunner";
+
         private final BiFunction<String, List<Chapter>, Flow<Chapter>> simpleFlow;
         private final BiFunction<String, List<Chapter>, Flow<Chapter>> complexFlow;
         private final int batchSize;
@@ -346,9 +350,9 @@ public class BookProcessor {
 
             if (TextUtil.isNotEmpty(request.getRunner())) {
                 return switch (request.getRunner()) {
-                    case "OneStepRunner" -> runner;
-                    case "RecursiveFlowRunner" -> recursiveRunner;
-                    case "BatchFlowRunner" -> batchRunner;
+                    case ONE_STEP_RUNNER -> runner;
+                    case RECURSIVE_FLOW_RUNNER -> recursiveRunner;
+                    case BATCH_FLOW_RUNNER -> batchRunner;
                     default -> throw new AppIllegalStateException("Unknown type of runner: " + request.getRunner());
                 };
             }

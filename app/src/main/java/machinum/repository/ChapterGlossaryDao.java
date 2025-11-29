@@ -51,14 +51,24 @@ public class ChapterGlossaryDao {
      * Results are combined, deduplicated, and sorted by score.
      *
      * @param bookId  the book ID to search in
-     * @param request the search request with algorithm enable flags
+     * @param request the search request with algorithm selection
      * @return list of search results as GlossarySearchResult objects
      */
     public List<GlossarySearchResult> searchGlossary(@NonNull String bookId, @NonNull GlossarySearchRequest request) {
-        log.debug("Searching glossary for bookId={}, searchText='{}'/'{}'", bookId, request.getSearchText(), request.getFuzzyText());
+        log.debug("Searching glossary for bookId={}, searchText='{}'/'{}', algorithm='{}'",
+                bookId, request.getSearchText(), request.getFuzzyText(), request.getAlgorithm());
 
-        // Execute enabled algorithms and collect all results
+        final String algorithm = request.getAlgorithm() != null ? request.getAlgorithm() : "all";
+
+        // Execute algorithms based on selection
         var allResults = algorithms.entrySet().stream()
+                .filter(entry -> {
+                    if ("all".equals(algorithm)) {
+                        return true; // Run all algorithms
+                    } else {
+                        return algorithm.equals(entry.getKey()); // Run only specific algorithm
+                    }
+                })
                 .flatMap(entry -> {
                     try {
                         var results = entry.getValue().apply(request, bookId);

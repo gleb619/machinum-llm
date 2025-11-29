@@ -417,6 +417,343 @@ function createContextMenu(app, el, editor) {
     });
 }
 
+export function initMonacoEditorDirective() {
+    Alpine.directive('monaco-editor', (el, { expression, modifiers }, { evaluate, evaluateLater, effect, cleanup }) => {
+        const app = {
+            settings: evaluate(el.getAttribute('x-settings')) || {},
+            customSettings: {},
+            isUpdatingFromEditor: false,
+            isUpdatingFromAlpine: false,
+            previousSettingsHash: '',
+            editor: null,
+            decorations: [], // For suspicious highlighting
+            activeLineDecorations: [], // For active line highlighting
+            currentActiveLineNumber: null
+        };
+
+        // Store the directive app context on the element for Alpine components to access
+        el._monacoDirective = app;
+
+        const getVarValue = evaluateLater(expression);
+        const setValue = (value) => Alpine.$data(el)[expression] = value;
+
+        // Load Monaco and create editor
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.0/min/vs' } });
+        window.require(['vs/editor/editor.main'], function() {
+            const monacoSettings = {
+                value: '',
+                language: 'plaintext',
+                fontSize: app.settings.fontSize || 16,
+                fontFamily: app.settings.fontFamily || 'monospace',
+                lineNumbers: app.settings.lineNumbers === undefined ? true : app.settings.lineNumbers,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                wordWrap: 'on',
+                theme: 'vs'
+            };
+
+            app.editor = window.monaco.editor.create(el, monacoSettings);
+
+            // Set initial content
+            getVarValue(value => {
+                app.editor.setValue(value || '');
+            });
+
+            // Listen for changes
+            app.editor.onDidChangeModelContent(() => {
+                if (app.isUpdatingFromAlpine) return;
+                app.isUpdatingFromEditor = true;
+
+                const value = app.editor.getValue();
+                setValue(value);
+                setTimeout(() => {
+                    app.isUpdatingFromEditor = false;
+                }, 10);
+            });
+
+            // Handle dynamic settings
+            if (el.hasAttribute('x-settings')) {
+                handleMonacoDynamicSettings(app.editor, el, app, effect, evaluateLater);
+            }
+
+            // Setup custom context menus and features (to be implemented)
+            configureMonacoContextMenus(app, el, app.editor);
+
+            cleanup(() => {
+                if (app.editor) {
+                    app.editor.dispose();
+                }
+            });
+
+            // Apply initial styling and highlighting
+            applyMonacoInitialStyling(app.editor, app.settings);
+        });
+    });
+}
+
+function handleMonacoDynamicSettings(editor, el, app, effect, evaluateLater) {
+    const getSettings = evaluateLater(el.getAttribute('x-settings'));
+    effect(() => {
+        getSettings(value => {
+            const { fontSize, lineHeight, fontFamily, lineNumbers, highlightEnglish, hideNonSuspicious, ...monacoSettings } = value || {};
+            app.customSettings = { fontSize, lineHeight, fontFamily, lineNumbers, hideNonSuspicious };
+            app.settings = monacoSettings;
+
+            const settingsHash = hashObject(monacoSettings);
+            const customSettingsHash = hashObject(app.customSettings);
+            const combinedHash = settingsHash + customSettingsHash;
+
+            if (editor && combinedHash !== app.previousSettingsHash) {
+                app.previousSettingsHash = combinedHash;
+
+                // Update monaco options
+                editor.updateOptions({
+                    fontSize: fontSize || 16,
+                    fontFamily: fontFamily || 'monospace',
+                    lineNumbers: lineNumbers === undefined ? 'on' : (lineNumbers ? 'on' : 'off')
+                });
+
+                // Handle highlighting and hiding
+                setTimeout(() => {
+                    if (highlightEnglish) {
+                        highlightMonacoEnglishLines(editor, app);
+                        if (hideNonSuspicious) {
+                            hideMonacoNonSuspiciousLines(editor, app, true);
+                        } else {
+                            hideMonacoNonSuspiciousLines(editor, app, false);
+                        }
+                    } else {
+                        clearMonacoHighlights(editor, app);
+                        hideMonacoNonSuspiciousLines(editor, app, false);
+                    }
+                }, 10);
+            }
+        });
+    });
+}
+
+function applyMonacoInitialStyling(editor, settings) {
+    editor.updateOptions({
+        fontSize: settings.fontSize || 16,
+        fontFamily: settings.fontFamily || 'monospace',
+        lineNumbers: settings.lineNumbers === undefined ? 'on' : (settings.lineNumbers ? 'on' : 'off')
+    });
+    if (settings.highlightEnglish) {
+        highlightMonacoEnglishLines(editor, {});
+        if (settings.hideNonSuspicious) {
+            hideMonacoNonSuspiciousLines(editor, {}, true);
+        }
+    }
+}
+
+function highlightMonacoEnglishLines(editor, app) {
+    if (!editor) return;
+
+    const model = editor.getModel();
+    if (!model) return;
+
+    const lines = model.getLinesContent();
+    const decorations = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        const lineContent = lines[i];
+        const isEnglish = checkLineIsEnglish(lineContent);
+        const isOriginal = checkOriginalLine(lineContent);
+        const isTranslated = checkTranslatedLine(lineContent);
+
+        if (isEnglish || isOriginal || isTranslated) {
+            decorations.push({
+                range: new window.monaco.Range(i + 1, 1, i + 1, lineContent.length + 1),
+                options: {
+                    className: `monaco-suspicious-line ${isEnglish ? 'sl-english' : ''} ${isOriginal ? 'sl-original' : ''} ${isTranslated ? 'sl-translated' : ''}`,
+                }
+            });
+        }
+    }
+
+    app.decorations = editor.deltaDecorations([], decorations);
+}
+
+function clearMonacoHighlights(editor, app) {
+    if (app.decorations) {
+        editor.deltaDecorations(app.decorations, []);
+        app.decorations = [];
+    }
+    // Also clear active line decorations
+    clearMonacoActiveLine(editor, app);
+}
+
+function setMonacoActiveLine(editor, app, lineNumber) {
+    if (!editor) return;
+
+    // Clear previous active line decoration
+    clearMonacoActiveLine(editor, app);
+
+    if (lineNumber !== null && lineNumber >= 0) {
+        const model = editor.getModel();
+        if (!model) return;
+
+        const lineContent = model.getLineContent(lineNumber + 1); // 1-based
+        const decoration = [{
+            range: new window.monaco.Range(lineNumber + 1, 1, lineNumber + 1, lineContent.length + 1),
+            options: {
+                className: 'monaco-active-line',
+            }
+        }];
+        app.activeLineDecorations = editor.deltaDecorations([], decoration);
+        app.currentActiveLineNumber = lineNumber;
+    }
+}
+
+function clearMonacoActiveLine(editor, app) {
+    if (app.activeLineDecorations.length > 0) {
+        editor.deltaDecorations(app.activeLineDecorations, []);
+        app.activeLineDecorations = [];
+        app.currentActiveLineNumber = null;
+    }
+}
+
+function hideMonacoNonSuspiciousLines(editor, app, shouldHide) {
+    if (!editor) return;
+
+    const model = editor.getModel();
+    if (!model) return;
+
+    if (shouldHide) {
+        const lines = model.getLinesContent();
+        const decorations = [];
+
+        for (let i = 0; i < lines.length; i++) {
+            const lineContent = lines[i];
+            const isEnglish = checkLineIsEnglish(lineContent);
+            const isOriginal = checkOriginalLine(lineContent);
+            const isTranslated = checkTranslatedLine(lineContent);
+
+            // Hide lines that are NOT suspicious
+            if (!(isEnglish || isOriginal || isTranslated)) {
+                decorations.push({
+                    range: new window.monaco.Range(i + 1, 1, i + 1, lineContent.length + 1),
+                    options: {
+                        className: 'monaco-hidden-line',
+                        inlineClassName: 'monaco-hidden-inline'
+                    }
+                });
+            }
+        }
+
+        app.hiddenDecorations = editor.deltaDecorations(app.hiddenDecorations || [], decorations);
+    } else {
+        // Clear all hidden line decorations
+        if (app.hiddenDecorations) {
+            editor.deltaDecorations(app.hiddenDecorations, []);
+            app.hiddenDecorations = [];
+        }
+    }
+}
+
+function configureMonacoContextMenus(app, el, editor) {
+    // Handle text selection changes
+    editor.onDidChangeCursorSelection((e) => {
+        handleMonacoSelectionChange(editor, el, app);
+    });
+
+    // Handle cursor position changes for active line highlighting
+    editor.onDidChangeCursorPosition((e) => {
+        handleMonacoCursorPosition(editor, app);
+    });
+
+    // Handle line number clicks by intercepting mouse events on the editor
+    const container = editor.getDomNode();
+
+    // Use Monaco's content widget overlay for line number events
+    container.addEventListener('mousedown', (e) => {
+        handleMonacoMouseDown(editor, el, app, e);
+    });
+
+    // Prevent Monaco's default context menu
+    container.addEventListener('contextmenu', (e) => {
+        // Allow Monaco's default menu to be prevented by our custom implementation
+        // This can be commented out if we want Monaco's default menu to coexist
+        // e.preventDefault();
+    });
+}
+
+function handleMonacoSelectionChange(editor, el, app) {
+    const selection = editor.getSelection();
+    const selectedText = editor.getSelection().toString();
+
+    if (selection && !selection.isEmpty() && selectedText.length > 0) {
+        // Calculate screen coordinates for menu positioning
+        const startPosition = selection.getStartPosition();
+        const endPosition = selection.getEndPosition();
+        const pos = editor.getScrolledVisiblePosition(startPosition);
+
+        if (pos) {
+            const containerRect = editor.getDomNode().getBoundingClientRect();
+            const x = containerRect.left + pos.left;
+            const y = containerRect.top + pos.top - 10; // Position slightly above the selection
+
+            // Dispatch event for Alpine component
+            el.dispatchEvent(new CustomEvent('selectionchange', {
+                detail: {
+                    selectedText: selectedText,
+                    range: { start: startPosition, end: endPosition },
+                    x: x,
+                    y: y
+                }
+            }));
+        }
+    } else {
+        // Clear selection
+        el.dispatchEvent(new CustomEvent('selectionclear'));
+    }
+}
+
+function handleMonacoCursorPosition(editor, app) {
+    if (!editor) return;
+
+    const position = editor.getPosition();
+    if (position) {
+        const newLine = position.lineNumber - 1; // 0-based
+        if (newLine !== app.currentActiveLineNumber) {
+            setMonacoActiveLine(editor, app, newLine);
+        }
+    }
+}
+
+function handleMonacoMouseDown(editor, el, app, event) {
+    // Check if click is on a line number area (left gutter)
+    const target = event.target;
+    const containerRect = editor.getDomNode().getBoundingClientRect();
+    const clickX = event.clientX - containerRect.left;
+    const clickY = event.clientY - containerRect.top;
+
+    // Monaco line numbers are typically in the left gutter (~50px wide)
+    // We'll use Monaco's API to determine if we're over a line number
+    const position = editor.getPosition();
+    if (position) {
+        const lineNumber = position.lineNumber;
+        const widgetPosition = editor.getScrolledVisiblePosition(position);
+
+        if (widgetPosition && clickX >= 0 && clickX <= 50) { // Approximate line number width
+            const lineContent = editor.getModel().getLineContent(lineNumber);
+
+            // Dispatch line number click event for Alpine component
+            el.dispatchEvent(new CustomEvent('linenumberclick', {
+                detail: {
+                    lineNumber: lineNumber - 1, // Convert to 0-based
+                    lineContent: lineContent,
+                    x: event.clientX,
+                    y: event.clientY
+                }
+            }));
+
+            event.stopPropagation();
+        }
+    }
+}
+
 function hashObject(obj) {
   if (obj === null || typeof obj !== 'object') {
     // Handle non-objects or null gracefully, perhaps return a default hash or hash their string representation.

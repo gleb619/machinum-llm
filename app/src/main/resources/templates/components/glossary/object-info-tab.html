@@ -16,13 +16,27 @@
                 <!-- Item 1 -->
                 <div class="space-y-4" x-show="glossary?.details?.compareData?.item1">
                     <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border-l-4 border-blue-400">
-                        <h3 class="text-xl font-bold text-blue-900"
-                            x-text="glossary?.details?.compareData?.item1?.name"></h3>
-                        <a :href="`/chapters?bookId=${currentBook.id}&chapterNumber=${glossary?.details?.compareData?.item1?.chapterNumber}`" class="inline-block bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs font-medium"
-                           href="#"
-                           target="_blank"
-                           x-text="`Ch. ${glossary?.details?.compareData?.item1?.chapterNumber}`">
-                        </a>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-blue-900"
+                                    x-text="glossary?.details?.compareData?.item1?.name"></h3>
+                                <a :href="`/chapters?bookId=${currentBook.id}&chapterNumber=${glossary?.details?.compareData?.item1?.chapterNumber}`"
+                                   class="inline-block bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs font-medium"
+                                   href="#"
+                                   target="_blank"
+                                   x-text="`Ch. ${glossary?.details?.compareData?.item1?.chapterNumber}`">
+                                </a>
+                            </div>
+                            <button @click="copyItemMarkdown(glossary.details.compareData.item1)"
+                                    class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-blue-800 bg-transparent hover:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    title="Copy Markdown">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                     xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"
+                                          stroke-width="2"></path>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="space-y-3">
@@ -72,13 +86,27 @@
                 <!-- Item 2 - from related tabs(a first item) -->
                 <div class="space-y-4" x-show="glossary?.details?.compareData?.item2">
                     <div class="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border-l-4 border-green-400">
-                        <h3 class="text-xl font-bold text-green-900"
-                            x-text="glossary?.details?.compareData?.item2?.name"></h3>
-                        <a :href="`/chapters?bookId=${currentBook.id}&chapterNumber=${glossary?.details?.compareData?.item2?.chapterNumber}`" class="inline-block bg-green-200 text-green-800 px-2 py-1 rounded-full text-xs font-medium"
-                           href="#"
-                           target="_blank"
-                           x-text="`Ch. ${glossary?.details?.compareData?.item2?.chapterNumber}`">
-                        </a>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-green-900"
+                                    x-text="glossary?.details?.compareData?.item2?.name"></h3>
+                                <a :href="`/chapters?bookId=${currentBook.id}&chapterNumber=${glossary?.details?.compareData?.item2?.chapterNumber}`"
+                                   class="inline-block bg-green-200 text-green-800 px-2 py-1 rounded-full text-xs font-medium"
+                                   href="#"
+                                   target="_blank"
+                                   x-text="`Ch. ${glossary?.details?.compareData?.item2?.chapterNumber}`">
+                                </a>
+                            </div>
+                            <button @click="copyItemMarkdown(glossary.details.compareData.item2)"
+                                    class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-green-800 bg-transparent hover:bg-green-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                    title="Copy Markdown">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                     xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"
+                                          stroke-width="2"></path>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="space-y-3">

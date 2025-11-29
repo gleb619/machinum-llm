@@ -2,6 +2,7 @@ package machinum.flow.core;
 
 import lombok.extern.slf4j.Slf4j;
 import machinum.flow.exception.FlowException;
+import machinum.flow.model.Flow;
 import machinum.flow.model.FlowContext;
 
 import java.time.Duration;
@@ -73,6 +74,7 @@ public interface ErrorStrategy<T> {
     @Slf4j
     class RetryAfterDelayErrorStrategy<T> implements ErrorStrategy<T> {
 
+        public static final int MAX_TRY = 10;
         private final Runnable retryAction;
 
         public RetryAfterDelayErrorStrategy(Runnable retryAction) {
@@ -83,15 +85,22 @@ public interface ErrorStrategy<T> {
         public void handleError(FlowContext<T> context, Exception exception) {
             log.error("Error occurred during flow execution, scheduling retry after 1 minute in background", exception);
 
+            var flow = Objects.requireNonNullElseGet(context.getFlow(), Flow::from);
+
             // Launch retry in background thread
             Thread.ofVirtual().start(() -> {
                 try {
                     Thread.sleep(Duration.ofMinutes(1));
-                    log.info("Retrying operation after delay");
-                    retryAction.run();
-                } catch (InterruptedException e) {
-                    log.warn("Retry scheduling was interrupted", e);
-                } catch (Exception e) {
+                    var retryCount = Objects.requireNonNullElse(flow.metadata("retryCount"), 0);
+
+                    log.info("Retrying operation after delay: {}", retryCount);
+                    if (retryCount < MAX_TRY) {
+                        flow.metadata("retryCount", retryCount + 1);
+                        retryAction.run();
+                    } else {
+                        log.warn("Maximum retry count ({}}) reached, not retrying", MAX_TRY);
+                    }
+                } catch (Throwable e) {
                     log.error("Error during retry execution", e);
                 }
             });

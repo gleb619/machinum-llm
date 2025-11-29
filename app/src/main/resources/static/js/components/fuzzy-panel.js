@@ -31,8 +31,7 @@ export function fuzzyAddon() {
         },
 
         toggleFuzzyMode(glossary) {
-            this.glossaryConfigTabs.isFuzzyMode = !this.glossaryConfigTabs.isFuzzyMode;
-            if (this.glossaryConfigTabs.isFuzzyMode) {
+            if (this.glossaryConfigTabs.selectedAlgorithm == 'fuzzy') {
                 // Switch to fuzzy mode
                 const searchText = glossary.details.searchText || glossary.name || '';
                 glossary.details.fuzzyTextInput = searchText;

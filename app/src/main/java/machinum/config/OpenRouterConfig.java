@@ -1,5 +1,6 @@
 package machinum.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import lombok.extern.slf4j.Slf4j;
 import machinum.processor.client.OpenRouterChatClientPool;
@@ -20,15 +21,21 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -40,6 +47,8 @@ import java.util.stream.Collectors;
 })
 public class OpenRouterConfig {
 
+    public static final Pattern PARAMETERS_PATTERN = Pattern.compile("(\\d+)b");
+
     @Bean
     public OpenRouterChatClientPool openRouterChatClientPool(
             OpenAiConnectionProperties connectionProperties,
@@ -49,9 +58,18 @@ public class OpenRouterConfig {
             OpenRouterAiChatProperties multiChatProperties,
             Holder<WiremockRequestInterceptor> requestInterceptorHolder
     ) {
-        var models = multiChatProperties.getOptions().acquireModels();
+        Set<String> models;
+
+        if (multiChatProperties.getOptions().isDynamicMode()) {
+            log.info("OpenRouter mode: dynamic - fetching models from API");
+            models = fetchDynamicModels(connectionProperties, multiChatProperties);
+        } else {
+            log.info("OpenRouter mode: static - using configured models");
+            models = multiChatProperties.getOptions().acquireModels();
+        }
 
         var observationRegistry = ObservationRegistry.NOOP;
+        log.info("Prepare to build OpenRouterPool with {} models", models.size());
 
         return new OpenRouterChatClientPool(
                 models.stream()
@@ -77,6 +95,89 @@ public class OpenRouterConfig {
                             return new OpenRouterChatClientPool.OpenRouterClientItem(client, model);
                         })
                         .collect(Collectors.toList()));
+    }
+
+    private Set<String> fetchDynamicModels(OpenAiConnectionProperties connectionProperties, OpenRouterAiChatProperties properties) {
+        try {
+            String baseUrl = "https://openrouter.ai/api/frontend";
+
+            // Create RestTemplate for API calls
+            var restTemplate = new RestTemplate();
+            restTemplate.setErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+
+            // Set up headers
+            var headers = new HttpHeaders();
+            //headers.set("Authorization", "Bearer " + connectionProperties.getApiKey());
+            headers.set("Content-Type", "application/json");
+            headers.set("X-Title", "machinum-llm");
+
+            var entity = new HttpEntity<String>(headers);
+
+            log.debug("Fetching models from OpenRouter API: {}", baseUrl + "/models");
+
+            var response = restTemplate.exchange(
+                    baseUrl + "/models/find?context=32000&max_price=0",
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                var objectMapper = new ObjectMapper();
+                var root = objectMapper.readTree(response.getBody());
+                var modelsArray = root.path("data").path("models");
+
+                var filteredModels = new LinkedHashSet<String>();
+
+                if (modelsArray.isArray()) {
+                    for (var model : modelsArray) {
+                        var slug = model.path("slug").asText();
+                        if (!slug.isEmpty() && isLargeParameterModel(slug)) {
+                            filteredModels.add(slug);
+                        }
+                    }
+                }
+
+                log.info("Fetched {} models from OpenRouter, filtered to {} large-parameter models",
+                        modelsArray.size(), filteredModels.size());
+
+                if (filteredModels.isEmpty()) {
+                    log.warn("No large-parameter models found, falling back to static mode");
+                    return properties.getOptions().acquireModels();
+                } else {
+                    log.info("Working with next models: {}", filteredModels);
+                }
+
+                return filteredModels;
+            } else {
+                log.warn("Failed to fetch models from OpenRouter API, status: {}, falling back to static mode",
+                        response.getStatusCode());
+                return properties.getOptions().acquireModels();
+            }
+
+        } catch (Exception e) {
+            log.error("Exception while fetching dynamic models from OpenRouter, falling back to static mode", e);
+            return properties.getOptions().acquireModels();
+        }
+    }
+
+    private boolean isLargeParameterModel(String modelSlug) {
+        // Extract parameter count from model slug using regex
+        // Look for patterns like "8b", "70b", "405b", etc.
+        var matcher = PARAMETERS_PATTERN.matcher(modelSlug.toLowerCase());
+
+        if (matcher.find()) {
+            try {
+                int paramCount = Integer.parseInt(matcher.group(1));
+                return paramCount >= 16;
+            } catch (NumberFormatException e) {
+                log.debug("Could not parse parameter count from model: {}", modelSlug);
+                return false;
+            }
+        }
+
+        log.debug("No parameter count found in model: {}", modelSlug);
+        return true;
     }
 
     private OpenAiApi createApi(OpenAiConnectionProperties connectionProperties,

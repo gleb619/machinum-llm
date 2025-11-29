@@ -2,22 +2,22 @@ drop view if exists chapter_glossary;
 create or replace view chapter_glossary as
 with data as (
     select
-        MD5(ci.id || '-' || coalesce(c1 ->> 'name', ''))::text as id,
+        MD5(ci.id || '-' || coalesce(elems.c1 ->> 'name', '') || '-' || coalesce(elems.c1 ->> 'category', '') || '-' || order_num)::text as id,
         ci.id as chapter_id,
         ci.source_key,
         ci.number,
         ci.title,
         ci.book_id,
-        
-        c1 ->>'name' as name,
-        c1 ->>'category' as category,
-        c1 ->>'description' as description,
-        c1 ->>'ruName' IS NOT NULL as translated,
-        c1 ->>'ruName' as translated_name,
-        c1 #>> '{}' as raw_json
+
+        elems.c1 ->>'name' as name,
+        elems.c1 ->>'category' as category,
+        elems.c1 ->>'description' as description,
+        elems.c1 ->>'ruName' IS NOT NULL as translated,
+        elems.c1 ->>'ruName' as translated_name,
+        elems.c1 #>> '{}' as raw_json
     from
         chapter_info ci,
-        json_array_elements(names) as c1
+        json_array_elements(names) WITH ORDINALITY AS elems (c1, order_num)
 )
 select
     c1.*,

@@ -25,6 +25,13 @@ public class OpenRouterAiChatProperties {
 
         private Set<String> models;
 
+        @Builder.Default
+        private String mode = "static";
+
+        public boolean isDynamicMode() {
+            return "dynamic".equalsIgnoreCase(mode);
+        }
+
         public Set<String> acquireModels() {
             if (models.isEmpty()) {
                 return Collections.emptySet();

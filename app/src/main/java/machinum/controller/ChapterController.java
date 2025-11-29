@@ -53,7 +53,7 @@ public class ChapterController implements ControllerTrait {
     @GetMapping("/api/chapters/{id}")
     public ResponseEntity<Chapter> getChapterById(@PathVariable("id") String id) {
         log.info("Getting chapter by ID: {}", id);
-        return chapterService.getChapterById(id)
+        return chapterService.findChapterById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -139,17 +139,27 @@ public class ChapterController implements ControllerTrait {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/api/books/{bookId}/chapters-glossary")
+    public ResponseEntity<List<ChapterGlossary>> getBookChaptersGlossary(
+            @PathVariable("bookId") String bookId,
+            @RequestParam("chapterIds") List<String> chapterIds) {
+        log.info("Fetching glossary for specific chapters in bookId: {}: {}", bookId, chapterIds);
+        var result = chapterGlossaryService.findGlossariesByChapterIds(bookId, chapterIds);
+
+        return ResponseEntity.ok(result);
+    }
+
     @GetMapping("/api/books/{bookId}/glossary")
     public ResponseEntity<List<ChapterGlossary>> getBookGlossary(
             @PathVariable("bookId") String bookId,
             @RequestParam("page") int page,
             @RequestParam("size") int size,
-            @RequestParam(name = "translationMode", defaultValue = "all") String translationMode,
+            @RequestParam(name = "fetchMode", defaultValue = "all") String fetchMode,
             @RequestParam(name = "fromChapter", required = false) Integer fromChapterNumber,
             @RequestParam(name = "toChapter", required = false) Integer toChapterNumber) {
         log.info("Fetching chapters names for bookId: {}", bookId);
 
-        Page<ChapterGlossary> result = switch (translationMode) {
+        Page<ChapterGlossary> result = switch (fetchMode) {
             case MISSING_MODE ->
                     chapterGlossaryService.findBookTranslatedGlossary(bookId, false, PageRequest.of(page, size));
             case TRANSLATION_MODE ->
@@ -220,18 +230,14 @@ public class ChapterController implements ControllerTrait {
         return ResponseEntity.ok(affectedChapterIds != null ? affectedChapterIds : List.of());
     }
 
-    //TODO: redo, accept from frontend a glossaryId(e.g. a `ChapterGlossary#id`) and work on
-    //TODO: redo api to `/api/books/{bookId}/glossary/{chapterGlossaryId}/mark`, and redo js
-    @PutMapping("/api/books/{bookId}/chapters/{chapterId}/glossary/{glossaryIndex}/mark")
-    public ResponseEntity<Void> markGlossaryItem(@PathVariable("bookId") String bookId,
-                                                 @PathVariable("chapterId") String chapterId,
-                                                 @PathVariable("glossaryIndex") Integer glossaryIndex,
-                                                 @RequestParam("marked") boolean marked) {
-        log.info("Marking glossary item for bookId: {}, chapterId: {}, glossaryIndex: {}, marked: {}",
-                bookId, chapterId, glossaryIndex, marked);
+    @PutMapping("/api/books/{bookId}/glossary/{chapterGlossaryId}/properties")
+    public ResponseEntity<Void> updateGlossaryProperties(@PathVariable("bookId") String bookId,
+                                                         @PathVariable("chapterGlossaryId") String chapterGlossaryId,
+                                                         @RequestBody UpdateGlossaryRequest request) {
+        log.info("Updating glossary properties for bookId: {}, chapterGlossaryId: {}, field: {}, value: {}",
+                bookId, chapterGlossaryId, request.field, request.value);
 
-        //TODO: work with id and not with anme of glossary
-        chapterGlossaryService.toggleGlossaryMark(bookId, "glossaryName", marked, "glossaryName"); // Use name as filter
+        chapterGlossaryService.updateGlossaryProperties(bookId, chapterGlossaryId, request.field, request.value);
 
         return ResponseEntity.noContent().build();
     }
@@ -351,11 +357,15 @@ public class ChapterController implements ControllerTrait {
         private Integer chapterEnd = 999999;
         private Integer topK = 20;
         private Float minScore = 0.1f;
+        private String algorithm = "all"; // Algorithm: all, exact, contains, fulltext, trigram, levenshtein, phonetic, jaro_winkler, fuzzy
 
     }
 
     public record UpdateGlossaryRuNameRequest(String oldRuName, String newRuName, Boolean returnIds,
                                               String nameFilter) {
+    }
+
+    public record UpdateGlossaryRequest(String field, Object value) {
     }
 
 }

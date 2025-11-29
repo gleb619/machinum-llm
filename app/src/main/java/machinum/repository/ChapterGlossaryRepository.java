@@ -359,8 +359,8 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterGlossary
     @Query(value = "SELECT mt_update_glossary_runame(:bookId, :oldRuName, :newRuName, :returnIds, :nameFilter)",
             nativeQuery = true)
     String updateGlossaryRuName(@Param("bookId") String bookId,
-                              @Param("oldRuName") String oldRuName,
-                              @Param("newRuName") String newRuName,
+                                @Param("oldRuName") String oldRuName,
+                                @Param("newRuName") String newRuName,
                                 @Param("returnIds") Boolean returnIds,
                                 @Param("nameFilter") String nameFilter);
 
@@ -370,6 +370,26 @@ public interface ChapterGlossaryRepository extends JpaRepository<ChapterGlossary
                               @Param("glossaryName") String glossaryName,
                               @Param("marked") Boolean marked,
                               @Param("nameFilter") String nameFilter);
+
+    @Query(value =
+            """
+                    SELECT
+                        cg1.id,
+                        cg1.chapter_id as chapterId,
+                        cg1.number as chapterNumber,
+                        cg1.raw_json as rawJson
+                    FROM chapter_glossary cg1
+                    WHERE cg1.book_id = :bookId
+                    AND CAST(cg1.raw_json AS jsonb)->>'marked' = 'true'
+                    ORDER BY cg1.number, cg1.category, cg1.name
+                    """,
+            countQuery = """
+                    SELECT count(cg1.id)
+                    FROM chapter_glossary cg1
+                    WHERE cg1.book_id = :bookId
+                    AND CAST(cg1.raw_json AS jsonb)->>'marked' = 'true'
+                    """, nativeQuery = true)
+    Page<ChapterGlossaryProjection> findMarkedGlossaryByBookId(@Param("bookId") String bookId, PageRequest pageRequest);
 
     @Query(value =
             """

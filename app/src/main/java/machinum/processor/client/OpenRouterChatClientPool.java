@@ -131,6 +131,10 @@ public class OpenRouterChatClientPool {
         log.error("Client blocked due to DDoS protection. Reduce request frequency");
     }
 
+    public void disableClient(OpenRouterClientItem client) {
+        client.disableClient();
+    }
+
     public int availableSize() {
         return (int) clients.stream().filter(OpenRouterClientItem::isAvailable).count();
     }
@@ -181,6 +185,7 @@ public class OpenRouterChatClientPool {
 
         private LocalDateTime blockedUntil;
         private boolean isBlocked;
+        private boolean disabled = false;
 
         public <T> T execute(BiFunction<ChatClient, String, T> function) {
             if (!isAvailable()) {
@@ -190,6 +195,8 @@ public class OpenRouterChatClientPool {
         }
 
         public boolean isAvailable() {
+            if (disabled) return false;
+
             if (!isBlocked) return true;
             if (blockedUntil != null && LocalDateTime.now().isAfter(blockedUntil)) {
                 unblockClient();
@@ -204,6 +211,11 @@ public class OpenRouterChatClientPool {
             this.isBlocked = true;
             this.blockedUntil = LocalDateTime.now().plusSeconds(retryDelaySeconds);
             log.debug("Client blocked until: {}, model={}", blockedUntil, model);
+        }
+
+        public void disableClient() {
+            this.disabled = true;
+            log.debug("Client disabled: {}", model);
         }
 
         private void unblockClient() {

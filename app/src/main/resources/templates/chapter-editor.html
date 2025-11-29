@@ -68,6 +68,24 @@
                 <!-- Editor Tab -->
                 <div class="h-full" x-show="chapterActiveTab === 'editor'">
                     <div class="flex flex-wrap items-center justify-between p-3 bg-gray-50 border rounded-md gap-4">
+
+                        <!-- Editor Type Selection -->
+                        <div class="flex items-center space-x-1">
+                            <label class="text-sm font-medium text-gray-700">Editor:</label>
+                            <div class="flex items-center space-x-1">
+                                <button :class="editorType === 'codemirror' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'"
+                                        @click="editorType = 'codemirror'; localStorage.setItem('editorType', 'codemirror')"
+                                        class="px-3 py-1 text-sm rounded-md">
+                                    CodeMirror
+                                </button>
+                                <button :class="editorType === 'monaco' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'"
+                                        @click="editorType = 'monaco'; localStorage.setItem('editorType', 'monaco')"
+                                        class="px-3 py-1 text-sm rounded-md">
+                                    Monaco
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="flex items-center divide-x divide-gray-300">
                             <div class="flex items-center space-x-2 pr-4">
                                 <input class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
@@ -146,25 +164,44 @@
                         </div>
                     </div>
 
+                    <!-- Editor Content Area -->
                     <div class="relative">
-                        <div :class="{
-                            'hide-none-suspicious-line': highlightSuspicious && hideNonSuspicious
-                         }"
-                             @editor-event="handleEditorEvent($event)"
-                             class="h-full CodeMirror-container"
-                             x-editor="currentContent"
-                             x-settings="{
-                            lineNumbers: true,
-                            styleActiveLine: true,
-                            styleActiveSelected: true,
-                            lineWrapping: true,
-                            mode: 'text/plain',
-                            theme: 'eclipse',
-                            viewportMargin: Infinity,
-                            fontSize: chapterFontSize,
-                            highlightEnglish: highlightSuspicious
-                         }"
-                        ></div>
+                        <!-- CodeMirror Editor -->
+                        <template x-if="editorType === 'codemirror'">
+                            <div :class="{
+                                'hide-none-suspicious-line': highlightSuspicious && hideNonSuspicious
+                             }"
+                                 @editor-event="handleEditorEvent($event)"
+                                 class="h-full CodeMirror-container"
+                                 x-editor="currentContent"
+                                 x-settings="{
+                                lineNumbers: true,
+                                styleActiveLine: true,
+                                styleActiveSelected: true,
+                                lineWrapping: true,
+                                mode: 'text/plain',
+                                theme: 'eclipse',
+                                viewportMargin: Infinity,
+                                fontSize: chapterFontSize,
+                                highlightEnglish: highlightSuspicious
+                             }"
+                            ></div>
+                        </template>
+
+                        <!-- Monaco Editor -->
+                        <template x-if="editorType === 'monaco'">
+                            <div @editor-event="handleEditorEvent($event)"
+                                 class="h-full min-h-screen monaco-container"
+                                 x-monaco-editor="currentContent"
+                                 x-settings="{
+                                lineNumbers: true,
+                                fontSize: chapterFontSize,
+                                fontFamily: 'monospace',
+                                highlightEnglish: highlightSuspicious,
+                                hideNonSuspicious: hideNonSuspicious
+                             }"
+                            ></div>
+                        </template>
 
                         <div :style="`left: ${contextMenuX}px; top: ${contextMenuY}px;`"
                              @click.away="contextMenuVisible = false; relText = ''"

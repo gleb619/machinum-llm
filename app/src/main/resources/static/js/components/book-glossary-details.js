@@ -17,7 +17,7 @@ export function glossaryDetailsApp() {
             lineMatchCase: false,
             lineMatchWholeWord: false,
             lineUseRegex: false,
-            isFuzzyMode: false
+            selectedAlgorithm: 'all'
         },
 
         initGlossaryDetails() {
@@ -29,8 +29,8 @@ export function glossaryDetailsApp() {
             glossary.details.searchText = glossary.details.searchText || glossary.name;
             glossary.details.filterText = '';
             glossary.details.lineSearchTerm = glossary.details.lineSearchTerm || glossary.name;
-            this.glossary.details.replaceTextSearch = glossary.name;
-            this.glossary.details.replaceSummarySearch = glossary.name;
+            glossary.details.replaceTextSearch = glossary.name;
+            glossary.details.replaceSummarySearch = glossary.name;
             glossary.details.updateRuNameOldRuName = glossary.ruName || '';
             glossary.details.updateRuNameNewRuName = '';
             glossary.details.updateRuNameNameFilter = '';
@@ -59,8 +59,8 @@ export function glossaryDetailsApp() {
                 this.fetchRelatedLines(glossary);
                 let relatedItems;
 
-                if(this.glossaryConfigTabs.isFuzzyMode) {
-                    // Ensure fuzzy mode is properly initialized
+                if(this.glossaryConfigTabs.selectedAlgorithm === 'fuzzy') {
+                    // Ensure fuzzy mode is properly initialized for fuzzy tab
                     if (!glossary.details.fuzzyTextInput && (glossary.details.searchText || glossary.name)) {
                         glossary.details.fuzzyTextInput = glossary.details.searchText || glossary.name;
                         this.updateFuzzyPreview(glossary);
@@ -97,6 +97,7 @@ export function glossaryDetailsApp() {
                 chapterEnd: parseInt(this.glossaryConfigTabs.chapterEnd) || 999999,
                 topK: parseInt(this.glossaryConfigTabs.topK) || 20,
                 minScore: parseFloat(this.glossaryConfigTabs.minScore) || 0.1,
+                algorithm: this.glossaryConfigTabs.selectedAlgorithm || 'all',
             };
 
             try {
@@ -159,8 +160,8 @@ export function glossaryDetailsApp() {
             }
         },
 
-        async replaceGlossaryText() {
-            const {replaceTextSearch, replaceTextReplacement} = this.glossary.details;
+        async replaceGlossaryText(glossary) {
+            const {replaceTextSearch, replaceTextReplacement} = glossary.details;
             if (!replaceTextSearch || !replaceTextReplacement) {
                 this.showToast('Book ID, Search Term and Replacement Text are required', true);
                 return Promise.resolve();
@@ -188,8 +189,8 @@ export function glossaryDetailsApp() {
             }
         },
 
-        async replaceSummary() {
-            const {replaceSummarySearch, replaceSummaryReplacement} = this.glossary.details;
+        async replaceSummary(glossary) {
+            const {replaceSummarySearch, replaceSummaryReplacement} = glossary.details;
             if (!replaceSummarySearch || !replaceSummaryReplacement) {
                 this.showToast('Book ID, Search Term and Replacement Text are required', true);
                 return Promise.resolve();
@@ -217,8 +218,8 @@ export function glossaryDetailsApp() {
             }
         },
 
-        async previewUpdateRuName() {
-            const {updateRuNameOldRuName, updateRuNameNewRuName, updateRuNameNameFilter} = this.glossary.details;
+        async previewUpdateRuName(glossary) {
+            const {updateRuNameOldRuName, updateRuNameNewRuName, updateRuNameNameFilter} = glossary.details;
             if (!updateRuNameOldRuName || !updateRuNameNewRuName) {
                 this.showToast('Old Russian Name and New Russian Name are required', true);
                 return Promise.resolve();
@@ -247,7 +248,7 @@ export function glossaryDetailsApp() {
                 }
 
                 const affectedChapters = await response.json();
-                this.glossary.details.updateRuNameAffectedChapters = [...affectedChapters];
+                glossary.details.updateRuNameAffectedChapters = [...affectedChapters];
                 this.showToast(`Preview complete: ${affectedChapters.length} chapters will be affected`, false);
                 return Promise.resolve();
             } catch (error) {
@@ -257,8 +258,8 @@ export function glossaryDetailsApp() {
             }
         },
 
-        async updateGlossaryRuName() {
-            const {updateRuNameOldRuName, updateRuNameNewRuName, updateRuNameNameFilter} = this.glossary.details;
+        async updateGlossaryRuName(glossary) {
+            const {updateRuNameOldRuName, updateRuNameNewRuName, updateRuNameNameFilter} = glossary.details;
             if (!updateRuNameOldRuName || !updateRuNameNewRuName) {
                 this.showToast('Book ID, Old Russian Name and New Russian Name are required', true);
                 return Promise.resolve();
@@ -292,11 +293,12 @@ export function glossaryDetailsApp() {
                 // Refresh glossary items from affected chapters
                 if (affectedChapterIds && affectedChapterIds.length > 0) {
                     await this.refreshGlossaryItemsFromChapters(affectedChapterIds);
+                    await this.refreshGlossaryItem(glossary.id);
                 }
 
                 this.showToast('Russian name updated successfully', false);
                 // Clear affected chapters after successful update
-                this.glossary.details.updateRuNameAffectedChapters = [];
+                glossary.details.updateRuNameAffectedChapters = [];
                 return Promise.resolve();
             } catch (error) {
                 console.error('Error updating Russian name:', error);
@@ -316,9 +318,41 @@ export function glossaryDetailsApp() {
         async changeGlossaryTranslatedName(glossaryTo, glossaryFrom) {
           // Update the translated glossary
           glossaryTo.ruName = glossaryFrom.ruName;
-        
+
           // Save the changes with loading state management
           return withLoadingState(() => this.saveGlossaryChanges(glossaryTo), glossaryTo);
+        },
+
+        async changeGlossaryAlternativeName(glossaryTo, glossaryFrom) {
+            const alternativeName = glossaryFrom.name;
+            try {
+                return withLoadingState(async () => {
+                    glossaryTo.details.jobLoading = true;
+
+                    const response = await fetch(`/api/books/${this.activeId}/glossary/${glossaryTo.id}/properties`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            field: 'alternativeName',
+                            value: alternativeName
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        this.showToast(`Error updating alternative name: ${error.message || 'Unknown error'}`, true);
+                        return Promise.reject(error);
+                    }
+
+                    await this.refreshGlossaryItem(glossaryTo.id);
+                    this.showToast('Alternative name updated successfully', false);
+                    return Promise.resolve();
+                }, glossaryTo);
+            } catch (error) {
+                console.error('Error updating alternative name:', error);
+                this.showToast(`Failed to update alternative name: ${error.message || error}`, true);
+                return Promise.reject(error);
+            }
         },
         
         async changeGlossaryText(glossaryTo, glossaryFrom) {
@@ -327,7 +361,7 @@ export function glossaryDetailsApp() {
           glossaryTo.details.replaceTextReplacement = glossaryFrom.name;
         
           // Save the changes with loading state management
-          return withLoadingState(() => this.replaceGlossaryText(), glossaryTo);
+          return withLoadingState(() => this.replaceGlossaryText(glossaryTo), glossaryTo);
         },
         
         async changeGlossarySummary(glossaryTo, glossaryFrom) {
@@ -336,7 +370,7 @@ export function glossaryDetailsApp() {
           glossaryTo.details.replaceSummaryReplacement = glossaryFrom.name;
         
           // Save the changes with loading state management
-          return withLoadingState(() => this.replaceSummary(), glossaryTo);
+          return withLoadingState(() => this.replaceSummary(glossaryTo), glossaryTo);
         },
 
         async applyAllGlossaryChanges(glossaryTo, glossaryFrom) {
@@ -374,14 +408,41 @@ export function glossaryDetailsApp() {
             return { item1, item2, summary };
         },
 
-        get glossaryFilteredRelatedItems() {
-            if(!this.glossary.details?.filterText || this.glossary.details?.filterText == '') {
-                return this.glossary.details.relatedItems;
+        glossaryFilteredRelatedItems(glossary) {
+            if(!glossary.details?.filterText || glossary.details?.filterText == '') {
+                return glossary.details.relatedItems;
             }
 
-            return this.glossary.details.relatedItems?.filter(item =>item?.name?.toLowerCase().includes(this.glossary.details.filterText?.toLowerCase()) ||
-                item.ruName?.toLowerCase().includes(this.glossary.details.filterText.toLowerCase()) ||
-                item.description.toLowerCase().includes(this.glossary.details.filterText.toLowerCase()));
+            return glossary.details.relatedItems?.filter(item =>item?.name?.toLowerCase().includes(glossary.details.filterText?.toLowerCase()) ||
+                item.ruName?.toLowerCase().includes(glossary.details.filterText.toLowerCase()) ||
+                item.description.toLowerCase().includes(glossary.details.filterText.toLowerCase()));
+        },
+
+        copyItemMarkdown(item) {
+            if (!item) return;
+
+            const sb = [];
+            sb.push(item.name);
+            if (item.alternativeName) {
+                sb.push(` (${item.alternativeName})`);
+            }
+            sb.push(` - it's a ${item.category}`);
+            sb.push(`; Example of usage: ${item.description}`);
+            if (item.references && item.references.length > 0) {
+                sb.push(`; References: ${item.references.join(', ')}`);
+            }
+            if (item.ruName) {
+                sb.push(`; Russian translation is: \`${item.ruName}\`;`);
+            }
+
+            const markdown = sb.join('');
+
+            navigator.clipboard.writeText(markdown).then(() => {
+                this.showToast('Markdown copied to clipboard', false);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                this.showToast('Failed to copy to clipboard', true);
+            });
         },
 
     };
